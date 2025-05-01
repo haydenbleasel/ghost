@@ -70,7 +70,7 @@
     "posthog-node": "^4.9.0",
     "react": "19.0.0",
     "react-aria-components": "^1.7.1",
-    "react-day-picker": "^8.10.1",
+    "react-day-picker": "^9.6.7",
     "react-dom": "19.0.0",
     "react-hook-form": "^7.54.2",
     "react-moveable": "^0.56.0",
