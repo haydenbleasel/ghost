@@ -105,7 +105,7 @@
     "@types/react-dom": "19.0.4",
     "@types/ssh2": "^1.15.4",
     "@types/ssh2-sftp-client": "^9.0.4",
-    "@types/ws": "^8.18.0",
+    "@types/ws": "^8.18.1",
     "bufferutil": "^4.0.9",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.0.12",
