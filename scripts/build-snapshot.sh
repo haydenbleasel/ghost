@@ -148,6 +148,8 @@ else
   echo "HETZNER_IMAGE_ID=$SNAPSHOT_ID" >> .env.local
 fi
 
+SUCCESS=1
+
 echo
 echo "=========================================="
 echo " snapshot ready: $SNAPSHOT_ID"
