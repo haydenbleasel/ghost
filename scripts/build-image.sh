@@ -10,7 +10,7 @@
 #   3. ssh root@<ip> 'bash /root/build-image.sh'
 #   4. Once finished (clean shutdown), create the snapshot:
 #        hcloud server shutdown <id>
-#        hcloud image create --type snapshot --description 'ultrabeam-gold' --server <id>
+#        hcloud server create-image --type snapshot --description 'ultrabeam-gold' <server>
 #   5. Capture the snapshot ID into HETZNER_IMAGE_ID in your Vercel env.
 #   6. Delete the throwaway server.
 set -euxo pipefail
@@ -19,13 +19,23 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
 apt-get -y upgrade
-apt-get -y install \
-  ca-certificates \
-  curl \
-  gnupg \
-  ufw \
-  docker.io \
-  docker-compose-plugin
+apt-get -y install ca-certificates curl gnupg ufw
+
+# Remove any distro Docker packages so Docker Inc's official ones install cleanly
+for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do
+  apt-get -y remove "$pkg" 2>/dev/null || true
+done
+
+# Add Docker's official apt repo (ships docker-compose-plugin; Ubuntu 24.04's own repos don't)
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+. /etc/os-release
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" \
+  > /etc/apt/sources.list.d/docker.list
+
+apt-get update
+apt-get -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 systemctl enable --now docker
 

@@ -65,15 +65,86 @@ SENTRY_PROJECT=
 ## One-time setup
 
 1. **Neon** — create a Postgres database, set `DATABASE_URL`.
-2. **Upstash** — create a Redis database, set the REST URL/token.
-3. **Prisma** — `pnpm db:push` (dev) or `pnpm db:migrate` for prod.
-4. **Build the gold image**:
-   - `cd agent && bun install && bun run build` — writes `dist/ultrabeam-agent` (Linux x86_64).
-   - Spin up a throwaway Hetzner Ubuntu 24.04 server.
-   - `scp dist/ultrabeam-agent scripts/ultrabeam-agent.service scripts/build-image.sh root@<ip>:/` then `ssh root@<ip> 'bash /build-image.sh'`.
-   - `ssh root@<ip> shutdown -h now` → `hcloud image create --type snapshot --server <id> --description ultrabeam-gold`.
-   - Capture the snapshot id into `HETZNER_IMAGE_ID`.
+2. **Vercel KV / Upstash** — create a Redis database, set `KV_REST_API_URL` + `KV_REST_API_TOKEN`.
+3. **Prisma** — `pnpm migrate` (runs `prisma format && prisma generate && prisma db push`).
+4. **Build the gold image** — see [Building the gold image](#building-the-gold-image) below.
 5. **Deploy** the Next.js app to Vercel with the env vars above.
+
+## Building the gold image
+
+One-time ~10 min process on Hetzner. Produces a snapshot with Ubuntu + Docker + `ultrabeam-agent` + the game's Docker image pre-pulled, so first provision is instant.
+
+### Prereqs
+
+```bash
+brew install hcloud
+hcloud context create ultrabeam              # paste your HETZNER_TOKEN
+hcloud ssh-key create --name laptop --public-key-from-file ~/.ssh/id_ed25519.pub
+```
+
+### 1. Compile the agent binary
+
+```bash
+pnpm agent:build
+# → dist/ultrabeam-agent  (Linux x86_64, ~100 MB)
+```
+
+### 2. Spin up a throwaway builder VM
+
+```bash
+hcloud server create \
+  --name ultrabeam-image-builder \
+  --type cx22 \
+  --image ubuntu-24.04 \
+  --location nbg1 \
+  --ssh-key laptop
+
+BUILDER_IP=$(hcloud server ip ultrabeam-image-builder)
+ssh -o StrictHostKeyChecking=accept-new root@$BUILDER_IP 'echo ok'
+```
+
+### 3. Copy the agent + scripts onto it
+
+```bash
+scp dist/ultrabeam-agent             root@$BUILDER_IP:/usr/local/bin/
+scp scripts/ultrabeam-agent.service  root@$BUILDER_IP:/etc/systemd/system/
+scp scripts/build-image.sh           root@$BUILDER_IP:/root/
+ssh root@$BUILDER_IP 'chmod +x /usr/local/bin/ultrabeam-agent /root/build-image.sh'
+```
+
+### 4. Run the build script
+
+```bash
+ssh root@$BUILDER_IP 'bash /root/build-image.sh'
+```
+
+Installs Docker, enables the agent systemd unit, opens port 22, and pre-pulls `itzg/minecraft-server:latest`. Takes 2–3 min.
+
+### 5. Shut down and snapshot
+
+```bash
+hcloud server shutdown ultrabeam-image-builder
+# wait until status = off (~20s)
+hcloud server describe ultrabeam-image-builder -o format='{{.Status}}'
+
+hcloud server create-image \
+  --type snapshot \
+  --description ultrabeam-gold-minecraft \
+  ultrabeam-image-builder
+```
+
+Grab the snapshot ID from the output (or `hcloud image list --type snapshot`).
+
+### 6. Wire it up and nuke the builder
+
+```bash
+echo "HETZNER_IMAGE_ID=<snapshot-id>" >> .env
+hcloud server delete ultrabeam-image-builder
+```
+
+### Adding more games later
+
+Add `docker pull <image>` lines to `scripts/build-image.sh`, rebuild the snapshot (steps 2–5), and bump `HETZNER_IMAGE_ID`. Same snapshot shape, more images pre-baked.
 
 ## Lifecycle
 
