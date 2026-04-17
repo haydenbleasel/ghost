@@ -10,6 +10,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
+    "migrate": "prisma format && prisma generate && prisma db push",
     "agent:build": "cd agent && bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/ultrabeam-agent",
     "agent:dev": "cd agent && bun run src/index.ts"
   },

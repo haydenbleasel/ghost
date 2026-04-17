@@ -89,27 +89,27 @@ enum ObservedState {
 }
 
 model Server {
-  id               String          @id
-  userId           String
-  name             String
-  game             String
-  location         String
-  serverType       String
-  hetznerServerId  String?         @unique
-  ipv4             String?
-  desiredState     DesiredState    @default(running)
-  observedState    ObservedState   @default(pending)
-  phase            String          @default("queued")
-  rconPassword     String
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  deletedAt        DateTime?
-  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent            Agent?
-  commands         Command[]
-  activityEvents   ActivityEvent[]
-  logChunks        LogChunk[]
-  enrollments      AgentEnrollment[]
+  id              String            @id
+  userId          String
+  name            String
+  game            String
+  location        String
+  serverType      String
+  hetznerServerId String?           @unique
+  ipv4            String?
+  desiredState    DesiredState      @default(running)
+  observedState   ObservedState     @default(pending)
+  phase           String            @default("queued")
+  rconPassword    String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent           Agent?
+  commands        Command[]
+  activityEvents  ActivityEvent[]
+  logChunks       LogChunk[]
+  enrollments     AgentEnrollment[]
 
   @@index([userId])
   @@index([desiredState, observedState])
@@ -117,44 +117,44 @@ model Server {
 }
 
 model Agent {
-  id                String    @id
-  serverId          String    @unique
-  publicKey         String
-  sessionVersion    Int       @default(0)
-  lastHeartbeatAt   DateTime?
-  lastCommandId     String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  server            Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  id              String    @id
+  serverId        String    @unique
+  publicKey       String
+  sessionVersion  Int       @default(0)
+  lastHeartbeatAt DateTime?
+  lastCommandId   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  server          Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   @@map("agents")
 }
 
 model AgentEnrollment {
-  jti        String    @id
-  serverId   String
-  expiresAt  DateTime
-  burnedAt   DateTime?
-  createdAt  DateTime  @default(now())
-  server     Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  jti       String    @id
+  serverId  String
+  expiresAt DateTime
+  burnedAt  DateTime?
+  createdAt DateTime  @default(now())
+  server    Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   @@index([serverId])
   @@map("agent_enrollments")
 }
 
 model Command {
-  id         String    @id
-  serverId   String
-  type       String
-  payload    Json
-  status     String    @default("pending")
-  issuedAt   DateTime  @default(now())
+  id          String    @id
+  serverId    String
+  type        String
+  payload     Json
+  status      String    @default("pending")
+  issuedAt    DateTime  @default(now())
   deliveredAt DateTime?
-  ackedAt    DateTime?
-  error      String?
-  result     Json?
-  durationMs Int?
-  server     Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  ackedAt     DateTime?
+  error       String?
+  result      Json?
+  durationMs  Int?
+  server      Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   @@index([serverId, status])
   @@map("commands")
