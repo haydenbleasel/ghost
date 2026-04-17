@@ -25,10 +25,7 @@ const NewServerPage = async () => {
           Pick a game, a machine, and a region. Provisioning starts immediately.
         </p>
       </header>
-      <NewServerForm
-        games={gameOptions}
-        serverTypes={catalog.serverTypes}
-      />
+      <NewServerForm games={gameOptions} serverTypes={catalog.serverTypes} />
     </div>
   );
 };
