@@ -1,6 +1,6 @@
 import "server-only";
 import { env } from "@/lib/env";
-import { getImage, getPricingCurrency, listDatacenters, listServerTypes } from "./client";
+import { hetzner, throwIfHetznerError } from "./index";
 
 export interface CatalogLocation {
   name: string;
@@ -31,12 +31,32 @@ export interface Catalog {
 }
 
 export const getHetznerCatalog = async (): Promise<Catalog> => {
-  const [serverTypes, datacenters, image, currency] = await Promise.all([
-    listServerTypes(),
-    listDatacenters(),
-    getImage(env.HETZNER_IMAGE_ID),
-    getPricingCurrency(),
+  const [serverTypesRes, datacentersRes, imageRes, pricingRes] = await Promise.all([
+    hetzner.GET("/server_types", {
+      next: { revalidate: 60 },
+      params: { query: { per_page: 50 } },
+    }),
+    hetzner.GET("/datacenters", { next: { revalidate: 60 } }),
+    hetzner.GET("/images/{id}", {
+      next: { revalidate: 3600 },
+      params: { path: { id: Number(env.HETZNER_IMAGE_ID) } },
+    }),
+    hetzner.GET("/pricing", { next: { revalidate: 86_400 } }),
   ]);
+
+  throwIfHetznerError(serverTypesRes.error, serverTypesRes.response);
+  throwIfHetznerError(datacentersRes.error, datacentersRes.response);
+  throwIfHetznerError(imageRes.error, imageRes.response);
+  throwIfHetznerError(pricingRes.error, pricingRes.response);
+
+  const serverTypes = serverTypesRes.data?.server_types ?? [];
+  const datacenters = datacentersRes.data?.datacenters ?? [];
+  const image = imageRes.data?.image;
+  const currency = pricingRes.data?.pricing.currency ?? "EUR";
+
+  if (!image) {
+    throw new Error("Hetzner image not found");
+  }
 
   const perLocation = new Map<
     string,

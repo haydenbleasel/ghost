@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { changeServerType, HetznerApiError } from "@/lib/hetzner/client";
+import { hetzner } from "@/lib/hetzner";
 import { requireUser } from "@/lib/session";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -38,13 +38,14 @@ export const POST = async (request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: "Already on this server type" }, { status: 400 });
   }
 
-  try {
-    await changeServerType(Number(server.hetznerServerId), parsed.data.serverType);
-  } catch (error) {
-    if (error instanceof HetznerApiError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    throw error;
+  const { error: apiError, response } = await hetzner.POST("/servers/{id}/actions/change_type", {
+    body: { server_type: parsed.data.serverType, upgrade_disk: false },
+    params: { path: { id: Number(server.hetznerServerId) } },
+  });
+  if (!response.ok) {
+    const errorBody = apiError as { error?: { message?: string } } | undefined;
+    const message = errorBody?.error?.message ?? response.statusText;
+    return NextResponse.json({ error: message }, { status: response.status });
   }
 
   await prisma.server.update({

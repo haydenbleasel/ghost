@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { disableServerBackups, enableServerBackups, HetznerApiError } from "@/lib/hetzner/client";
+import { hetzner } from "@/lib/hetzner";
 import { requireUser } from "@/lib/session";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -32,13 +32,16 @@ export const PATCH = async (request: Request, context: { params: Promise<{ id: s
 
   const hetznerId = Number(server.hetznerServerId);
 
-  try {
-    await (parsed.data.enabled ? enableServerBackups(hetznerId) : disableServerBackups(hetznerId));
-  } catch (error) {
-    if (error instanceof HetznerApiError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    throw error;
+  const path = parsed.data.enabled
+    ? ("/servers/{id}/actions/enable_backup" as const)
+    : ("/servers/{id}/actions/disable_backup" as const);
+  const { error: apiError, response } = await hetzner.POST(path, {
+    params: { path: { id: hetznerId } },
+  });
+  if (!response.ok) {
+    const errorBody = apiError as { error?: { message?: string } } | undefined;
+    const message = errorBody?.error?.message ?? response.statusText;
+    return NextResponse.json({ error: message }, { status: response.status });
   }
 
   await prisma.server.update({

@@ -128,9 +128,7 @@ const DashboardPage = async () => {
               </div>
 
               <div className="flex items-center justify-between border-foreground/10 border-t pt-3 text-xs">
-                <span className="font-mono text-muted-foreground">
-                  {server.ipv4 ?? "—"}
-                </span>
+                <span className="font-mono text-muted-foreground">{server.ipv4 ?? "—"}</span>
                 <span className="text-muted-foreground">
                   <span className="text-foreground/70">{server.serverType}</span> · {phaseLabel}
                 </span>

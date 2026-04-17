@@ -5,12 +5,7 @@ import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { emitActivity } from "@/lib/events/emit";
-import {
-  createServer as createHetznerServer,
-  deleteServer as deleteHetznerServer,
-  getServer as getHetznerServer,
-  HetznerApiError,
-} from "@/lib/hetzner/client";
+import { hetzner, HetznerApiError, throwIfHetznerError } from "@/lib/hetzner";
 import type { Phase } from "@/protocol";
 import { FatalError, getStepMetadata } from "workflow";
 import { resumeHook } from "workflow/api";
@@ -87,20 +82,31 @@ export const stepCreateHetznerServer = async (serverId: string) => {
     .randomBytes(2)
     .toString("hex")}`;
 
-  let created;
-  try {
-    created = await createHetznerServer({
+  const { data, error, response } = await hetzner.POST("/servers", {
+    body: {
+      image: env.HETZNER_IMAGE_ID,
       location: server.location,
       name: hetznerName,
-      serverType: server.serverType,
-      userData,
-    });
-  } catch (error) {
-    if (error instanceof HetznerApiError && error.isClientError) {
-      throw new FatalError(error.message);
+      public_net: { enable_ipv4: true, enable_ipv6: false },
+      server_type: server.serverType,
+      start_after_create: true,
+      user_data: userData,
+    },
+  });
+  if (!response.ok) {
+    const body = error as { error?: { code?: string; message?: string } } | undefined;
+    const code = body?.error?.code ?? String(response.status);
+    const message = body?.error?.message ?? response.statusText;
+    const apiError = new HetznerApiError(response.status, code, message);
+    if (apiError.isClientError) {
+      throw new FatalError(apiError.message);
     }
-    throw error;
+    throw apiError;
   }
+  if (!data?.server) {
+    throw new Error("Hetzner server creation returned no server");
+  }
+  const created = data.server;
 
   const updated = await prisma.server.update({
     data: {
@@ -113,12 +119,11 @@ export const stepCreateHetznerServer = async (serverId: string) => {
   });
 
   if (updated.desiredState === "deleted") {
-    try {
-      await deleteHetznerServer(created.id);
-    } catch (error) {
-      if (!(error instanceof HetznerApiError && error.status === 404)) {
-        throw error;
-      }
+    const { error: delError, response: delResponse } = await hetzner.DELETE("/servers/{id}", {
+      params: { path: { id: created.id } },
+    });
+    if (!delResponse.ok && delResponse.status !== 404) {
+      throwIfHetznerError(delError, delResponse);
     }
     return { cancelled: true as const, hetznerServerId: created.id };
   }
@@ -135,7 +140,16 @@ export const stepCreateHetznerServer = async (serverId: string) => {
 
 export const stepGetHetznerStatus = async (hetznerServerId: number) => {
   "use step";
-  const server = await getHetznerServer(hetznerServerId);
+  const { data, error, response } = await hetzner.GET("/servers/{id}", {
+    params: { path: { id: hetznerServerId } },
+  });
+  if (response.status === 404) {
+    return { ip: null, status: "unknown" as const };
+  }
+  if (!response.ok) {
+    throwIfHetznerError(error, response);
+  }
+  const server = data?.server;
   if (!server) {
     return { ip: null, status: "unknown" as const };
   }
@@ -275,12 +289,11 @@ export const stepDeleteHetzner = async (serverId: string) => {
   if (!server?.hetznerServerId) {
     return { deleted: false };
   }
-  try {
-    await deleteHetznerServer(Number(server.hetznerServerId));
-  } catch (error) {
-    if (!(error instanceof HetznerApiError && error.status === 404)) {
-      throw error;
-    }
+  const { error, response } = await hetzner.DELETE("/servers/{id}", {
+    params: { path: { id: Number(server.hetznerServerId) } },
+  });
+  if (!response.ok && response.status !== 404) {
+    throwIfHetznerError(error, response);
   }
   return { deleted: true };
 };
