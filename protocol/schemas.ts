@@ -41,7 +41,7 @@ export const activityEventSchema = z.object({
   agentSeq: z.number().int().nonnegative(),
   phase: z.enum(PHASES),
   message: z.string().min(1),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   occurredAt: z.string().datetime(),
 });
 export type ActivityEvent = z.infer<typeof activityEventSchema>;
@@ -89,7 +89,7 @@ const updateConfigCommand = z.object({
   type: z.literal('UPDATE_CONFIG'),
   payload: z.object({
     compose: z.string().min(1),
-    env: z.record(z.string()).optional(),
+    env: z.record(z.string(), z.string()).optional(),
   }),
   issuedAt: z.string().datetime(),
 });
@@ -124,7 +124,7 @@ export type CommandEnvelope = z.infer<typeof commandEnvelopeSchema>;
 
 export const commandAckSchema = z.object({
   status: z.enum(COMMAND_STATUSES),
-  result: z.record(z.unknown()).optional(),
+  result: z.record(z.string(), z.unknown()).optional(),
   error: z.string().optional(),
   durationMs: z.number().int().nonnegative(),
 });

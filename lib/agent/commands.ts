@@ -42,18 +42,21 @@ export async function claimPendingCommands(
 
   if (pending.length === 0) return [];
 
-  const ids = pending.map((c) => c.id);
+  const ids = pending.map((c: { id: string }) => c.id);
   await prisma.command.updateMany({
     where: { id: { in: ids } },
     data: { status: 'delivered', deliveredAt: new Date() },
   });
 
-  return pending.map((command) => ({
-    id: command.id,
-    type: command.type as Command['type'],
-    payload: command.payload as Record<string, unknown>,
-    issuedAt: command.issuedAt.toISOString(),
-  })) as Command[];
+  return pending.map(
+    (command): Command =>
+      ({
+        id: command.id,
+        type: command.type as Command['type'],
+        payload: command.payload as Record<string, unknown>,
+        issuedAt: command.issuedAt.toISOString(),
+      }) as Command
+  );
 }
 
 export async function ackCommand(input: {

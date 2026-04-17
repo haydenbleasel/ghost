@@ -34,8 +34,6 @@ let config: NextConfig = {
   },
 };
 
-config = withWorkflow(config);
-
 if (env.VERCEL) {
   config = withSentryConfig(
     { ...config, transpilePackages: ['@sentry/nextjs'] },
@@ -55,4 +53,4 @@ if (env.ANALYZE === 'true') {
   config = withBundleAnalyzer()(config);
 }
 
-export default config;
+export default withWorkflow(config);
