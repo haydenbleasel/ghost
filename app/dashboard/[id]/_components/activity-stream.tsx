@@ -17,30 +17,35 @@ export const ActivityStream = ({ serverId }: { serverId: string }) => {
 
   useEffect(() => {
     let cancelled = false;
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     const connect = () => {
       if (cancelled) return;
-      const es = new EventSource(
+      es = new EventSource(
         `/api/servers/${serverId}/activity/stream?cursor=${cursorRef.current}`
       );
       es.addEventListener('activity', (event) => {
         const data = JSON.parse((event as MessageEvent).data) as ActivityItem;
-        cursorRef.current = Math.max(cursorRef.current, data.seq);
+        if (data.seq <= cursorRef.current) return;
+        cursorRef.current = data.seq;
         setEvents((prev) => [...prev, data]);
       });
       es.addEventListener('close', () => {
-        es.close();
-        setTimeout(connect, 250);
+        es?.close();
+        reconnectTimer = setTimeout(connect, 250);
       });
       es.onerror = () => {
-        es.close();
-        setTimeout(connect, 2000);
+        es?.close();
+        reconnectTimer = setTimeout(connect, 2000);
       };
     };
 
     connect();
     return () => {
       cancelled = true;
+      es?.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
     };
   }, [serverId]);
 
