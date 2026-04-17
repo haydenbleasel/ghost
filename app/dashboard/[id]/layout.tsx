@@ -1,11 +1,18 @@
+import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { games } from "@/games";
 import { prisma } from "@/lib/db";
 import { getHetznerCatalog } from "@/lib/hetzner/catalog";
 import { requireUser } from "@/lib/session";
-import { notFound } from "next/navigation";
-import { ServerDetail } from "./_components/detail";
+import { ServerShell } from "./_components/shell";
 
-const ServerPage = async ({ params }: { params: Promise<{ id: string }> }) => {
+const ServerLayout = async ({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ id: string }>;
+}) => {
   const user = await requireUser();
   const { id } = await params;
 
@@ -48,7 +55,7 @@ const ServerPage = async ({ params }: { params: Promise<{ id: string }> }) => {
     : [];
 
   return (
-    <ServerDetail
+    <ServerShell
       currency={catalog.currency}
       eligibleTypes={eligibleTypes}
       server={{
@@ -66,8 +73,10 @@ const ServerPage = async ({ params }: { params: Promise<{ id: string }> }) => {
         serverType: server.serverType,
         specs,
       }}
-    />
+    >
+      {children}
+    </ServerShell>
   );
 };
 
-export default ServerPage;
+export default ServerLayout;

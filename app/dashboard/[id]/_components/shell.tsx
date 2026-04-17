@@ -1,7 +1,8 @@
 "use client";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSelectedLayoutSegment } from "next/navigation";
+import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -14,18 +15,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { games } from "@/games";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
-import { ActivityStream } from "./activity-stream";
-import { BackupsPanel } from "./backups-panel";
-import { ConnectPanel } from "./connect-panel";
-import { DetailsPanel } from "./details-panel";
-import { GraphsPanel } from "./graphs-panel";
-import { LogsStream } from "./logs-stream";
 import { ProvisioningStatus } from "./provisioning-status";
 import { ReadyHeader } from "./ready-header";
-import { SettingsPanel } from "./settings-panel";
+import { ServerProvider, type ServerView } from "./server-context";
 
 const PROVISIONING_PHASES = new Set([
   "queued",
@@ -38,51 +33,32 @@ const PROVISIONING_PHASES = new Set([
   "errored",
 ]);
 
-interface Specs {
-  typeName: string;
-  cores: number;
-  memory: number;
-  disk: number;
-  cpuType: "shared" | "dedicated";
-  architecture: "x86" | "arm";
-}
-
-interface Location {
-  name: string;
-  city: string | null;
-  country: string | null;
-}
-
-interface ServerView {
-  id: string;
-  name: string;
-  game: string;
-  ipv4: string | null;
-  phase: string;
-  observedState: string;
-  desiredState: string;
-  errorReason: string | null;
-  lastHeartbeatAt: string | null;
-  serverType: string;
-  backupsEnabled: boolean;
-  specs: Specs | null;
-  location: Location | null;
-}
+const TABS = [
+  { label: "Connect", value: "connect" },
+  { label: "Activity", value: "activity" },
+  { label: "Console", value: "console" },
+  { label: "Graphs", value: "graphs" },
+  { label: "Backups", value: "backups" },
+  { label: "Details", value: "details" },
+  { label: "Settings", value: "settings" },
+] as const;
 
 interface Props {
   server: ServerView;
   eligibleTypes: CatalogServerType[];
   currency: string;
+  children: ReactNode;
 }
 
-export const ServerDetail = ({ server: initial, eligibleTypes, currency }: Props) => {
+export const ServerShell = ({ server: initial, eligibleTypes, currency, children }: Props) => {
   const router = useRouter();
+  const segment = useSelectedLayoutSegment();
+  const activeTab =
+    segment && TABS.some((tab) => tab.value === segment) ? segment : "connect";
   const [server, setServer] = useState(initial);
   const [pending, setPending] = useState<null | string>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  // Refresh server meta every 5s
-  const ref = useRef(server);
-  ref.current = server;
   useEffect(() => {
     const t = setInterval(async () => {
       const res = await fetch(`/api/servers/${initial.id}`);
@@ -125,8 +101,6 @@ export const ServerDetail = ({ server: initial, eligibleTypes, currency }: Props
     }
   };
 
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
   const runDelete = async () => {
     setPending("DELETE");
     const res = await fetch(`/api/servers/${server.id}`, { method: "DELETE" });
@@ -139,7 +113,8 @@ export const ServerDetail = ({ server: initial, eligibleTypes, currency }: Props
     }
   };
 
-  const onDelete = () => setDeleteOpen(true);
+  const updateServer = (patch: Partial<ServerView>) =>
+    setServer((prev) => ({ ...prev, ...patch }));
 
   const isProvisioning = PROVISIONING_PHASES.has(server.phase);
   const game = games.find((g) => g.id === server.game);
@@ -168,23 +143,27 @@ export const ServerDetail = ({ server: initial, eligibleTypes, currency }: Props
       <div className="grid gap-8">
         <div className="flex items-center gap-4">
           <Image
-            src={game.image}
             alt={game.name}
             className="size-14 shrink-0 rounded-lg object-cover"
             placeholder="blur"
+            src={game.image}
           />
           <div>
-            <p className="font-medium tracking-tight text-2xl">{game.name}</p>
-            <p className="text-sm text-muted-foreground">{game.description}</p>
+            <p className="font-medium text-2xl tracking-tight">{game.name}</p>
+            <p className="text-muted-foreground text-sm">{game.description}</p>
           </div>
         </div>
         <ProvisioningStatus
-          phase={server.phase}
           errored={server.phase === "errored" || server.observedState === "failed"}
           errorReason={server.errorReason}
+          phase={server.phase}
         />
         <div className="flex justify-end">
-          <Button variant="destructive" onClick={onDelete} disabled={Boolean(pending)}>
+          <Button
+            disabled={Boolean(pending)}
+            onClick={() => setDeleteOpen(true)}
+            variant="destructive"
+          >
             Delete
           </Button>
         </div>
@@ -194,62 +173,37 @@ export const ServerDetail = ({ server: initial, eligibleTypes, currency }: Props
   }
 
   return (
-    <div className="grid gap-8">
-      <ReadyHeader
-        name={server.name}
-        game={server.game}
-        ipv4={server.ipv4}
-        observedState={server.observedState}
-        pending={Boolean(pending)}
-        onCommand={sendCommand}
-        onDelete={onDelete}
-      />
-      <Tabs defaultValue="connect">
-        <TabsList>
-          <TabsTrigger value="connect">Connect</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
-          <TabsTrigger value="console">Console</TabsTrigger>
-          <TabsTrigger value="graphs">Graphs</TabsTrigger>
-          <TabsTrigger value="backups">Backups</TabsTrigger>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-        <TabsContent value="connect">
-          <ConnectPanel game={server.game} ipv4={server.ipv4} />
-        </TabsContent>
-        <TabsContent value="activity">
-          <ActivityStream serverId={server.id} />
-        </TabsContent>
-        <TabsContent value="console">
-          <LogsStream serverId={server.id} />
-        </TabsContent>
-        <TabsContent value="graphs">
-          <GraphsPanel serverId={server.id} observedState={server.observedState} />
-        </TabsContent>
-        <TabsContent value="backups">
-          <BackupsPanel
-            serverId={server.id}
-            backupsEnabled={server.backupsEnabled}
-            onBackupsChange={(enabled) =>
-              setServer((prev) => ({ ...prev, backupsEnabled: enabled }))
-            }
-          />
-        </TabsContent>
-        <TabsContent value="details">
-          <DetailsPanel specs={server.specs} location={server.location} />
-        </TabsContent>
-        <TabsContent value="settings">
-          <SettingsPanel
-            serverId={server.id}
-            observedState={server.observedState}
-            currentServerType={server.serverType}
-            eligibleTypes={eligibleTypes}
-            currency={currency}
-            onChange={(patch) => setServer((prev) => ({ ...prev, ...patch }))}
-          />
-        </TabsContent>
-      </Tabs>
+    <ServerProvider value={{ currency, eligibleTypes, server, updateServer }}>
+      <div className="grid gap-8">
+        <ReadyHeader
+          game={server.game}
+          ipv4={server.ipv4}
+          name={server.name}
+          observedState={server.observedState}
+          onCommand={sendCommand}
+          onDelete={() => setDeleteOpen(true)}
+          pending={Boolean(pending)}
+        />
+        <Tabs value={activeTab}>
+          <TabsList>
+            {TABS.map((tab) => (
+              <TabsTrigger asChild key={tab.value} value={tab.value}>
+                <Link
+                  href={
+                    tab.value === "connect"
+                      ? `/dashboard/${server.id}`
+                      : `/dashboard/${server.id}/${tab.value}`
+                  }
+                >
+                  {tab.label}
+                </Link>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+        {children}
+      </div>
       {deleteDialog}
-    </div>
+    </ServerProvider>
   );
 };
