@@ -138,7 +138,7 @@ export const getHetznerCatalog = async (): Promise<Catalog> => {
     })
     .filter((t) => t.locations.length > 0)
     .toSorted(
-      (a, b) => a.memory - b.memory || a.cores - b.cores || a.pricePerMonth - b.pricePerMonth,
+      (a, b) => a.pricePerMonth - b.pricePerMonth || a.memory - b.memory || a.cores - b.cores,
     );
 
   return { currency, imageArchitecture: image.architecture, serverTypes: types };
