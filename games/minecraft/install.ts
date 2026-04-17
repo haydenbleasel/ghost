@@ -20,7 +20,7 @@ export const buildMinecraftCompose = (config: MinecraftConfig): string => {
       MOTD: "${escape(config.name)} - Powered by Ghost"
       DIFFICULTY: "normal"
       MODE: "survival"
-      MEMORY: "4G"
+      MEMORY: "6G"
       TZ: "${timezone}"
       ENABLE_RCON: "true"
       RCON_PASSWORD: "${escape(config.rconPassword)}"

@@ -128,7 +128,9 @@ export const ServerShell = ({ server: initial, eligibleTypes, currency, children
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this server?</AlertDialogTitle>
-          <AlertDialogDescription>This tears down the VM.</AlertDialogDescription>
+          <AlertDialogDescription>
+            Your server and all its worlds, saves and settings will be permanently deleted.
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
