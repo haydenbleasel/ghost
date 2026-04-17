@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/db';
 import { AgentAuthError, verifyAgentRequest } from '@/lib/agent/signing';
 import { emitActivity, emitLog } from '@/lib/events/emit';
+import { hookTokens } from '@/lib/workflows/hook-tokens';
 import { AGENT_HEADERS, eventBatchSchema } from '@/protocol';
 import { NextResponse } from 'next/server';
+import { resumeHook } from 'workflow/api';
 
 export const runtime = 'nodejs';
 
@@ -40,6 +42,12 @@ export async function POST(request: Request) {
       source: 'agent',
       occurredAt: new Date(event.occurredAt),
     });
+
+    try {
+      await resumeHook(hookTokens.phase(verified.serverId), event.phase);
+    } catch {
+      // No workflow is waiting on this phase, or it has already moved on.
+    }
   }
 
   for (const logLine of parsed.data.logs) {

@@ -1,26 +1,54 @@
 import 'server-only';
 import { prisma } from '@/lib/db';
 import type { Command } from '@/protocol';
+import { Prisma } from '@prisma/client';
 import { ulid } from 'ulid';
 
 export async function enqueueCommand(input: {
   serverId: string;
   type: Command['type'];
   payload: Record<string, unknown>;
+  /**
+   * Stable deduplication key (typically a workflow step ID). When supplied,
+   * re-enqueues with the same key are treated as a no-op so step retries
+   * don't double-queue commands.
+   */
+  idempotencyKey?: string;
 }): Promise<Command> {
-  const id = ulid();
+  const id = input.idempotencyKey
+    ? `cmd_${input.idempotencyKey}`
+    : `cmd_${ulid()}`;
   const issuedAt = new Date();
 
-  await prisma.command.create({
-    data: {
-      id,
-      serverId: input.serverId,
-      type: input.type,
-      payload: input.payload as object,
-      status: 'pending',
-      issuedAt,
-    },
-  });
+  try {
+    await prisma.command.create({
+      data: {
+        id,
+        serverId: input.serverId,
+        type: input.type,
+        payload: input.payload as object,
+        status: 'pending',
+        issuedAt,
+      },
+    });
+  } catch (error) {
+    if (
+      input.idempotencyKey &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      const existing = await prisma.command.findUniqueOrThrow({
+        where: { id },
+      });
+      return {
+        id: existing.id,
+        type: existing.type as Command['type'],
+        payload: existing.payload as Record<string, unknown>,
+        issuedAt: existing.issuedAt.toISOString(),
+      } as Command;
+    }
+    throw error;
+  }
 
   return {
     id,

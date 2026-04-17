@@ -1,8 +1,10 @@
 import crypto from 'node:crypto';
 import { prisma } from '@/lib/db';
 import { verifyBootstrapJwt } from '@/lib/agent/bootstrap';
+import { hookTokens } from '@/lib/workflows/hook-tokens';
 import { enrollRequestSchema, enrollResponseSchema } from '@/protocol';
 import { NextResponse } from 'next/server';
+import { resumeHook } from 'workflow/api';
 
 export const runtime = 'nodejs';
 
@@ -78,6 +80,14 @@ export async function POST(request: Request) {
     serverId: agent.serverId,
     sessionVersion: agent.sessionVersion,
   });
+
+  try {
+    await resumeHook(hookTokens.enrolled(agent.serverId), undefined);
+  } catch {
+    // Provision workflow may have already moved past enrollment (or not yet
+    // registered the hook on a replay). Either way, enrollment itself
+    // succeeded — don't fail the HTTP response.
+  }
 
   return NextResponse.json(response);
 }

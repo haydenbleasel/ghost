@@ -11,6 +11,18 @@ import {
 import { enqueueCommand } from '@/lib/agent/commands';
 import { buildMinecraftCompose } from '@/games/minecraft/install';
 import type { Phase } from '@/protocol';
+import { getStepMetadata } from 'workflow';
+import { resumeHook } from 'workflow/api';
+import { hookTokens } from './hook-tokens';
+
+async function safeResumeHook(token: string, payload: unknown): Promise<void> {
+  try {
+    await resumeHook(token, payload);
+  } catch {
+    // Hook not found: the target workflow either hasn't registered it yet
+    // or has already exited. Either way, the signal is a no-op.
+  }
+}
 
 const MINECRAFT_PORT_COMMENT = '# opened via ufw in cloud-init';
 
@@ -42,9 +54,22 @@ runcmd:
 export async function stepCreateHetznerServer(serverId: string) {
   'use step';
 
-  const server = await prisma.server.findUniqueOrThrow({ where: { id: serverId } });
+  const server = await prisma.server.findUniqueOrThrow({
+    where: { id: serverId },
+  });
+  if (server.desiredState === 'deleted') {
+    return {
+      hetznerServerId: server.hetznerServerId
+        ? Number(server.hetznerServerId)
+        : null,
+      cancelled: true as const,
+    };
+  }
   if (server.hetznerServerId) {
-    return { hetznerServerId: Number(server.hetznerServerId) };
+    return {
+      hetznerServerId: Number(server.hetznerServerId),
+      cancelled: false as const,
+    };
   }
 
   const { token, jti, expiresAt } = await mintBootstrapJwt({ serverId });
@@ -70,7 +95,8 @@ export async function stepCreateHetznerServer(serverId: string) {
     serverType: server.serverType,
   });
 
-  await prisma.server.update({
+  // Persist the Hetzner ID first so teardown can find it even if we race.
+  const updated = await prisma.server.update({
     where: { id: serverId },
     data: {
       hetznerServerId: String(created.id),
@@ -80,6 +106,18 @@ export async function stepCreateHetznerServer(serverId: string) {
     },
   });
 
+  // Race guard: if teardown flipped desiredState while we were calling
+  // Hetzner, delete the VM we just created instead of leaving it orphaned.
+  if (updated.desiredState === 'deleted') {
+    try {
+      await deleteHetznerServer(created.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown';
+      if (!message.includes('404')) throw error;
+    }
+    return { hetznerServerId: created.id, cancelled: true as const };
+  }
+
   await emitActivity({
     serverId,
     phase: 'provisioning',
@@ -87,7 +125,7 @@ export async function stepCreateHetznerServer(serverId: string) {
     metadata: { hetznerServerId: created.id, location: server.location },
   });
 
-  return { hetznerServerId: created.id };
+  return { hetznerServerId: created.id, cancelled: false as const };
 }
 
 export async function stepGetHetznerStatus(hetznerServerId: number) {
@@ -143,6 +181,7 @@ export async function stepAgentConnected(serverId: string) {
 
 export async function stepSendInstallConfig(serverId: string) {
   'use step';
+  const { stepId } = getStepMetadata();
   const server = await prisma.server.findUniqueOrThrow({
     where: { id: serverId },
   });
@@ -156,6 +195,7 @@ export async function stepSendInstallConfig(serverId: string) {
     serverId,
     type: 'UPDATE_CONFIG',
     payload: { compose },
+    idempotencyKey: stepId,
   });
 
   await prisma.server.update({
@@ -208,9 +248,15 @@ export async function stepMarkFailed(input: { serverId: string; reason: string }
 
 export async function stepSendDeleteCommand(serverId: string) {
   'use step';
+  const { stepId } = getStepMetadata();
   const agent = await prisma.agent.findUnique({ where: { serverId } });
   if (!agent) return { hadAgent: false };
-  await enqueueCommand({ serverId, type: 'DELETE', payload: {} });
+  await enqueueCommand({
+    serverId,
+    type: 'DELETE',
+    payload: {},
+    idempotencyKey: stepId,
+  });
   await emitActivity({
     serverId,
     phase: 'deleting',
@@ -249,12 +295,23 @@ export async function stepMarkDeleted(serverId: string) {
   });
 }
 
+export async function stepSignalCancelProvision(serverId: string) {
+  'use step';
+  await safeResumeHook(hookTokens.cancel(serverId), undefined);
+}
+
+export async function stepSignalProvisionDone(serverId: string) {
+  'use step';
+  await safeResumeHook(hookTokens.provisionDone(serverId), undefined);
+}
+
 export async function stepReadDesiredState(serverId: string) {
   'use step';
-  const server = await prisma.server.findUniqueOrThrow({
+  const server = await prisma.server.findUnique({
     where: { id: serverId },
     select: { desiredState: true },
   });
+  if (!server) return 'deleted' as const;
   return server.desiredState as 'running' | 'stopped' | 'deleted';
 }
 
