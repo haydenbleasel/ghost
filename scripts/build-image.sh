@@ -47,6 +47,9 @@ test -f /etc/systemd/system/ultrabeam-agent.service || { echo 'missing service u
 systemctl daemon-reload
 systemctl enable ultrabeam-agent.service
 
+# Pre-pull game images so first provision is instant
+docker pull itzg/minecraft-server:latest
+
 # Minimize image size
 apt-get clean
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
