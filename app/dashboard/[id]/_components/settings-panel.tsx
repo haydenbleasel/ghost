@@ -11,19 +11,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
 
 interface Props {
   serverId: string;
-  backupsEnabled: boolean;
   observedState: string;
   currentServerType: string;
   eligibleTypes: CatalogServerType[];
   currency: string;
-  onChange: (patch: { backupsEnabled?: boolean; serverType?: string }) => void;
+  onChange: (patch: { serverType?: string }) => void;
 }
 
 const formatPrice = (amount: number, currency: string) =>
@@ -35,40 +33,17 @@ const formatPrice = (amount: number, currency: string) =>
 
 export const SettingsPanel = ({
   serverId,
-  backupsEnabled,
   observedState,
   currentServerType,
   eligibleTypes,
   currency,
   onChange,
 }: Props) => {
-  const [backupPending, setBackupPending] = useState(false);
   const [rescaleOpen, setRescaleOpen] = useState(false);
   const [rescalePending, setRescalePending] = useState(false);
   const [selectedType, setSelectedType] = useState(currentServerType);
 
   const canRescale = observedState === "stopped";
-
-  const toggleBackups = async (enabled: boolean) => {
-    setBackupPending(true);
-    try {
-      const res = await fetch(`/api/servers/${serverId}/backups`, {
-        body: JSON.stringify({ enabled }),
-        headers: { "Content-Type": "application/json" },
-        method: "PATCH",
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Could not update backups");
-      }
-      onChange({ backupsEnabled: enabled });
-      toast.success(enabled ? "Backups enabled" : "Backups disabled");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update backups");
-    } finally {
-      setBackupPending(false);
-    }
-  };
 
   const submitRescale = async () => {
     if (selectedType === currentServerType) {
@@ -104,20 +79,6 @@ export const SettingsPanel = ({
   return (
     <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
       <div className="flex flex-col gap-1 rounded-2xl bg-background p-2 shadow-sm/5">
-        <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-3">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium">Enable backups</span>
-            <span className="text-xs text-muted-foreground">
-              Daily snapshots of this server's disk, retained for 7 days.
-            </span>
-          </div>
-          <Switch
-            checked={backupsEnabled}
-            disabled={backupPending}
-            onCheckedChange={toggleBackups}
-            aria-label="Enable backups"
-          />
-        </div>
         <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-3">
           <div className="flex flex-col gap-0.5">
             <span className="text-sm font-medium">Rescale</span>
