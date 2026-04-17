@@ -51,9 +51,6 @@ export const ActivityStream = ({ serverId }: { serverId: string }) => {
 
   return (
     <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-      <div className="px-4 pt-2 pb-1">
-        <h2 className="text-sm font-medium text-muted-foreground">Activity</h2>
-      </div>
       <div className="rounded-2xl bg-background p-2 shadow-sm/5">
         <ol className="flex max-h-80 flex-col gap-1 overflow-auto">
           {events.map((event) => (

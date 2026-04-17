@@ -14,11 +14,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { games } from "@/games";
+import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { ActivityStream } from "./activity-stream";
+import { ConnectPanel } from "./connect-panel";
+import { DetailsPanel } from "./details-panel";
 import { LogsStream } from "./logs-stream";
 import { ProvisioningStatus } from "./provisioning-status";
 import { ReadyHeader } from "./ready-header";
+import { SettingsPanel } from "./settings-panel";
 
 const PROVISIONING_PHASES = new Set([
   "queued",
@@ -31,6 +36,21 @@ const PROVISIONING_PHASES = new Set([
   "errored",
 ]);
 
+interface Specs {
+  typeName: string;
+  cores: number;
+  memory: number;
+  disk: number;
+  cpuType: "shared" | "dedicated";
+  architecture: "x86" | "arm";
+}
+
+interface Location {
+  name: string;
+  city: string | null;
+  country: string | null;
+}
+
 interface ServerView {
   id: string;
   name: string;
@@ -41,9 +61,19 @@ interface ServerView {
   desiredState: string;
   errorReason: string | null;
   lastHeartbeatAt: string | null;
+  serverType: string;
+  backupsEnabled: boolean;
+  specs: Specs | null;
+  location: Location | null;
 }
 
-export const ServerDetail = ({ server: initial }: { server: ServerView }) => {
+interface Props {
+  server: ServerView;
+  eligibleTypes: CatalogServerType[];
+  currency: string;
+}
+
+export const ServerDetail = ({ server: initial, eligibleTypes, currency }: Props) => {
   const router = useRouter();
   const [server, setServer] = useState(initial);
   const [pending, setPending] = useState<null | string>(null);
@@ -59,7 +89,9 @@ export const ServerDetail = ({ server: initial }: { server: ServerView }) => {
       }
       const { server: fresh } = await res.json();
       if (fresh) {
-        setServer({
+        setServer((prev) => ({
+          ...prev,
+          backupsEnabled: fresh.backupsEnabled ?? prev.backupsEnabled,
           desiredState: fresh.desiredState,
           errorReason: fresh.errorReason ?? null,
           game: fresh.game,
@@ -69,7 +101,8 @@ export const ServerDetail = ({ server: initial }: { server: ServerView }) => {
           name: fresh.name,
           observedState: fresh.observedState,
           phase: fresh.phase,
-        });
+          serverType: fresh.serverType ?? prev.serverType,
+        }));
       }
     }, 5000);
     return () => clearInterval(t);
@@ -169,10 +202,38 @@ export const ServerDetail = ({ server: initial }: { server: ServerView }) => {
         onCommand={sendCommand}
         onDelete={onDelete}
       />
-      <div className="flex flex-col gap-6">
-        <ActivityStream serverId={server.id} />
-        <LogsStream serverId={server.id} />
-      </div>
+      <Tabs defaultValue="connect">
+        <TabsList>
+          <TabsTrigger value="connect">Connect</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="console">Console</TabsTrigger>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+        <TabsContent value="connect">
+          <ConnectPanel game={server.game} ipv4={server.ipv4} />
+        </TabsContent>
+        <TabsContent value="activity">
+          <ActivityStream serverId={server.id} />
+        </TabsContent>
+        <TabsContent value="console">
+          <LogsStream serverId={server.id} />
+        </TabsContent>
+        <TabsContent value="details">
+          <DetailsPanel specs={server.specs} location={server.location} />
+        </TabsContent>
+        <TabsContent value="settings">
+          <SettingsPanel
+            serverId={server.id}
+            backupsEnabled={server.backupsEnabled}
+            observedState={server.observedState}
+            currentServerType={server.serverType}
+            eligibleTypes={eligibleTypes}
+            currency={currency}
+            onChange={(patch) => setServer((prev) => ({ ...prev, ...patch }))}
+          />
+        </TabsContent>
+      </Tabs>
       {deleteDialog}
     </div>
   );

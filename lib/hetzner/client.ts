@@ -124,6 +124,25 @@ export const rebootServer = async (id: number): Promise<void> => {
   await hetznerFetch(`/servers/${id}/actions/reboot`, { method: "POST" });
 };
 
+export const enableServerBackups = async (id: number): Promise<void> => {
+  await hetznerFetch(`/servers/${id}/actions/enable_backup`, { method: "POST" });
+};
+
+export const disableServerBackups = async (id: number): Promise<void> => {
+  await hetznerFetch(`/servers/${id}/actions/disable_backup`, { method: "POST" });
+};
+
+export const changeServerType = async (
+  id: number,
+  serverType: string,
+  upgradeDisk = false,
+): Promise<void> => {
+  await hetznerFetch(`/servers/${id}/actions/change_type`, {
+    body: JSON.stringify({ server_type: serverType, upgrade_disk: upgradeDisk }),
+    method: "POST",
+  });
+};
+
 interface HetznerLocationInfo {
   id: number;
   name: string;
