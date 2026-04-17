@@ -57,8 +57,16 @@ const DashboardPage = async () => {
                 {server.game} · {server.location} · {server.serverType}
               </p>
             </div>
-            <Badge variant={statusVariant(server.observedState)}>
-              {server.observedState}
+            <Badge
+              variant={
+                server.desiredState === 'deleted'
+                  ? 'destructive'
+                  : statusVariant(server.observedState)
+              }
+            >
+              {server.desiredState === 'deleted'
+                ? 'deleting'
+                : server.observedState}
             </Badge>
           </CardHeader>
           <CardContent>
@@ -66,7 +74,10 @@ const DashboardPage = async () => {
               <span className="font-mono text-muted-foreground">
                 {server.ipv4 ?? '—'}
               </span>
-              <span className="text-muted-foreground">Phase: {server.phase}</span>
+              <span className="text-muted-foreground">
+                Phase:{' '}
+                {server.desiredState === 'deleted' ? 'deleting' : server.phase}
+              </span>
             </div>
           </CardContent>
         </Card>
