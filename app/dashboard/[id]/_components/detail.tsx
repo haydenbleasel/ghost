@@ -30,6 +30,7 @@ type ServerView = {
 	phase: string;
 	observedState: string;
 	desiredState: string;
+	errorReason: string | null;
 	lastHeartbeatAt: string | null;
 };
 
@@ -55,6 +56,7 @@ export const ServerDetail = ({ server: initial }: { server: ServerView }) => {
 					phase: fresh.phase,
 					observedState: fresh.observedState,
 					desiredState: fresh.desiredState,
+					errorReason: fresh.errorReason ?? null,
 					lastHeartbeatAt: fresh.agent?.lastHeartbeatAt ?? null,
 				});
 			}
@@ -106,9 +108,7 @@ export const ServerDetail = ({ server: initial }: { server: ServerView }) => {
 					/>
 					<div>
 						<p className="font-medium tracking-tight text-2xl">{game.name}</p>
-						<p className="text-sm text-muted-foreground">
-							{`${game.description} · ${server.ipv4}`}
-						</p>
+						<p className="text-sm text-muted-foreground">{game.description}</p>
 					</div>
 				</div>
 				<ProvisioningStatus
@@ -116,6 +116,7 @@ export const ServerDetail = ({ server: initial }: { server: ServerView }) => {
 					errored={
 						server.phase === "errored" || server.observedState === "failed"
 					}
+					errorReason={server.errorReason}
 				/>
 				<div className="flex justify-end">
 					<Button

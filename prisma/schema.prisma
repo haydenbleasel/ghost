@@ -98,6 +98,7 @@ model Server {
   desiredState    DesiredState      @default(running)
   observedState   ObservedState     @default(pending)
   phase           String            @default("queued")
+  errorReason     String?
   rconPassword    String
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt

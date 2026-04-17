@@ -28,6 +28,7 @@ const ServerPage = async ({
         phase: server.phase,
         observedState: server.observedState,
         desiredState: server.desiredState,
+        errorReason: server.errorReason,
         lastHeartbeatAt:
           server.agent?.lastHeartbeatAt?.toISOString() ?? null,
       }}
