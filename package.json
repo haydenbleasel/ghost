@@ -99,7 +99,7 @@
     "@types/diff": "^7.0.1",
     "@types/gamedig": "^5.0.3",
     "@types/lodash.merge": "^4.6.9",
-    "@types/node": "22.13.9",
+    "@types/node": "25.6.0",
     "@types/node-rsa": "^1.1.4",
     "@types/react": "19.0.10",
     "@types/react-dom": "19.0.4",
