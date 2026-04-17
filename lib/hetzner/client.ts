@@ -197,4 +197,12 @@ export async function getImage(id: number | string): Promise<HetznerImage> {
   return image;
 }
 
+export async function getPricingCurrency(): Promise<string> {
+  const { pricing } = await hetznerFetch<{ pricing: { currency: string } }>(
+    '/pricing',
+    { next: { revalidate: 86_400 } }
+  );
+  return pricing.currency;
+}
+
 export type { HetznerServer };

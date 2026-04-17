@@ -20,12 +20,20 @@ import { Cobe } from "./cobe";
 
 const VISIBLE_ALL_SIZES = 3;
 
+const formatPrice = (amount: number, currency: string) =>
+	new Intl.NumberFormat(undefined, {
+		style: "currency",
+		currency,
+		maximumFractionDigits: 2,
+	}).format(amount);
+
 type SizeCardProps = {
 	type: CatalogServerType;
 	selected: boolean;
+	currency: string;
 };
 
-const SizeCard = ({ type, selected }: SizeCardProps) => (
+const SizeCard = ({ type, selected, currency }: SizeCardProps) => (
 	<label
 		className={cn(
 			"flex cursor-pointer items-center justify-between gap-4 rounded-md border-2 p-3 transition",
@@ -49,7 +57,7 @@ const SizeCard = ({ type, selected }: SizeCardProps) => (
 			</div>
 		</div>
 		<div className="text-right text-sm tabular-nums">
-			€{type.pricePerMonth.toFixed(2)}
+			{formatPrice(type.pricePerMonth, currency)}
 			<span className="text-muted-foreground">/mo</span>
 		</div>
 	</label>
@@ -66,6 +74,7 @@ export type GameOption = {
 type Props = {
 	games: GameOption[];
 	serverTypes: CatalogServerType[];
+	currency: string;
 };
 
 const STEPS = [
@@ -83,7 +92,7 @@ const typeFitsGame = (t: CatalogServerType, g: GameOption) =>
 const firstAvailableLocation = (t: CatalogServerType | undefined) =>
 	t?.locations.find((l) => l.available)?.name ?? "";
 
-export const NewServerForm = ({ games, serverTypes }: Props) => {
+export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
 	const router = useRouter();
 	const [pending, setPending] = useState(false);
 	const [step, setStep] = useState(0);
@@ -280,6 +289,7 @@ export const NewServerForm = ({ games, serverTypes }: Props) => {
 										<SizeCard
 											type={recommended}
 											selected={typeName === recommended.name}
+											currency={currency}
 										/>
 									</div>
 									{rest.length > 0 && (
@@ -293,6 +303,7 @@ export const NewServerForm = ({ games, serverTypes }: Props) => {
 														key={type.name}
 														type={type}
 														selected={typeName === type.name}
+														currency={currency}
 													/>
 												))}
 											</div>
@@ -304,6 +315,7 @@ export const NewServerForm = ({ games, serverTypes }: Props) => {
 																key={type.name}
 																type={type}
 																selected={typeName === type.name}
+																currency={currency}
 															/>
 														))}
 													</CollapsibleContent>
@@ -425,7 +437,7 @@ export const NewServerForm = ({ games, serverTypes }: Props) => {
 							<div className="flex justify-between gap-4">
 								<dt className="text-muted-foreground">Price</dt>
 								<dd className="font-medium tabular-nums">
-									€{selectedType.pricePerMonth.toFixed(2)}/mo
+									{formatPrice(selectedType.pricePerMonth, currency)}/mo
 								</dd>
 							</div>
 						)}

@@ -2,6 +2,7 @@ import 'server-only';
 import { env } from '@/lib/env';
 import {
   getImage,
+  getPricingCurrency,
   listDatacenters,
   listServerTypes,
 } from './client';
@@ -31,13 +32,15 @@ export type CatalogServerType = {
 export type Catalog = {
   serverTypes: CatalogServerType[];
   imageArchitecture: 'x86' | 'arm';
+  currency: string;
 };
 
 export async function getHetznerCatalog(): Promise<Catalog> {
-  const [serverTypes, datacenters, image] = await Promise.all([
+  const [serverTypes, datacenters, image, currency] = await Promise.all([
     listServerTypes(),
     listDatacenters(),
     getImage(env.HETZNER_IMAGE_ID),
+    getPricingCurrency(),
   ]);
 
   const perLocation = new Map<
@@ -118,5 +121,5 @@ export async function getHetznerCatalog(): Promise<Catalog> {
         a.pricePerMonth - b.pricePerMonth
     );
 
-  return { serverTypes: types, imageArchitecture: image.architecture };
+  return { serverTypes: types, imageArchitecture: image.architecture, currency };
 }

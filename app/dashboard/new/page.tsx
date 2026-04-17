@@ -25,7 +25,11 @@ const NewServerPage = async () => {
           Step through game, size, location, and name to start provisioning.
         </p>
       </header>
-      <NewServerForm games={gameOptions} serverTypes={catalog.serverTypes} />
+      <NewServerForm
+        games={gameOptions}
+        serverTypes={catalog.serverTypes}
+        currency={catalog.currency}
+      />
     </div>
   );
 };
