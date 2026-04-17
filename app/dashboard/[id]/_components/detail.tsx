@@ -20,6 +20,7 @@ import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { ActivityStream } from "./activity-stream";
 import { ConnectPanel } from "./connect-panel";
 import { DetailsPanel } from "./details-panel";
+import { GraphsPanel } from "./graphs-panel";
 import { LogsStream } from "./logs-stream";
 import { ProvisioningStatus } from "./provisioning-status";
 import { ReadyHeader } from "./ready-header";
@@ -207,6 +208,7 @@ export const ServerDetail = ({ server: initial, eligibleTypes, currency }: Props
           <TabsTrigger value="connect">Connect</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="console">Console</TabsTrigger>
+          <TabsTrigger value="graphs">Graphs</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -218,6 +220,9 @@ export const ServerDetail = ({ server: initial, eligibleTypes, currency }: Props
         </TabsContent>
         <TabsContent value="console">
           <LogsStream serverId={server.id} />
+        </TabsContent>
+        <TabsContent value="graphs">
+          <GraphsPanel serverId={server.id} observedState={server.observedState} />
         </TabsContent>
         <TabsContent value="details">
           <DetailsPanel specs={server.specs} location={server.location} />
