@@ -1,63 +1,41 @@
-import { gameDataDirectory } from '@/lib/consts';
+export type MinecraftConfig = {
+  name: string;
+  rconPassword: string;
+  timezone?: string;
+};
 
-export default (name: string, password: string, timezone: string) => `
-#!/bin/bash
-set -e
-
-# Create directory structure
-mkdir -p ${gameDataDirectory}/minecraft/data
-mkdir -p ${gameDataDirectory}/minecraft/backups
-
-# Navigate to the game data directory
-cd ${gameDataDirectory}
-
-# Create docker-compose.yml file
-cat > docker-compose.yml << 'EOF'
-services:
+export function buildMinecraftCompose(config: MinecraftConfig): string {
+  const timezone = config.timezone ?? 'UTC';
+  return `services:
   minecraft:
     image: itzg/minecraft-server:latest
+    container_name: ultrabeam-minecraft
     ports:
-      - 25565:25565
+      - "25565:25565"
     environment:
-      - EULA=TRUE
-      - SERVER_NAME=${name}
-      - DIFFICULTY=normal
-      - ALLOW_NETHER=true
-      - MODE=survival
-      - MOTD=${name} - Powered by Ultrabeam
-      - MEMORY=4G
-      - TZ=${timezone}
-      - ENABLE_RCON=true
-      - RCON_PASSWORD=${password}
-      - OVERRIDE_SERVER_PROPERTIES=true
-      - ENABLE_COMMAND_BLOCK=true
-      - SPAWN_PROTECTION=0
-      - MAX_TICK_TIME=60000
-      - VIEW_DISTANCE=10
-      - ONLINE_MODE=true
-      - ENFORCE_WHITELIST=false
-      - MAX_PLAYERS=20
-      - SPAWN_ANIMALS=true
-      - SPAWN_MONSTERS=true
-      - SPAWN_NPCS=true
-      - GENERATE_STRUCTURES=true
-      - MAX_WORLD_SIZE=10000
-      - ALLOW_FLIGHT=false
-      - LEVEL_TYPE=default
-      - PVP=true
-      - SNOOPER_ENABLED=true
-      - MAX_BUILD_HEIGHT=256
-      - FORCE_GAMEMODE=false
-      - HARDCORE=false
-      - WHITE_LIST=false
-      - ENABLE_AUTOPAUSE=false
-      - BACKUP_FREQ=24
-      - BACKUP_RETENTION=5
+      EULA: "TRUE"
+      SERVER_NAME: "${escape(config.name)}"
+      MOTD: "${escape(config.name)} - Powered by Ultrabeam"
+      DIFFICULTY: "normal"
+      MODE: "survival"
+      MEMORY: "4G"
+      TZ: "${timezone}"
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: "${escape(config.rconPassword)}"
+      OVERRIDE_SERVER_PROPERTIES: "true"
+      ENABLE_COMMAND_BLOCK: "true"
+      SPAWN_PROTECTION: "0"
+      MAX_PLAYERS: "20"
+      ALLOW_NETHER: "true"
+      ONLINE_MODE: "true"
+      VIEW_DISTANCE: "10"
     volumes:
-      - ./minecraft/data:/data
-      - ./minecraft/backups:/backups
+      - /var/lib/ultrabeam/game/data:/data
+      - /var/lib/ultrabeam/game/backups:/backups
     restart: unless-stopped
-EOF
-
-echo "Minecraft server has been installed."
 `;
+}
+
+function escape(value: string): string {
+  return value.replace(/"/g, '\\"');
+}

@@ -1,0 +1,54 @@
+import { readFile, writeFile, unlink, mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { z } from 'zod';
+
+const bootstrapSchema = z.object({
+  serverId: z.string().min(1),
+  bootstrapToken: z.string().min(1),
+  apiBaseUrl: z.string().url(),
+});
+
+const stateSchema = z.object({
+  agentId: z.string().min(1),
+  serverId: z.string().min(1),
+  apiBaseUrl: z.string().url(),
+  privateKey: z.string().min(1),
+  publicKey: z.string().min(1),
+  agentSeq: z.number().int().nonnegative(),
+  lastExecutedCommandId: z.string().nullable(),
+});
+
+export type Bootstrap = z.infer<typeof bootstrapSchema>;
+export type State = z.infer<typeof stateSchema>;
+
+const BOOTSTRAP_PATH = process.env.ULTRABEAM_BOOTSTRAP_PATH ?? '/etc/ultrabeam/bootstrap.json';
+const STATE_PATH = process.env.ULTRABEAM_STATE_PATH ?? '/var/lib/ultrabeam/state.json';
+const STATE_DIR = STATE_PATH.replace(/\/[^/]+$/, '');
+
+export async function loadBootstrap(): Promise<Bootstrap | null> {
+  if (!existsSync(BOOTSTRAP_PATH)) return null;
+  const raw = await readFile(BOOTSTRAP_PATH, 'utf8');
+  return bootstrapSchema.parse(JSON.parse(raw));
+}
+
+export async function deleteBootstrap(): Promise<void> {
+  try {
+    await unlink(BOOTSTRAP_PATH);
+  } catch {
+    /* ok */
+  }
+}
+
+export async function loadState(): Promise<State | null> {
+  if (!existsSync(STATE_PATH)) return null;
+  const raw = await readFile(STATE_PATH, 'utf8');
+  return stateSchema.parse(JSON.parse(raw));
+}
+
+export async function saveState(state: State): Promise<void> {
+  await mkdir(STATE_DIR, { recursive: true });
+  const tmp = `${STATE_PATH}.tmp`;
+  await writeFile(tmp, JSON.stringify(state, null, 2), { mode: 0o600 });
+  await Bun.write(STATE_PATH, await Bun.file(tmp).arrayBuffer());
+  await unlink(tmp).catch(() => {});
+}

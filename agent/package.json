@@ -1,0 +1,19 @@
+{
+  "name": "ultrabeam-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/ultrabeam-agent"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^2.1.0",
+    "ulid": "^2.3.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.8.2"
+  }
+}

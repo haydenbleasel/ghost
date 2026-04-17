@@ -1,0 +1,23 @@
+[Unit]
+Description=Ultrabeam Agent
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ultrabeam-agent
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=NODE_ENV=production
+# Allow writing state and compose files
+ReadWritePaths=/var/lib/ultrabeam /etc/ultrabeam
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
