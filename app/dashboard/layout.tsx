@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Separator } from "@/components/ui/separator";
 import {
 	SidebarInset,
 	SidebarProvider,
@@ -25,10 +24,7 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
 			/>
 			<SidebarTrigger className="absolute top-3 left-3 z-50 text-muted-foreground" />
 			<SidebarInset>
-				<header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-					<Separator orientation="vertical" className="mr-2 h-4" />
-				</header>
-				<main className="flex-1 p-6">
+				<main className="flex-1 px-6 py-20">
 					<div className="mx-auto w-full max-w-5xl">{children}</div>
 				</main>
 			</SidebarInset>

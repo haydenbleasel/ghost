@@ -66,7 +66,7 @@ export const AppSidebar = ({
 	const initial = (user.name ?? user.email ?? "?").charAt(0).toUpperCase();
 
 	return (
-		<Sidebar collapsible="icon">
+		<Sidebar collapsible="offcanvas">
 			<SidebarContent className="pt-16">
 				<SidebarGroup>
 					<SidebarGroupContent>
