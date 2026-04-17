@@ -19,8 +19,8 @@ export const env = createEnv({
     DATABASE_URL: z.string().min(1).url(),
     DIRECT_URL: z.string().min(1).url().optional(),
 
-    UPSTASH_REDIS_REST_URL: z.string().min(1).url(),
-    UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+    KV_REST_API_URL: z.string().min(1).url(),
+    KV_REST_API_TOKEN: z.string().min(1),
 
     HETZNER_TOKEN: z.string().min(1),
     HETZNER_IMAGE_ID: z.string().min(1),
@@ -48,8 +48,8 @@ export const env = createEnv({
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     DATABASE_URL: process.env.DATABASE_URL,
     DIRECT_URL: process.env.DIRECT_URL,
-    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    KV_REST_API_URL: process.env.KV_REST_API_URL,
+    KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
     HETZNER_TOKEN: process.env.HETZNER_TOKEN,
     HETZNER_IMAGE_ID: process.env.HETZNER_IMAGE_ID,
     HETZNER_LOCATION: process.env.HETZNER_LOCATION,

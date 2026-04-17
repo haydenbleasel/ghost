@@ -38,9 +38,9 @@ games/                per-game compose generators (Minecraft only enabled in MVP
 DATABASE_URL=
 DIRECT_URL=               # pooled vs direct for Prisma migrate
 
-# Upstash Redis (used for monotonic event sequence + nonce dedupe)
-UPSTASH_REDIS_REST_URL=
-UPSTASH_REDIS_REST_TOKEN=
+# Vercel KV / Upstash Redis (monotonic event sequence + nonce dedupe)
+KV_REST_API_URL=
+KV_REST_API_TOKEN=
 
 # Hetzner Cloud
 HETZNER_TOKEN=            # read/write token from Hetzner console
