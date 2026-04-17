@@ -5,6 +5,22 @@ const HETZNER_API = 'https://api.hetzner.cloud/v1';
 
 type HetznerResponse<T> = T & { error?: { code: string; message: string } };
 
+export class HetznerApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(`Hetzner API ${code}: ${message}`);
+    this.name = 'HetznerApiError';
+    this.status = status;
+    this.code = code;
+  }
+
+  get isClientError(): boolean {
+    return this.status >= 400 && this.status < 500;
+  }
+}
+
 type HetznerServer = {
   id: number;
   name: string;
@@ -50,7 +66,7 @@ async function hetznerFetch<T>(
   if (!res.ok || body.error) {
     const code = body.error?.code ?? String(res.status);
     const message = body.error?.message ?? res.statusText;
-    throw new Error(`Hetzner API ${code}: ${message}`);
+    throw new HetznerApiError(res.status, code, message);
   }
 
   return body as T;
@@ -88,7 +104,7 @@ export async function getServer(id: number): Promise<HetznerServer | null> {
     );
     return server;
   } catch (error) {
-    if (error instanceof Error && error.message.includes('404')) {
+    if (error instanceof HetznerApiError && error.status === 404) {
       return null;
     }
     throw error;

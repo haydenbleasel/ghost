@@ -7,11 +7,12 @@ import {
   createServer as createHetznerServer,
   deleteServer as deleteHetznerServer,
   getServer as getHetznerServer,
+  HetznerApiError,
 } from '@/lib/hetzner/client';
 import { enqueueCommand } from '@/lib/agent/commands';
 import { buildMinecraftCompose } from '@/games/minecraft/install';
 import type { Phase } from '@/protocol';
-import { getStepMetadata } from 'workflow';
+import { FatalError, getStepMetadata } from 'workflow';
 import { resumeHook } from 'workflow/api';
 import { hookTokens } from './hook-tokens';
 
@@ -88,12 +89,22 @@ export async function stepCreateHetznerServer(serverId: string) {
     .randomBytes(2)
     .toString('hex')}`;
 
-  const created = await createHetznerServer({
-    name: hetznerName,
-    userData,
-    location: server.location,
-    serverType: server.serverType,
-  });
+  let created;
+  try {
+    created = await createHetznerServer({
+      name: hetznerName,
+      userData,
+      location: server.location,
+      serverType: server.serverType,
+    });
+  } catch (error) {
+    // 4xx from Hetzner (bad location/server_type/image, bad token, quota)
+    // will never succeed on retry — fail fast.
+    if (error instanceof HetznerApiError && error.isClientError) {
+      throw new FatalError(error.message);
+    }
+    throw error;
+  }
 
   // Persist the Hetzner ID first so teardown can find it even if we race.
   const updated = await prisma.server.update({
@@ -112,8 +123,9 @@ export async function stepCreateHetznerServer(serverId: string) {
     try {
       await deleteHetznerServer(created.id);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown';
-      if (!message.includes('404')) throw error;
+      if (!(error instanceof HetznerApiError && error.status === 404)) {
+        throw error;
+      }
     }
     return { hetznerServerId: created.id, cancelled: true as const };
   }
@@ -272,8 +284,9 @@ export async function stepDeleteHetzner(serverId: string) {
   try {
     await deleteHetznerServer(Number(server.hetznerServerId));
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'unknown';
-    if (!message.includes('404')) throw error;
+    if (!(error instanceof HetznerApiError && error.status === 404)) {
+      throw error;
+    }
   }
   return { deleted: true };
 }

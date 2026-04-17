@@ -23,6 +23,7 @@ const PUBLIC_PATHS = [
   '/api/auth',
   '/api/agent',
   '/monitoring',
+  '/.well-known/workflow',
 ];
 
 const isPublic = (pathname: string) =>

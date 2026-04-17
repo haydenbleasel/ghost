@@ -111,10 +111,12 @@ export async function provisionServer(input: { serverId: string }) {
 
     await stepMarkReady(serverId);
   } catch (error) {
-    if (error instanceof FatalError) {
-      await stepMarkFailed({ serverId, reason: error.message });
-      return;
-    }
+    const reason = error instanceof Error ? error.message : 'Unknown error';
+    await stepMarkFailed({ serverId, reason });
+    // FatalError is an intentional bail-out: swallow so the workflow run
+    // reports as completed rather than failed. Anything else (including
+    // step retries giving up) re-throws so the run itself is marked failed.
+    if (error instanceof FatalError) return;
     throw error;
   } finally {
     await stepSignalProvisionDone(serverId);
