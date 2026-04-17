@@ -1,6 +1,7 @@
-import { Badge } from "@/components/ui/badge";
+import { ArrowRightIcon, PlusIcon, ServerIcon } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
   EmptyContent,
@@ -9,22 +10,25 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { games } from "@/games";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
-import { ServerIcon } from "lucide-react";
-import Link from "next/link";
+import { cn } from "@/lib/utils";
 
-const statusVariant = (state: string): "default" | "secondary" | "destructive" | "outline" => {
+const statusDotClass = (state: string, deleting: boolean) => {
+  if (deleting) {
+    return "bg-destructive";
+  }
   if (state === "running") {
-    return "default";
+    return "bg-emerald-500";
   }
   if (state === "failed" || state === "lost") {
-    return "destructive";
+    return "bg-destructive";
   }
   if (state === "unhealthy") {
-    return "secondary";
+    return "bg-amber-500";
   }
-  return "outline";
+  return "bg-muted-foreground/40";
 };
 
 const DashboardPage = async () => {
@@ -56,40 +60,85 @@ const DashboardPage = async () => {
   }
 
   return (
-    <div className="grid gap-4">
-      {servers.map((server) => (
-        <Card key={server.id}>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>
-                <Link href={`/dashboard/${server.id}`} className="hover:underline">
-                  {server.name}
-                </Link>
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {server.game} · {server.location} · {server.serverType}
-              </p>
-            </div>
-            <Badge
-              variant={
-                server.desiredState === "deleted"
-                  ? "destructive"
-                  : statusVariant(server.observedState)
-              }
+    <div className="flex flex-col gap-8">
+      <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading font-medium text-2xl tracking-tight">Servers</h1>
+          <p className="text-muted-foreground text-sm">
+            {servers.length} {servers.length === 1 ? "server" : "servers"} across your account.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/dashboard/new">
+            <PlusIcon />
+            New server
+          </Link>
+        </Button>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {servers.map((server) => {
+          const game = games.find((g) => g.id === server.game);
+          const deleting = server.desiredState === "deleted";
+          const statusLabel = deleting ? "deleting" : server.observedState;
+          const phaseLabel = deleting ? "deleting" : server.phase;
+
+          return (
+            <Link
+              key={server.id}
+              href={`/dashboard/${server.id}`}
+              className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl bg-card p-4 ring-1 ring-foreground/10 transition-colors hover:bg-muted/40"
             >
-              {server.desiredState === "deleted" ? "deleting" : server.observedState}
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-mono text-muted-foreground">{server.ipv4 ?? "—"}</span>
-              <span className="text-muted-foreground">
-                Phase: {server.desiredState === "deleted" ? "deleting" : server.phase}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              <div className="flex items-start gap-3">
+                <div className="relative size-12 shrink-0 overflow-hidden rounded-lg ring-1 ring-foreground/10">
+                  {game ? (
+                    <Image
+                      src={game.image}
+                      alt={game.name}
+                      fill
+                      sizes="48px"
+                      className="object-cover"
+                      placeholder="blur"
+                    />
+                  ) : (
+                    <div className="flex size-full items-center justify-center bg-muted">
+                      <ServerIcon className="size-5 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">{server.name}</span>
+                    <ArrowRightIcon className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  </div>
+                  <p className="truncate text-muted-foreground text-xs">
+                    {game?.name ?? server.game} · {server.location.toUpperCase()}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-muted/60 px-2 py-1">
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      statusDotClass(server.observedState, deleting),
+                    )}
+                    aria-hidden
+                  />
+                  <span className="text-xs capitalize">{statusLabel}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-foreground/10 border-t pt-3 text-xs">
+                <span className="font-mono text-muted-foreground">
+                  {server.ipv4 ?? "—"}
+                </span>
+                <span className="text-muted-foreground">
+                  <span className="text-foreground/70">{server.serverType}</span> · {phaseLabel}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 };
