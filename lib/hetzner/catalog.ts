@@ -10,6 +10,8 @@ export type CatalogLocation = {
   name: string;
   city: string;
   country: string;
+  latitude: number;
+  longitude: number;
   available: boolean;
   supported: boolean;
 };
@@ -43,6 +45,8 @@ export async function getHetznerCatalog(): Promise<Catalog> {
     {
       city: string;
       country: string;
+      latitude: number;
+      longitude: number;
       supported: Set<number>;
       available: Set<number>;
     }
@@ -53,6 +57,8 @@ export async function getHetznerCatalog(): Promise<Catalog> {
     const existing = perLocation.get(name) ?? {
       city: dc.location.city,
       country: dc.location.country,
+      latitude: dc.location.latitude,
+      longitude: dc.location.longitude,
       supported: new Set<number>(),
       available: new Set<number>(),
     };
@@ -76,6 +82,8 @@ export async function getHetznerCatalog(): Promise<Catalog> {
           name,
           city: info.city,
           country: info.country,
+          latitude: info.latitude,
+          longitude: info.longitude,
           supported: true,
           available: info.available.has(t.id),
         });

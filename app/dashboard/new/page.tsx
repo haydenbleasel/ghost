@@ -22,7 +22,7 @@ const NewServerPage = async () => {
       <header className="space-y-1">
         <h1 className="font-semibold text-2xl">New server</h1>
         <p className="text-muted-foreground text-sm">
-          Pick a game, a machine, and a region. Provisioning starts immediately.
+          Step through game, size, location, and name to start provisioning.
         </p>
       </header>
       <NewServerForm games={gameOptions} serverTypes={catalog.serverTypes} />

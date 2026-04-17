@@ -1,8 +1,17 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/session';
+import { ServerIcon } from 'lucide-react';
 import Link from 'next/link';
 
 const DashboardPage = async () => {
@@ -14,15 +23,22 @@ const DashboardPage = async () => {
 
   if (servers.length === 0) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <h1 className="text-2xl font-semibold">No servers yet</h1>
-        <p className="text-muted-foreground">
-          Spin up your first Minecraft server in under a minute.
-        </p>
-        <Button asChild>
-          <Link href="/dashboard/new">Create server</Link>
-        </Button>
-      </div>
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <ServerIcon />
+          </EmptyMedia>
+          <EmptyTitle>No servers yet</EmptyTitle>
+          <EmptyDescription>
+            Spin up your first Minecraft server in under a minute.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button asChild>
+            <Link href="/dashboard/new">Create server</Link>
+          </Button>
+        </EmptyContent>
+      </Empty>
     );
   }
 
