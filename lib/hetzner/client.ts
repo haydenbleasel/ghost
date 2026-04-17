@@ -1,7 +1,7 @@
-import 'server-only';
-import { env } from '@/lib/env';
+import "server-only";
+import { env } from "@/lib/env";
 
-const HETZNER_API = 'https://api.hetzner.cloud/v1';
+const HETZNER_API = "https://api.hetzner.cloud/v1";
 
 type HetznerResponse<T> = T & { error?: { code: string; message: string } };
 
@@ -11,7 +11,7 @@ export class HetznerApiError extends Error {
 
   constructor(status: number, code: string, message: string) {
     super(`Hetzner API ${code}: ${message}`);
-    this.name = 'HetznerApiError';
+    this.name = "HetznerApiError";
     this.status = status;
     this.code = code;
   }
@@ -21,19 +21,19 @@ export class HetznerApiError extends Error {
   }
 }
 
-type HetznerServer = {
+interface HetznerServer {
   id: number;
   name: string;
   status:
-    | 'initializing'
-    | 'starting'
-    | 'running'
-    | 'stopping'
-    | 'off'
-    | 'deleting'
-    | 'migrating'
-    | 'rebuilding'
-    | 'unknown';
+    | "initializing"
+    | "starting"
+    | "running"
+    | "stopping"
+    | "off"
+    | "deleting"
+    | "migrating"
+    | "rebuilding"
+    | "unknown";
   public_net: {
     ipv4: { ip: string } | null;
     ipv6: { ip: string } | null;
@@ -41,23 +41,20 @@ type HetznerServer = {
   created: string;
   server_type: { id: number; name: string };
   datacenter: { location: { name: string } };
-};
+}
 
-type CreateServerResponse = {
+interface CreateServerResponse {
   server: HetznerServer;
   action: { id: number; status: string };
-};
+}
 
-async function hetznerFetch<T>(
-  path: string,
-  init: RequestInit = {}
-): Promise<T> {
+const hetznerFetch = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
   const res = await fetch(`${HETZNER_API}${path}`, {
     ...init,
     headers: {
       Authorization: `Bearer ${env.HETZNER_TOKEN}`,
-      'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
+      "Content-Type": "application/json",
+      ...init.headers,
     },
   });
 
@@ -70,38 +67,36 @@ async function hetznerFetch<T>(
   }
 
   return body as T;
-}
+};
 
-export async function createServer(input: {
+export const createServer = async (input: {
   name: string;
   userData: string;
   imageId?: string;
   serverType?: string;
   location?: string;
-}): Promise<HetznerServer> {
+}): Promise<HetznerServer> => {
   const body = {
-    name: input.name,
-    server_type: input.serverType ?? env.HETZNER_SERVER_TYPE,
-    location: input.location ?? env.HETZNER_LOCATION,
     image: input.imageId ?? env.HETZNER_IMAGE_ID,
-    user_data: input.userData,
-    start_after_create: true,
+    location: input.location ?? env.HETZNER_LOCATION,
+    name: input.name,
     public_net: { enable_ipv4: true, enable_ipv6: false },
+    server_type: input.serverType ?? env.HETZNER_SERVER_TYPE,
+    start_after_create: true,
+    user_data: input.userData,
   };
 
-  const { server } = await hetznerFetch<CreateServerResponse>('/servers', {
-    method: 'POST',
+  const { server } = await hetznerFetch<CreateServerResponse>("/servers", {
     body: JSON.stringify(body),
+    method: "POST",
   });
 
   return server;
-}
+};
 
-export async function getServer(id: number): Promise<HetznerServer | null> {
+export const getServer = async (id: number): Promise<HetznerServer | null> => {
   try {
-    const { server } = await hetznerFetch<{ server: HetznerServer }>(
-      `/servers/${id}`
-    );
+    const { server } = await hetznerFetch<{ server: HetznerServer }>(`/servers/${id}`);
     return server;
   } catch (error) {
     if (error instanceof HetznerApiError && error.status === 404) {
@@ -109,27 +104,27 @@ export async function getServer(id: number): Promise<HetznerServer | null> {
     }
     throw error;
   }
-}
+};
 
-export async function deleteServer(id: number): Promise<void> {
+export const deleteServer = async (id: number): Promise<void> => {
   await hetznerFetch<{ action: { id: number } }>(`/servers/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
-}
+};
 
-export async function powerOnServer(id: number): Promise<void> {
-  await hetznerFetch(`/servers/${id}/actions/poweron`, { method: 'POST' });
-}
+export const powerOnServer = async (id: number): Promise<void> => {
+  await hetznerFetch(`/servers/${id}/actions/poweron`, { method: "POST" });
+};
 
-export async function powerOffServer(id: number): Promise<void> {
-  await hetznerFetch(`/servers/${id}/actions/poweroff`, { method: 'POST' });
-}
+export const powerOffServer = async (id: number): Promise<void> => {
+  await hetznerFetch(`/servers/${id}/actions/poweroff`, { method: "POST" });
+};
 
-export async function rebootServer(id: number): Promise<void> {
-  await hetznerFetch(`/servers/${id}/actions/reboot`, { method: 'POST' });
-}
+export const rebootServer = async (id: number): Promise<void> => {
+  await hetznerFetch(`/servers/${id}/actions/reboot`, { method: "POST" });
+};
 
-type HetznerLocationInfo = {
+interface HetznerLocationInfo {
   id: number;
   name: string;
   description: string;
@@ -138,27 +133,27 @@ type HetznerLocationInfo = {
   latitude: number;
   longitude: number;
   network_zone: string;
-};
+}
 
-type HetznerServerTypePrice = {
+interface HetznerServerTypePrice {
   location: string;
   price_monthly: { gross: string };
-};
+}
 
-export type HetznerServerType = {
+export interface HetznerServerType {
   id: number;
   name: string;
   description: string;
   cores: number;
   memory: number;
   disk: number;
-  cpu_type: 'shared' | 'dedicated';
-  architecture: 'x86' | 'arm';
+  cpu_type: "shared" | "dedicated";
+  architecture: "x86" | "arm";
   deprecated: boolean | null;
   prices: HetznerServerTypePrice[];
-};
+}
 
-export type HetznerDatacenter = {
+export interface HetznerDatacenter {
   id: number;
   name: string;
   location: HetznerLocationInfo;
@@ -167,42 +162,40 @@ export type HetznerDatacenter = {
     available: number[];
     available_for_migration: number[];
   };
-};
+}
 
-export type HetznerImage = {
+export interface HetznerImage {
   id: number;
-  architecture: 'x86' | 'arm';
+  architecture: "x86" | "arm";
   status: string;
-};
+}
 
-export async function listServerTypes(): Promise<HetznerServerType[]> {
+export const listServerTypes = async (): Promise<HetznerServerType[]> => {
   const { server_types } = await hetznerFetch<{
     server_types: HetznerServerType[];
-  }>('/server_types?per_page=50', { next: { revalidate: 60 } });
+  }>("/server_types?per_page=50", { next: { revalidate: 60 } });
   return server_types;
-}
+};
 
-export async function listDatacenters(): Promise<HetznerDatacenter[]> {
+export const listDatacenters = async (): Promise<HetznerDatacenter[]> => {
   const { datacenters } = await hetznerFetch<{
     datacenters: HetznerDatacenter[];
-  }>('/datacenters', { next: { revalidate: 60 } });
+  }>("/datacenters", { next: { revalidate: 60 } });
   return datacenters;
-}
+};
 
-export async function getImage(id: number | string): Promise<HetznerImage> {
-  const { image } = await hetznerFetch<{ image: HetznerImage }>(
-    `/images/${id}`,
-    { next: { revalidate: 3600 } }
-  );
+export const getImage = async (id: number | string): Promise<HetznerImage> => {
+  const { image } = await hetznerFetch<{ image: HetznerImage }>(`/images/${id}`, {
+    next: { revalidate: 3600 },
+  });
   return image;
-}
+};
 
-export async function getPricingCurrency(): Promise<string> {
-  const { pricing } = await hetznerFetch<{ pricing: { currency: string } }>(
-    '/pricing',
-    { next: { revalidate: 86_400 } }
-  );
+export const getPricingCurrency = async (): Promise<string> => {
+  const { pricing } = await hetznerFetch<{ pricing: { currency: string } }>("/pricing", {
+    next: { revalidate: 86_400 },
+  });
   return pricing.currency;
-}
+};
 
 export type { HetznerServer };

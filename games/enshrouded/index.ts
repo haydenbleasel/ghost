@@ -1,25 +1,24 @@
-import image from './image.jpg';
+import image from "./image.jpg";
 
 export const enshrouded = {
-  id: 'enshrouded',
-  gamedigId: 'enshrouded',
-  name: 'Enshrouded',
+  description: "A game of survival, crafting, and action on a sprawling voxel-based continent.",
   enabled: false,
+  gamedigId: "enshrouded",
+  id: "enshrouded",
   image,
-  description:
-    'A game of survival, crafting, and action on a sprawling voxel-based continent.',
+  name: "Enshrouded",
   ports: [
     // This is the default port for Enshrouded, used for game traffic.
     {
-      protocol: 'udp',
-      from: 15636,
-      to: 15636,
+      from: 15_636,
+      protocol: "udp",
+      to: 15_636,
     },
     // This is the port for Steam Query
     {
-      protocol: 'udp',
-      from: 27015,
-      to: 27015,
+      from: 27_015,
+      protocol: "udp",
+      to: 27_015,
     },
   ],
   requirements: {

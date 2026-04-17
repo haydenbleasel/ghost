@@ -1,24 +1,21 @@
-import { prisma } from '@/lib/db';
-import { AgentAuthError, verifyAgentRequest } from '@/lib/agent/signing';
-import { emitActivity, emitLog } from '@/lib/events/emit';
-import { hookTokens } from '@/lib/workflows/hook-tokens';
-import { AGENT_HEADERS, eventBatchSchema } from '@/protocol';
-import { NextResponse } from 'next/server';
-import { resumeHook } from 'workflow/api';
+import { prisma } from "@/lib/db";
+import { AgentAuthError, verifyAgentRequest } from "@/lib/agent/signing";
+import { emitActivity, emitLog } from "@/lib/events/emit";
+import { hookTokens } from "@/lib/workflows/hook-tokens";
+import { AGENT_HEADERS, eventBatchSchema } from "@/protocol";
+import { NextResponse } from "next/server";
+import { resumeHook } from "workflow/api";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
-export async function POST(request: Request) {
+export const POST = async (request: Request) => {
   let body: string;
-  let verified: Awaited<ReturnType<typeof verifyAgentRequest>>['verified'];
+  let verified: Awaited<ReturnType<typeof verifyAgentRequest>>["verified"];
   try {
     ({ verified, body } = await verifyAgentRequest(request));
   } catch (error) {
     if (error instanceof AgentAuthError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.status }
-      );
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     throw error;
   }
@@ -28,19 +25,19 @@ export async function POST(request: Request) {
   const parsed = eventBatchSchema.safeParse(JSON.parse(body));
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Invalid body', details: parsed.error.flatten() },
-      { status: 400 }
+      { details: parsed.error.flatten(), error: "Invalid body" },
+      { status: 400 },
     );
   }
 
   for (const event of parsed.data.activity) {
     await emitActivity({
-      serverId: verified.serverId,
-      phase: event.phase,
       message: event.message,
-      metadata: { ...event.metadata, batchId, agentSeq: event.agentSeq },
-      source: 'agent',
+      metadata: { ...event.metadata, agentSeq: event.agentSeq, batchId },
       occurredAt: new Date(event.occurredAt),
+      phase: event.phase,
+      serverId: verified.serverId,
+      source: "agent",
     });
 
     try {
@@ -52,19 +49,19 @@ export async function POST(request: Request) {
 
   for (const logLine of parsed.data.logs) {
     await emitLog({
+      line: logLine.line,
       serverId: verified.serverId,
       stream: logLine.stream,
-      line: logLine.line,
       ts: new Date(logLine.ts),
     });
   }
 
   if (parsed.data.activity.length > 0 || parsed.data.logs.length > 0) {
     await prisma.agent.update({
-      where: { id: verified.agentId },
       data: { lastHeartbeatAt: new Date() },
+      where: { id: verified.agentId },
     });
   }
 
   return NextResponse.json({ ok: true });
-}
+};

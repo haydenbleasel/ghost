@@ -1,35 +1,35 @@
-import crypto from 'node:crypto';
-import { games } from '@/games';
-import { prisma } from '@/lib/db';
-import { getHetznerCatalog } from '@/lib/hetzner/catalog';
-import { requireUser } from '@/lib/session';
-import { provisionServer } from '@/lib/workflows/provision-server';
-import { NextResponse } from 'next/server';
-import { ulid } from 'ulid';
-import { start } from 'workflow/api';
-import { z } from 'zod';
+import crypto from "node:crypto";
+import { games } from "@/games";
+import { prisma } from "@/lib/db";
+import { getHetznerCatalog } from "@/lib/hetzner/catalog";
+import { requireUser } from "@/lib/session";
+import { provisionServer } from "@/lib/workflows/provision-server";
+import { NextResponse } from "next/server";
+import { ulid } from "ulid";
+import { start } from "workflow/api";
+import { z } from "zod";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 const createServerSchema = z.object({
-  name: z.string().min(3).max(40),
   game: z.enum(games.map((g) => g.id) as [string, ...string[]]),
   location: z.string().min(1),
+  name: z.string().min(3).max(40),
   serverType: z.string().min(1),
 });
 
-export async function GET() {
+export const GET = async () => {
   const user = await requireUser();
 
   const servers = await prisma.server.findMany({
-    where: { userId: user.id, deletedAt: null },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
+    where: { deletedAt: null, userId: user.id },
   });
 
   return NextResponse.json({ servers });
-}
+};
 
-export async function POST(request: Request) {
+export const POST = async (request: Request) => {
   const user = await requireUser();
 
   const body = await request.json().catch(() => null);
@@ -37,68 +37,60 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Invalid body', details: parsed.error.flatten() },
-      { status: 400 }
+      { details: parsed.error.flatten(), error: "Invalid body" },
+      { status: 400 },
     );
   }
 
   const game = games.find((g) => g.id === parsed.data.game);
   if (!game) {
-    return NextResponse.json({ error: 'Unknown game' }, { status: 400 });
+    return NextResponse.json({ error: "Unknown game" }, { status: 400 });
   }
 
   const catalog = await getHetznerCatalog();
-  const type = catalog.serverTypes.find(
-    (t) => t.name === parsed.data.serverType
-  );
+  const type = catalog.serverTypes.find((t) => t.name === parsed.data.serverType);
   if (!type) {
-    return NextResponse.json(
-      { error: 'Unknown server type' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Unknown server type" }, { status: 400 });
   }
-  if (
-    type.memory < game.requirements.memory ||
-    type.cores < game.requirements.cpu
-  ) {
+  if (type.memory < game.requirements.memory || type.cores < game.requirements.cpu) {
     return NextResponse.json(
-      { error: 'Server type does not meet game requirements' },
-      { status: 400 }
+      { error: "Server type does not meet game requirements" },
+      { status: 400 },
     );
   }
   const location = type.locations.find((l) => l.name === parsed.data.location);
   if (!location) {
     return NextResponse.json(
-      { error: 'Region not supported for this server type' },
-      { status: 400 }
+      { error: "Region not supported for this server type" },
+      { status: 400 },
     );
   }
   if (!location.available) {
     return NextResponse.json(
-      { error: 'Region is temporarily unavailable. Please pick another.' },
-      { status: 409 }
+      { error: "Region is temporarily unavailable. Please pick another." },
+      { status: 409 },
     );
   }
 
   const id = ulid();
-  const rconPassword = crypto.randomBytes(16).toString('hex');
+  const rconPassword = crypto.randomBytes(16).toString("hex");
 
   const server = await prisma.server.create({
     data: {
-      id,
-      userId: user.id,
-      name: parsed.data.name,
+      desiredState: "running",
       game: parsed.data.game,
+      id,
       location: parsed.data.location,
-      serverType: parsed.data.serverType,
+      name: parsed.data.name,
+      observedState: "pending",
+      phase: "queued",
       rconPassword,
-      desiredState: 'running',
-      observedState: 'pending',
-      phase: 'queued',
+      serverType: parsed.data.serverType,
+      userId: user.id,
     },
   });
 
   await start(provisionServer, [{ serverId: server.id }]);
 
   return NextResponse.json({ server });
-}
+};

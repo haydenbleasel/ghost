@@ -1,26 +1,26 @@
-import { prisma } from '@/lib/db';
+import { prisma } from "@/lib/db";
 
-async function main() {
+const main = async () => {
   const stuck = await prisma.server.findMany({
-    where: { hetznerServerId: null, deletedAt: null, phase: 'queued' },
     select: {
+      desiredState: true,
       id: true,
       name: true,
-      phase: true,
       observedState: true,
-      desiredState: true,
+      phase: true,
     },
+    where: { deletedAt: null, hetznerServerId: null, phase: "queued" },
   });
 
   console.log(`Found ${stuck.length} stuck servers:`);
   for (const s of stuck) {
     console.log(
-      `  ${s.id}  name="${s.name}"  phase=${s.phase}  desired=${s.desiredState}  observed=${s.observedState}`
+      `  ${s.id}  name="${s.name}"  phase=${s.phase}  desired=${s.desiredState}  observed=${s.observedState}`,
     );
   }
 
   if (stuck.length === 0) {
-    console.log('Nothing to clean up.');
+    console.log("Nothing to clean up.");
     return;
   }
 
@@ -29,11 +29,13 @@ async function main() {
   });
 
   console.log(`Deleted ${count} servers (children cascaded).`);
-}
+};
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+try {
+  await main();
+} catch (error) {
+  console.error(error);
+  process.exit(1);
+} finally {
+  await prisma.$disconnect();
+}

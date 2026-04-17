@@ -46,7 +46,7 @@ KV_REST_API_TOKEN=
 HETZNER_TOKEN=            # read/write token from Hetzner console
 HETZNER_IMAGE_ID=         # snapshot id produced by scripts/build-image.sh
 HETZNER_LOCATION=nbg1
-HETZNER_SERVER_TYPE=cx22
+HETZNER_SERVER_TYPE=cx23
 
 # Secrets (32+ char random strings)
 BOOTSTRAP_JWT_SECRET=
@@ -77,74 +77,32 @@ One-time ~10 min process on Hetzner. Produces a snapshot with Ubuntu + Docker + 
 ### Prereqs
 
 ```bash
-brew install hcloud
-hcloud context create ghost                  # paste your HETZNER_TOKEN
+brew install hcloud jq
 hcloud ssh-key create --name laptop --public-key-from-file ~/.ssh/id_ed25519.pub
 ```
 
-### 1. Compile the agent binary
+In `.env.local`:
 
 ```bash
-pnpm agent:build
-# → dist/ghost-agent  (Linux x86_64, ~100 MB)
+HETZNER_TOKEN=            # required
+HETZNER_LOCATION=nbg1     # optional, default nbg1
+HETZNER_SERVER_TYPE=cx23  # optional, default cx23
+HETZNER_SSH_KEY=laptop    # optional, default laptop (hcloud ssh-key name)
 ```
 
-### 2. Spin up a throwaway builder VM
+### Build
 
 ```bash
-hcloud server create \
-  --name ghost-image-builder \
-  --type cx22 \
-  --image ubuntu-24.04 \
-  --location nbg1 \
-  --ssh-key laptop
-
-BUILDER_IP=$(hcloud server ip ghost-image-builder)
-ssh -o StrictHostKeyChecking=accept-new root@$BUILDER_IP 'echo ok'
+pnpm snapshot
 ```
 
-### 3. Copy the agent + scripts onto it
+Compiles the agent, creates a throwaway builder VM, runs `scripts/build-image.sh` on it, snapshots it, deletes the VM, and writes the new `HETZNER_IMAGE_ID` back to `.env.local`. A `trap` deletes the builder even if the run fails. Takes ~5 min.
 
-```bash
-scp dist/ghost-agent             root@$BUILDER_IP:/usr/local/bin/
-scp scripts/ghost-agent.service  root@$BUILDER_IP:/etc/systemd/system/
-scp scripts/build-image.sh           root@$BUILDER_IP:/root/
-ssh root@$BUILDER_IP 'chmod +x /usr/local/bin/ghost-agent /root/build-image.sh'
-```
-
-### 4. Run the build script
-
-```bash
-ssh root@$BUILDER_IP 'bash /root/build-image.sh'
-```
-
-Installs Docker, enables the agent systemd unit, opens port 22, and pre-pulls `itzg/minecraft-server:latest`. Takes 2–3 min.
-
-### 5. Shut down and snapshot
-
-```bash
-hcloud server shutdown ghost-image-builder
-# wait until status = off (~20s)
-hcloud server describe ghost-image-builder -o format='{{.Status}}'
-
-hcloud server create-image \
-  --type snapshot \
-  --description ghost-gold-minecraft \
-  ghost-image-builder
-```
-
-Grab the snapshot ID from the output (or `hcloud image list --type snapshot`).
-
-### 6. Wire it up and nuke the builder
-
-```bash
-echo "HETZNER_IMAGE_ID=<snapshot-id>" >> .env
-hcloud server delete ghost-image-builder
-```
+The previous snapshot (if any) is **not** auto-deleted — the script prints the old ID and the `hcloud image delete` command.
 
 ### Adding more games later
 
-Add `docker pull <image>` lines to `scripts/build-image.sh`, rebuild the snapshot (steps 2–5), and bump `HETZNER_IMAGE_ID`. Same snapshot shape, more images pre-baked.
+Add `docker pull <image>` lines to `scripts/build-image.sh`, then rerun `pnpm snapshot`.
 
 ## Lifecycle
 

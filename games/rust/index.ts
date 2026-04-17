@@ -1,31 +1,30 @@
-import image from './image.jpg';
+import image from "./image.jpg";
 
 export const rust = {
-  id: 'rust',
-  gamedigId: 'rust',
-  name: 'Rust',
+  description: "The only aim in Rust is to survive when everything on the island wants you to die.",
   enabled: false,
+  gamedigId: "rust",
+  id: "rust",
   image,
-  description:
-    'The only aim in Rust is to survive when everything on the island wants you to die.',
+  name: "Rust",
   ports: [
     // This is the default port for Rust, used for game traffic.
     {
-      protocol: 'udp',
-      from: 28015,
-      to: 28015,
+      from: 28_015,
+      protocol: "udp",
+      to: 28_015,
     },
     // This is the port for RCON
     {
-      protocol: 'tcp',
-      from: 28016,
-      to: 28016,
+      from: 28_016,
+      protocol: "tcp",
+      to: 28_016,
     },
     // This port was mentioned in the dockerfile.
     {
-      protocol: 'tcp',
-      from: 28082,
-      to: 28082,
+      from: 28_082,
+      protocol: "tcp",
+      to: 28_082,
     },
   ],
   requirements: {

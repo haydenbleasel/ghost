@@ -2,12 +2,12 @@ import { defineConfig } from "oxfmt";
 import ultracite from "ultracite/oxfmt";
 
 export default defineConfig({
-	extends: [ultracite],
-	ignorePatterns: [
-		"components/ui",
-		"components/ai-elements",
-		"components/kibo-ui",
-		"lib/utils.ts",
-		"hooks/use-mobile.ts",
-	],
+  extends: [ultracite],
+  ignorePatterns: [
+    "components/ui",
+    "components/ai-elements",
+    "components/kibo-ui",
+    "lib/utils.ts",
+    "hooks/use-mobile.ts",
+  ],
 });

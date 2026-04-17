@@ -1,22 +1,18 @@
-import {
-  type Bootstrap,
-  type State,
-  deleteBootstrap,
-  saveState,
-} from './config';
-import { generateKeypair } from './signing';
-import { enrollResponseSchema } from '../../protocol';
+import { deleteBootstrap, saveState } from "./config";
+import type { Bootstrap, State } from "./config";
+import { generateKeypair } from "./signing";
+import { enrollResponseSchema } from "../../protocol";
 
-export async function enroll(bootstrap: Bootstrap): Promise<State> {
+export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
   const keypair = await generateKeypair();
 
   const response = await fetch(`${bootstrap.apiBaseUrl}/api/agent/enroll`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       bootstrapToken: bootstrap.bootstrapToken,
       publicKey: keypair.publicKey,
     }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
   });
 
   if (!response.ok) {
@@ -28,16 +24,16 @@ export async function enroll(bootstrap: Bootstrap): Promise<State> {
 
   const state: State = {
     agentId: parsed.agentId,
-    serverId: parsed.serverId,
+    agentSeq: 0,
     apiBaseUrl: bootstrap.apiBaseUrl,
+    lastExecutedCommandId: null,
     privateKey: keypair.privateKey,
     publicKey: keypair.publicKey,
-    agentSeq: 0,
-    lastExecutedCommandId: null,
+    serverId: parsed.serverId,
   };
 
   await saveState(state);
   await deleteBootstrap();
 
   return state;
-}
+};

@@ -3,150 +3,178 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { games } from "@/games";
 import { ActivityStream } from "./activity-stream";
 import { LogsStream } from "./logs-stream";
-import { ProvisioningHeader } from "./provisioning-header";
 import { ProvisioningStatus } from "./provisioning-status";
 import { ReadyHeader } from "./ready-header";
 
 const PROVISIONING_PHASES = new Set([
-	"queued",
-	"provisioning",
-	"booting",
-	"agent_connected",
-	"installing",
-	"starting",
-	"healthy",
-	"errored",
+  "queued",
+  "provisioning",
+  "booting",
+  "agent_connected",
+  "installing",
+  "starting",
+  "healthy",
+  "errored",
 ]);
 
-type ServerView = {
-	id: string;
-	name: string;
-	game: string;
-	ipv4: string | null;
-	phase: string;
-	observedState: string;
-	desiredState: string;
-	errorReason: string | null;
-	lastHeartbeatAt: string | null;
-};
+interface ServerView {
+  id: string;
+  name: string;
+  game: string;
+  ipv4: string | null;
+  phase: string;
+  observedState: string;
+  desiredState: string;
+  errorReason: string | null;
+  lastHeartbeatAt: string | null;
+}
 
 export const ServerDetail = ({ server: initial }: { server: ServerView }) => {
-	const router = useRouter();
-	const [server, setServer] = useState(initial);
-	const [pending, setPending] = useState<null | string>(null);
+  const router = useRouter();
+  const [server, setServer] = useState(initial);
+  const [pending, setPending] = useState<null | string>(null);
 
-	// Refresh server meta every 5s
-	const ref = useRef(server);
-	ref.current = server;
-	useEffect(() => {
-		const t = setInterval(async () => {
-			const res = await fetch(`/api/servers/${initial.id}`);
-			if (!res.ok) return;
-			const { server: fresh } = await res.json();
-			if (fresh) {
-				setServer({
-					id: fresh.id,
-					name: fresh.name,
-					game: fresh.game,
-					ipv4: fresh.ipv4,
-					phase: fresh.phase,
-					observedState: fresh.observedState,
-					desiredState: fresh.desiredState,
-					errorReason: fresh.errorReason ?? null,
-					lastHeartbeatAt: fresh.agent?.lastHeartbeatAt ?? null,
-				});
-			}
-		}, 5000);
-		return () => clearInterval(t);
-	}, [initial.id]);
+  // Refresh server meta every 5s
+  const ref = useRef(server);
+  ref.current = server;
+  useEffect(() => {
+    const t = setInterval(async () => {
+      const res = await fetch(`/api/servers/${initial.id}`);
+      if (!res.ok) {
+        return;
+      }
+      const { server: fresh } = await res.json();
+      if (fresh) {
+        setServer({
+          desiredState: fresh.desiredState,
+          errorReason: fresh.errorReason ?? null,
+          game: fresh.game,
+          id: fresh.id,
+          ipv4: fresh.ipv4,
+          lastHeartbeatAt: fresh.agent?.lastHeartbeatAt ?? null,
+          name: fresh.name,
+          observedState: fresh.observedState,
+          phase: fresh.phase,
+        });
+      }
+    }, 5000);
+    return () => clearInterval(t);
+  }, [initial.id]);
 
-	const sendCommand = async (type: "START" | "STOP" | "RESTART") => {
-		setPending(type);
-		const res = await fetch(`/api/servers/${server.id}/commands`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ type }),
-		});
-		setPending(null);
-		if (!res.ok) toast.error(`${type} failed`);
-		else toast.success(`${type} queued`);
-	};
+  const sendCommand = async (type: "START" | "STOP" | "RESTART") => {
+    setPending(type);
+    const res = await fetch(`/api/servers/${server.id}/commands`, {
+      body: JSON.stringify({ type }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+    setPending(null);
+    if (res.ok) {
+      toast.success(`${type} queued`);
+    } else {
+      toast.error(`${type} failed`);
+    }
+  };
 
-	const onDelete = async () => {
-		if (!confirm("Delete this server? This tears down the VM.")) return;
-		setPending("DELETE");
-		const res = await fetch(`/api/servers/${server.id}`, { method: "DELETE" });
-		setPending(null);
-		if (!res.ok) {
-			toast.error("Delete failed");
-			return;
-		}
-		router.push("/dashboard");
-		router.refresh();
-	};
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-	const isProvisioning = PROVISIONING_PHASES.has(server.phase);
-	const game = games.find((g) => g.id === server.game);
+  const runDelete = async () => {
+    setPending("DELETE");
+    const res = await fetch(`/api/servers/${server.id}`, { method: "DELETE" });
+    setPending(null);
+    if (res.ok) {
+      router.push("/dashboard");
+      router.refresh();
+    } else {
+      toast.error("Delete failed");
+    }
+  };
 
-	if (!game) {
-		return null;
-	}
+  const onDelete = () => setDeleteOpen(true);
 
-	if (isProvisioning) {
-		return (
-			<div className="grid gap-8">
-				<div className="flex items-center gap-4">
-					<Image
-						src={game.image}
-						alt={game.name}
-						className="size-14 shrink-0 rounded-lg object-cover"
-						placeholder="blur"
-					/>
-					<div>
-						<p className="font-medium tracking-tight text-2xl">{game.name}</p>
-						<p className="text-sm text-muted-foreground">{game.description}</p>
-					</div>
-				</div>
-				<ProvisioningStatus
-					phase={server.phase}
-					errored={
-						server.phase === "errored" || server.observedState === "failed"
-					}
-					errorReason={server.errorReason}
-				/>
-				<div className="flex justify-end">
-					<Button
-						variant="destructive"
-						onClick={onDelete}
-						disabled={Boolean(pending)}
-					>
-						Delete
-					</Button>
-				</div>
-			</div>
-		);
-	}
+  const isProvisioning = PROVISIONING_PHASES.has(server.phase);
+  const game = games.find((g) => g.id === server.game);
 
-	return (
-		<div className="grid gap-8">
-			<ReadyHeader
-				name={server.name}
-				game={server.game}
-				ipv4={server.ipv4}
-				phase={server.phase}
-				observedState={server.observedState}
-				pending={Boolean(pending)}
-				onCommand={sendCommand}
-				onDelete={onDelete}
-			/>
-			<div className="grid gap-6 md:grid-cols-2">
-				<ActivityStream serverId={server.id} />
-				<LogsStream serverId={server.id} />
-			</div>
-		</div>
-	);
+  if (!game) {
+    return null;
+  }
+
+  const deleteDialog = (
+    <AlertDialog onOpenChange={setDeleteOpen} open={deleteOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this server?</AlertDialogTitle>
+          <AlertDialogDescription>This tears down the VM.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={runDelete}>Delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  if (isProvisioning) {
+    return (
+      <div className="grid gap-8">
+        <div className="flex items-center gap-4">
+          <Image
+            src={game.image}
+            alt={game.name}
+            className="size-14 shrink-0 rounded-lg object-cover"
+            placeholder="blur"
+          />
+          <div>
+            <p className="font-medium tracking-tight text-2xl">{game.name}</p>
+            <p className="text-sm text-muted-foreground">{game.description}</p>
+          </div>
+        </div>
+        <ProvisioningStatus
+          phase={server.phase}
+          errored={server.phase === "errored" || server.observedState === "failed"}
+          errorReason={server.errorReason}
+        />
+        <div className="flex justify-end">
+          <Button variant="destructive" onClick={onDelete} disabled={Boolean(pending)}>
+            Delete
+          </Button>
+        </div>
+        {deleteDialog}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-8">
+      <ReadyHeader
+        name={server.name}
+        game={server.game}
+        ipv4={server.ipv4}
+        phase={server.phase}
+        observedState={server.observedState}
+        pending={Boolean(pending)}
+        onCommand={sendCommand}
+        onDelete={onDelete}
+      />
+      <div className="grid gap-6 md:grid-cols-2">
+        <ActivityStream serverId={server.id} />
+        <LogsStream serverId={server.id} />
+      </div>
+      {deleteDialog}
+    </div>
+  );
 };

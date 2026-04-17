@@ -1,25 +1,24 @@
-import image from './image.jpg';
+import image from "./image.jpg";
 
 export const minecraft = {
-  id: 'minecraft',
-  gamedigId: 'minecraft',
-  name: 'Minecraft',
+  description: "Minecraft is a sandbox game where you can build your own world.",
   enabled: true,
+  gamedigId: "minecraft",
+  id: "minecraft",
   image,
-  description:
-    'Minecraft is a sandbox game where you can build your own world.',
+  name: "Minecraft",
   ports: [
     // This is the default port for Minecraft Java Edition, used for game traffic.
     {
-      protocol: 'tcp',
-      from: 25565,
-      to: 25565,
+      from: 25_565,
+      protocol: "tcp",
+      to: 25_565,
     },
     // For Bedrock clients via a proxy like Geyser.
     {
-      protocol: 'udp',
-      from: 19132,
-      to: 19133,
+      from: 19_132,
+      protocol: "udp",
+      to: 19_133,
     },
   ],
   requirements: {

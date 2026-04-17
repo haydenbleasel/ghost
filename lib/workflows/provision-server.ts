@@ -1,3 +1,6 @@
+import type { Phase } from "@/protocol";
+import { createHook, FatalError, sleep } from "workflow";
+import { hookTokens } from "./hook-tokens";
 import {
   stepAgentConnected,
   stepCreateHetznerServer,
@@ -8,117 +11,149 @@ import {
   stepReadDesiredState,
   stepSendInstallConfig,
   stepSignalProvisionDone,
-} from './steps';
-import { createHook, FatalError, sleep } from 'workflow';
-import { hookTokens } from './hook-tokens';
-import type { Phase } from '@/protocol';
+} from "./steps";
 
 const MAX_HETZNER_WAIT_SECONDS = 300;
 const MAX_ENROLL_WAIT_SECONDS = 300;
 const MAX_INSTALL_WAIT_SECONDS = 900;
 
-export async function provisionServer(input: { serverId: string }) {
-  'use workflow';
+type InstallOutcome = "healthy" | "cancelled" | "errored" | "timeout";
+
+const waitForInstall = async (
+  phaseHook: PromiseLike<Phase>,
+  cancelled: PromiseLike<"cancelled">,
+): Promise<InstallOutcome> => {
+  const deadline = Date.now() + MAX_INSTALL_WAIT_SECONDS * 1000;
+  while (Date.now() < deadline) {
+    const remainingSeconds = Math.max(1, Math.ceil((deadline - Date.now()) / 1000));
+    const phasePromise = (async () => {
+      const phase = await phaseHook;
+      return { kind: "phase" as const, phase };
+    })();
+    const cancelPromise = (async () => {
+      const value = await cancelled;
+      return { kind: "cancelled" as const, value };
+    })();
+    const timerPromise = (async () => {
+      await sleep(`${remainingSeconds}s`);
+      return { kind: "timeout" as const };
+    })();
+    const event = await Promise.race([phasePromise, cancelPromise, timerPromise]);
+    if (event.kind === "cancelled") {
+      return "cancelled";
+    }
+    if (event.kind === "timeout") {
+      return "timeout";
+    }
+    if (event.phase === "healthy" || event.phase === "ready") {
+      return "healthy";
+    }
+    if (event.phase === "errored") {
+      return "errored";
+    }
+  }
+  return "timeout";
+};
+
+export const provisionServer = async (input: { serverId: string }) => {
+  "use workflow";
 
   const { serverId } = input;
 
-  using cancelHook = createHook<void>({ token: hookTokens.cancel(serverId) });
-  using enrollHook = createHook<void>({
+  using cancelHook = createHook<undefined>({ token: hookTokens.cancel(serverId) });
+  using enrollHook = createHook<undefined>({
     token: hookTokens.enrolled(serverId),
   });
   using phaseHook = createHook<Phase>({ token: hookTokens.phase(serverId) });
 
-  // One shared cancel observer — resolves once when teardown fires.
-  const cancelled = cancelHook.then(() => 'cancelled' as const);
+  const cancelled: Promise<"cancelled"> = (async () => {
+    await cancelHook;
+    return "cancelled" as const;
+  })();
 
   try {
-    if ((await stepReadDesiredState(serverId)) === 'deleted') return;
+    if ((await stepReadDesiredState(serverId)) === "deleted") {
+      return;
+    }
 
     const createResult = await stepCreateHetznerServer(serverId);
-    if (createResult.cancelled) return;
+    if (createResult.cancelled) {
+      return;
+    }
     const { hetznerServerId } = createResult;
-    if (hetznerServerId === null) return;
+    if (hetznerServerId === null) {
+      return;
+    }
 
-    // Hetzner doesn't push status, so poll — but race against cancel each tick.
     const hetznerDeadline = Date.now() + MAX_HETZNER_WAIT_SECONDS * 1000;
     let ipv4: string | null = null;
     while (Date.now() < hetznerDeadline) {
       const status = await stepGetHetznerStatus(hetznerServerId);
-      if (status.status === 'running') {
+      if (status.status === "running") {
         ipv4 = status.ip;
         break;
       }
-      if (status.status === 'unknown') {
-        throw new FatalError('Hetzner server not found after create');
+      if (status.status === "unknown") {
+        throw new FatalError("Hetzner server not found after create");
       }
-      const tick = await Promise.race([
-        sleep('6s').then(() => 'tick' as const),
-        cancelled,
-      ]);
-      if (tick === 'cancelled') return;
+      const tickPromise = (async () => {
+        await sleep("6s");
+        return "tick" as const;
+      })();
+      const tick = await Promise.race([tickPromise, cancelled]);
+      if (tick === "cancelled") {
+        return;
+      }
     }
     if (!ipv4) {
-      await stepMarkFailed({ serverId, reason: 'Hetzner boot timeout' });
+      await stepMarkFailed({ reason: "Hetzner boot timeout", serverId });
       return;
     }
 
-    await stepMarkHetznerRunning({ serverId, ipv4 });
+    await stepMarkHetznerRunning({ ipv4, serverId });
 
-    const enrollOutcome = await Promise.race([
-      enrollHook.then(() => 'enrolled' as const),
-      cancelled,
-      sleep(`${MAX_ENROLL_WAIT_SECONDS}s`).then(() => 'timeout' as const),
-    ]);
-    if (enrollOutcome === 'cancelled') return;
-    if (enrollOutcome === 'timeout') {
-      await stepMarkFailed({ serverId, reason: 'Agent never enrolled' });
+    const enrollPromise = (async () => {
+      await enrollHook;
+      return "enrolled" as const;
+    })();
+    const enrollTimeout = (async () => {
+      await sleep(`${MAX_ENROLL_WAIT_SECONDS}s`);
+      return "timeout" as const;
+    })();
+    const enrollOutcome = await Promise.race([enrollPromise, cancelled, enrollTimeout]);
+    if (enrollOutcome === "cancelled") {
+      return;
+    }
+    if (enrollOutcome === "timeout") {
+      await stepMarkFailed({ reason: "Agent never enrolled", serverId });
       return;
     }
 
     await stepAgentConnected(serverId);
     await stepSendInstallConfig(serverId);
 
-    const installDeadline = Date.now() + MAX_INSTALL_WAIT_SECONDS * 1000;
-    let healthy = false;
-    while (Date.now() < installDeadline) {
-      const remainingSeconds = Math.max(
-        1,
-        Math.ceil((installDeadline - Date.now()) / 1000)
-      );
-      const event = await Promise.race([
-        phaseHook.then((phase) => ({ kind: 'phase' as const, phase })),
-        cancelled.then(() => ({ kind: 'cancelled' as const })),
-        sleep(`${remainingSeconds}s`).then(() => ({
-          kind: 'timeout' as const,
-        })),
-      ]);
-      if (event.kind === 'cancelled') return;
-      if (event.kind === 'timeout') break;
-      if (event.phase === 'healthy' || event.phase === 'ready') {
-        healthy = true;
-        break;
-      }
-      if (event.phase === 'errored') {
-        await stepMarkFailed({ serverId, reason: 'Agent reported error' });
-        return;
-      }
+    const installOutcome = await waitForInstall(phaseHook, cancelled);
+    if (installOutcome === "cancelled") {
+      return;
     }
-
-    if (!healthy) {
-      await stepMarkFailed({ serverId, reason: 'Install timeout' });
+    if (installOutcome === "errored") {
+      await stepMarkFailed({ reason: "Agent reported error", serverId });
+      return;
+    }
+    if (installOutcome === "timeout") {
+      await stepMarkFailed({ reason: "Install timeout", serverId });
       return;
     }
 
     await stepMarkReady(serverId);
   } catch (error) {
-    const reason = error instanceof Error ? error.message : 'Unknown error';
-    await stepMarkFailed({ serverId, reason });
-    // FatalError is an intentional bail-out: swallow so the workflow run
-    // reports as completed rather than failed. Anything else (including
-    // step retries giving up) re-throws so the run itself is marked failed.
-    if (error instanceof FatalError) return;
+    const reason = error instanceof Error ? error.message : "Unknown error";
+    await stepMarkFailed({ reason, serverId });
+    if (error instanceof FatalError) {
+      return;
+    }
     throw error;
   } finally {
     await stepSignalProvisionDone(serverId);
   }
-}
+};

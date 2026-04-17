@@ -1,7 +1,8 @@
-import { games } from '@/games';
-import { getHetznerCatalog } from '@/lib/hetzner/catalog';
-import { requireUser } from '@/lib/session';
-import { NewServerForm, type GameOption } from './_components/form';
+import { games } from "@/games";
+import { getHetznerCatalog } from "@/lib/hetzner/catalog";
+import { requireUser } from "@/lib/session";
+import { NewServerForm } from "./_components/form";
+import type { GameOption } from "./_components/form";
 
 const NewServerPage = async () => {
   await requireUser();
@@ -10,10 +11,10 @@ const NewServerPage = async () => {
   const gameOptions: GameOption[] = games
     .filter((g) => g.enabled)
     .map((g) => ({
-      id: g.id,
-      name: g.name,
       description: g.description,
+      id: g.id,
       image: g.image,
+      name: g.name,
       requirements: { cpu: g.requirements.cpu, memory: g.requirements.memory },
     }));
 

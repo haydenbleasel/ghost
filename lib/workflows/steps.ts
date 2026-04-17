@@ -1,41 +1,41 @@
-import crypto from 'node:crypto';
-import { mintBootstrapJwt } from '@/lib/agent/bootstrap';
-import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
-import { emitActivity } from '@/lib/events/emit';
+import crypto from "node:crypto";
+import { buildMinecraftCompose } from "@/games/minecraft/install";
+import { mintBootstrapJwt } from "@/lib/agent/bootstrap";
+import { enqueueCommand } from "@/lib/agent/commands";
+import { prisma } from "@/lib/db";
+import { env } from "@/lib/env";
+import { emitActivity } from "@/lib/events/emit";
 import {
   createServer as createHetznerServer,
   deleteServer as deleteHetznerServer,
   getServer as getHetznerServer,
   HetznerApiError,
-} from '@/lib/hetzner/client';
-import { enqueueCommand } from '@/lib/agent/commands';
-import { buildMinecraftCompose } from '@/games/minecraft/install';
-import type { Phase } from '@/protocol';
-import { FatalError, getStepMetadata } from 'workflow';
-import { resumeHook } from 'workflow/api';
-import { hookTokens } from './hook-tokens';
+} from "@/lib/hetzner/client";
+import type { Phase } from "@/protocol";
+import { FatalError, getStepMetadata } from "workflow";
+import { resumeHook } from "workflow/api";
+import { hookTokens } from "./hook-tokens";
 
-async function safeResumeHook(token: string, payload: unknown): Promise<void> {
+const safeResumeHook = async (token: string, payload?: unknown): Promise<void> => {
   try {
     await resumeHook(token, payload);
   } catch {
     // Hook not found: the target workflow either hasn't registered it yet
     // or has already exited. Either way, the signal is a no-op.
   }
-}
+};
 
-const MINECRAFT_PORT_COMMENT = '# opened via ufw in cloud-init';
+const MINECRAFT_PORT_COMMENT = "# opened via ufw in cloud-init";
 
-function buildCloudInit(input: {
+const buildCloudInit = (input: {
   serverId: string;
   bootstrapToken: string;
   apiBaseUrl: string;
-}): string {
+}): string => {
   const bootstrap = {
-    serverId: input.serverId,
-    bootstrapToken: input.bootstrapToken,
     apiBaseUrl: input.apiBaseUrl,
+    bootstrapToken: input.bootstrapToken,
+    serverId: input.serverId,
   };
 
   return `#cloud-config
@@ -50,76 +50,69 @@ runcmd:
   - systemctl enable --now ghost-agent.service
   - ufw allow 25565/tcp || true ${MINECRAFT_PORT_COMMENT}
 `;
-}
+};
 
-export async function stepCreateHetznerServer(serverId: string) {
-  'use step';
+export const stepCreateHetznerServer = async (serverId: string) => {
+  "use step";
 
   const server = await prisma.server.findUniqueOrThrow({
     where: { id: serverId },
   });
-  if (server.desiredState === 'deleted') {
+  if (server.desiredState === "deleted") {
     return {
-      hetznerServerId: server.hetznerServerId
-        ? Number(server.hetznerServerId)
-        : null,
       cancelled: true as const,
+      hetznerServerId: server.hetznerServerId ? Number(server.hetznerServerId) : null,
     };
   }
   if (server.hetznerServerId) {
     return {
-      hetznerServerId: Number(server.hetznerServerId),
       cancelled: false as const,
+      hetznerServerId: Number(server.hetznerServerId),
     };
   }
 
   const { token, jti, expiresAt } = await mintBootstrapJwt({ serverId });
 
   await prisma.agentEnrollment.create({
-    data: { jti, serverId, expiresAt },
+    data: { expiresAt, jti, serverId },
   });
 
   const userData = buildCloudInit({
-    serverId,
-    bootstrapToken: token,
     apiBaseUrl: env.NEXT_PUBLIC_APP_URL,
+    bootstrapToken: token,
+    serverId,
   });
 
   const hetznerName = `ghost-${serverId.toLowerCase().slice(-12)}-${crypto
     .randomBytes(2)
-    .toString('hex')}`;
+    .toString("hex")}`;
 
   let created;
   try {
     created = await createHetznerServer({
-      name: hetznerName,
-      userData,
       location: server.location,
+      name: hetznerName,
       serverType: server.serverType,
+      userData,
     });
   } catch (error) {
-    // 4xx from Hetzner (bad location/server_type/image, bad token, quota)
-    // will never succeed on retry — fail fast.
     if (error instanceof HetznerApiError && error.isClientError) {
       throw new FatalError(error.message);
     }
     throw error;
   }
 
-  // Persist the Hetzner ID first so teardown can find it even if we race.
   const updated = await prisma.server.update({
-    where: { id: serverId },
     data: {
       hetznerServerId: String(created.id),
-      observedState: 'provisioning',
-      phase: 'provisioning',
       ipv4: created.public_net.ipv4?.ip ?? null,
+      observedState: "provisioning",
+      phase: "provisioning",
     },
+    where: { id: serverId },
   });
 
-  // Race guard: if teardown flipped desiredState while we were calling
-  // Hetzner, delete the VM we just created instead of leaving it orphaned.
-  if (updated.desiredState === 'deleted') {
+  if (updated.desiredState === "deleted") {
     try {
       await deleteHetznerServer(created.id);
     } catch (error) {
@@ -127,72 +120,69 @@ export async function stepCreateHetznerServer(serverId: string) {
         throw error;
       }
     }
-    return { hetznerServerId: created.id, cancelled: true as const };
+    return { cancelled: true as const, hetznerServerId: created.id };
   }
 
   await emitActivity({
-    serverId,
-    phase: 'provisioning',
-    message: 'Creating Hetzner server',
+    message: "Creating Hetzner server",
     metadata: { hetznerServerId: created.id, location: server.location },
+    phase: "provisioning",
+    serverId,
   });
 
-  return { hetznerServerId: created.id, cancelled: false as const };
-}
+  return { cancelled: false as const, hetznerServerId: created.id };
+};
 
-export async function stepGetHetznerStatus(hetznerServerId: number) {
-  'use step';
+export const stepGetHetznerStatus = async (hetznerServerId: number) => {
+  "use step";
   const server = await getHetznerServer(hetznerServerId);
   if (!server) {
-    return { status: 'unknown' as const, ip: null };
+    return { ip: null, status: "unknown" as const };
   }
   return {
-    status: server.status,
     ip: server.public_net.ipv4?.ip ?? null,
+    status: server.status,
   };
-}
+};
 
-export async function stepMarkHetznerRunning(input: {
-  serverId: string;
-  ipv4: string | null;
-}) {
-  'use step';
+export const stepMarkHetznerRunning = async (input: { serverId: string; ipv4: string | null }) => {
+  "use step";
   await prisma.server.update({
+    data: { ipv4: input.ipv4, phase: "booting" },
     where: { id: input.serverId },
-    data: { ipv4: input.ipv4, phase: 'booting' },
   });
   await emitActivity({
-    serverId: input.serverId,
-    phase: 'booting',
-    message: 'Waiting for VM boot and agent handshake',
+    message: "Waiting for VM boot and agent handshake",
     metadata: { ipv4: input.ipv4 },
+    phase: "booting",
+    serverId: input.serverId,
   });
-}
+};
 
-export async function stepReadAgent(serverId: string) {
-  'use step';
+export const stepReadAgent = async (serverId: string) => {
+  "use step";
   const agent = await prisma.agent.findUnique({
+    select: { createdAt: true, id: true, lastHeartbeatAt: true },
     where: { serverId },
-    select: { id: true, lastHeartbeatAt: true, createdAt: true },
   });
   return agent;
-}
+};
 
-export async function stepAgentConnected(serverId: string) {
-  'use step';
+export const stepAgentConnected = async (serverId: string) => {
+  "use step";
   await prisma.server.update({
+    data: { observedState: "provisioning", phase: "agent_connected" },
     where: { id: serverId },
-    data: { phase: 'agent_connected', observedState: 'provisioning' },
   });
   await emitActivity({
+    message: "Agent connected",
+    phase: "agent_connected",
     serverId,
-    phase: 'agent_connected',
-    message: 'Agent connected',
   });
-}
+};
 
-export async function stepSendInstallConfig(serverId: string) {
-  'use step';
+export const stepSendInstallConfig = async (serverId: string) => {
+  "use step";
   const { stepId } = getStepMetadata();
   const server = await prisma.server.findUniqueOrThrow({
     where: { id: serverId },
@@ -204,83 +194,87 @@ export async function stepSendInstallConfig(serverId: string) {
   });
 
   await enqueueCommand({
-    serverId,
-    type: 'UPDATE_CONFIG',
-    payload: { compose },
     idempotencyKey: stepId,
+    payload: { compose },
+    serverId,
+    type: "UPDATE_CONFIG",
   });
 
   await prisma.server.update({
+    data: { phase: "installing" },
     where: { id: serverId },
-    data: { phase: 'installing' },
   });
 
   await emitActivity({
+    message: "Writing compose and pulling image",
+    phase: "installing",
     serverId,
-    phase: 'installing',
-    message: 'Writing compose and pulling image',
   });
-}
+};
 
-export async function stepReadPhase(serverId: string) {
-  'use step';
+export const stepReadPhase = async (serverId: string) => {
+  "use step";
   const server = await prisma.server.findUniqueOrThrow({
+    select: { desiredState: true, observedState: true, phase: true },
     where: { id: serverId },
-    select: { phase: true, desiredState: true, observedState: true },
   });
   return server;
-}
+};
 
-export async function stepMarkReady(serverId: string) {
-  'use step';
+export const stepMarkReady = async (serverId: string) => {
+  "use step";
   await prisma.server.update({
+    data: { observedState: "running", phase: "ready" },
     where: { id: serverId },
-    data: { phase: 'ready', observedState: 'running' },
   });
   await emitActivity({
+    message: "Server ready",
+    phase: "ready",
     serverId,
-    phase: 'ready',
-    message: 'Server ready',
   });
-}
+};
 
-export async function stepMarkFailed(input: { serverId: string; reason: string }) {
-  'use step';
+export const stepMarkFailed = async (input: { serverId: string; reason: string }) => {
+  "use step";
   await prisma.server.update({
+    data: { errorReason: input.reason, observedState: "failed" },
     where: { id: input.serverId },
-    data: { observedState: 'failed', errorReason: input.reason },
   });
   await emitActivity({
-    serverId: input.serverId,
-    phase: 'errored',
     message: `Provision failed: ${input.reason}`,
     metadata: { reason: input.reason },
+    phase: "errored",
+    serverId: input.serverId,
   });
-}
+};
 
-export async function stepSendDeleteCommand(serverId: string) {
-  'use step';
+export const stepSendDeleteCommand = async (serverId: string) => {
+  "use step";
   const { stepId } = getStepMetadata();
   const agent = await prisma.agent.findUnique({ where: { serverId } });
-  if (!agent) return { hadAgent: false };
+  if (!agent) {
+    return { hadAgent: false };
+  }
   await enqueueCommand({
-    serverId,
-    type: 'DELETE',
-    payload: {},
     idempotencyKey: stepId,
+    payload: {},
+    serverId,
+    type: "DELETE",
   });
   await emitActivity({
+    message: "Stopping game and shutting down",
+    phase: "deleting",
     serverId,
-    phase: 'deleting',
-    message: 'Stopping game and shutting down',
   });
   return { hadAgent: true };
-}
+};
 
-export async function stepDeleteHetzner(serverId: string) {
-  'use step';
+export const stepDeleteHetzner = async (serverId: string) => {
+  "use step";
   const server = await prisma.server.findUnique({ where: { id: serverId } });
-  if (!server?.hetznerServerId) return { deleted: false };
+  if (!server?.hetznerServerId) {
+    return { deleted: false };
+  }
   try {
     await deleteHetznerServer(Number(server.hetznerServerId));
   } catch (error) {
@@ -289,43 +283,45 @@ export async function stepDeleteHetzner(serverId: string) {
     }
   }
   return { deleted: true };
-}
+};
 
-export async function stepMarkDeleted(serverId: string) {
-  'use step';
+export const stepMarkDeleted = async (serverId: string) => {
+  "use step";
   await prisma.server.update({
-    where: { id: serverId },
     data: {
-      observedState: 'deleted',
-      phase: 'deleted',
       deletedAt: new Date(),
+      observedState: "deleted",
+      phase: "deleted",
     },
+    where: { id: serverId },
   });
   await emitActivity({
+    message: "Server deleted",
+    phase: "deleted",
     serverId,
-    phase: 'deleted',
-    message: 'Server deleted',
   });
-}
+};
 
-export async function stepSignalCancelProvision(serverId: string) {
-  'use step';
-  await safeResumeHook(hookTokens.cancel(serverId), undefined);
-}
+export const stepSignalCancelProvision = async (serverId: string) => {
+  "use step";
+  await safeResumeHook(hookTokens.cancel(serverId));
+};
 
-export async function stepSignalProvisionDone(serverId: string) {
-  'use step';
-  await safeResumeHook(hookTokens.provisionDone(serverId), undefined);
-}
+export const stepSignalProvisionDone = async (serverId: string) => {
+  "use step";
+  await safeResumeHook(hookTokens.provisionDone(serverId));
+};
 
-export async function stepReadDesiredState(serverId: string) {
-  'use step';
+export const stepReadDesiredState = async (serverId: string) => {
+  "use step";
   const server = await prisma.server.findUnique({
-    where: { id: serverId },
     select: { desiredState: true },
+    where: { id: serverId },
   });
-  if (!server) return 'deleted' as const;
-  return server.desiredState as 'running' | 'stopped' | 'deleted';
-}
+  if (!server) {
+    return "deleted" as const;
+  }
+  return server.desiredState as "running" | "stopped" | "deleted";
+};
 
 export type WaitPhaseTarget = Phase | Phase[];

@@ -1,59 +1,63 @@
-import type { State } from './config';
-import { signedFetch } from './signing';
-import { saveState } from './config';
-import { AGENT_HEADERS, type Phase } from '../../protocol';
+import type { State } from "./config";
+import { signedFetch } from "./signing";
+import { saveState } from "./config";
+import { AGENT_HEADERS } from "../../protocol";
+import type { Phase } from "../../protocol";
 
 const FLUSH_INTERVAL_MS = 500;
 const FLUSH_BYTES = 32 * 1024;
 
-type PendingActivity = {
+interface PendingActivity {
   clientEventId: string;
   agentSeq: number;
   phase: Phase;
   message: string;
   metadata?: Record<string, unknown>;
   occurredAt: string;
-};
+}
 
-type PendingLog = {
+interface PendingLog {
   agentSeq: number;
-  stream: 'stdout' | 'stderr';
+  stream: "stdout" | "stderr";
   line: string;
   ts: string;
-};
+}
 
 export class EventBuffer {
   private activity: PendingActivity[] = [];
   private logs: PendingLog[] = [];
   private timer: ReturnType<typeof setTimeout> | null = null;
   private flushing = false;
+  private readonly state: State;
 
-  constructor(private state: State) {}
+  constructor(state: State) {
+    this.state = state;
+  }
 
   enqueueActivity(
-    input: Omit<PendingActivity, 'agentSeq' | 'clientEventId' | 'occurredAt'> & {
+    input: Omit<PendingActivity, "agentSeq" | "clientEventId" | "occurredAt"> & {
       clientEventId?: string;
       occurredAt?: string;
-    }
+    },
   ) {
     this.state.agentSeq += 1;
     this.activity.push({
-      clientEventId: input.clientEventId ?? crypto.randomUUID(),
       agentSeq: this.state.agentSeq,
-      phase: input.phase,
+      clientEventId: input.clientEventId ?? crypto.randomUUID(),
       message: input.message,
       metadata: input.metadata,
       occurredAt: input.occurredAt ?? new Date().toISOString(),
+      phase: input.phase,
     });
     this.scheduleFlush();
   }
 
-  enqueueLog(input: { stream: 'stdout' | 'stderr'; line: string; ts?: string }) {
+  enqueueLog(input: { stream: "stdout" | "stderr"; line: string; ts?: string }) {
     this.state.agentSeq += 1;
     this.logs.push({
       agentSeq: this.state.agentSeq,
-      stream: input.stream,
       line: input.line,
+      stream: input.stream,
       ts: input.ts ?? new Date().toISOString(),
     });
     const size = this.logs.reduce((acc, l) => acc + l.line.length, 0);
@@ -65,7 +69,9 @@ export class EventBuffer {
   }
 
   private scheduleFlush() {
-    if (this.timer) return;
+    if (this.timer) {
+      return;
+    }
     this.timer = setTimeout(() => {
       this.timer = null;
       void this.flush();
@@ -73,8 +79,12 @@ export class EventBuffer {
   }
 
   async flush(): Promise<void> {
-    if (this.flushing) return;
-    if (this.activity.length === 0 && this.logs.length === 0) return;
+    if (this.flushing) {
+      return;
+    }
+    if (this.activity.length === 0 && this.logs.length === 0) {
+      return;
+    }
     this.flushing = true;
 
     const batchId = crypto.randomUUID();
@@ -85,24 +95,24 @@ export class EventBuffer {
 
     try {
       const res = await signedFetch({
-        method: 'POST',
-        url: `${this.state.apiBaseUrl}/api/agent/events`,
         agentId: this.state.agentId,
-        privateKey: this.state.privateKey,
         body: { activity: activityBatch, logs: logBatch },
         extraHeaders: { [AGENT_HEADERS.BATCH]: batchId },
+        method: "POST",
+        privateKey: this.state.privateKey,
+        url: `${this.state.apiBaseUrl}/api/agent/events`,
       });
-      if (!res.ok) {
+      if (res.ok) {
+        await saveState(this.state);
+      } else {
         this.activity.unshift(...activityBatch);
         this.logs.unshift(...logBatch);
         console.warn(`events flush failed: ${res.status}`);
-      } else {
-        await saveState(this.state);
       }
     } catch (error) {
       this.activity.unshift(...activityBatch);
       this.logs.unshift(...logBatch);
-      console.warn('events flush error', error);
+      console.warn("events flush error", error);
     } finally {
       this.flushing = false;
     }

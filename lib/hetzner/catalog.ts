@@ -1,13 +1,8 @@
-import 'server-only';
-import { env } from '@/lib/env';
-import {
-  getImage,
-  getPricingCurrency,
-  listDatacenters,
-  listServerTypes,
-} from './client';
+import "server-only";
+import { env } from "@/lib/env";
+import { getImage, getPricingCurrency, listDatacenters, listServerTypes } from "./client";
 
-export type CatalogLocation = {
+export interface CatalogLocation {
   name: string;
   city: string;
   country: string;
@@ -15,27 +10,27 @@ export type CatalogLocation = {
   longitude: number;
   available: boolean;
   supported: boolean;
-};
+}
 
-export type CatalogServerType = {
+export interface CatalogServerType {
   name: string;
   description: string;
   cores: number;
   memory: number;
   disk: number;
-  cpuType: 'shared' | 'dedicated';
-  architecture: 'x86' | 'arm';
+  cpuType: "shared" | "dedicated";
+  architecture: "x86" | "arm";
   pricePerMonth: number;
   locations: CatalogLocation[];
-};
+}
 
-export type Catalog = {
+export interface Catalog {
   serverTypes: CatalogServerType[];
-  imageArchitecture: 'x86' | 'arm';
+  imageArchitecture: "x86" | "arm";
   currency: string;
-};
+}
 
-export async function getHetznerCatalog(): Promise<Catalog> {
+export const getHetznerCatalog = async (): Promise<Catalog> => {
   const [serverTypes, datacenters, image, currency] = await Promise.all([
     listServerTypes(),
     listDatacenters(),
@@ -56,17 +51,21 @@ export async function getHetznerCatalog(): Promise<Catalog> {
   >();
 
   for (const dc of datacenters) {
-    const name = dc.location.name;
+    const { name } = dc.location;
     const existing = perLocation.get(name) ?? {
+      available: new Set<number>(),
       city: dc.location.city,
       country: dc.location.country,
       latitude: dc.location.latitude,
       longitude: dc.location.longitude,
       supported: new Set<number>(),
-      available: new Set<number>(),
     };
-    for (const id of dc.server_types.supported) existing.supported.add(id);
-    for (const id of dc.server_types.available) existing.available.add(id);
+    for (const id of dc.server_types.supported) {
+      existing.supported.add(id);
+    }
+    for (const id of dc.server_types.available) {
+      existing.available.add(id);
+    }
     perLocation.set(name, existing);
   }
 
@@ -75,51 +74,52 @@ export async function getHetznerCatalog(): Promise<Catalog> {
     .filter((t) => t.architecture === image.architecture)
     .map<CatalogServerType>((t) => {
       const priceByLocation = new Map(
-        t.prices.map((p) => [p.location, Number(p.price_monthly.gross)])
+        t.prices.map((p) => [p.location, Number(p.price_monthly.gross)]),
       );
 
       const locations: CatalogLocation[] = [];
       for (const [name, info] of perLocation) {
-        if (!info.supported.has(t.id)) continue;
+        if (!info.supported.has(t.id)) {
+          continue;
+        }
         locations.push({
-          name,
+          available: info.available.has(t.id),
           city: info.city,
           country: info.country,
           latitude: info.latitude,
           longitude: info.longitude,
+          name,
           supported: true,
-          available: info.available.has(t.id),
         });
       }
       locations.sort((a, b) => {
-        if (a.available !== b.available) return a.available ? -1 : 1;
+        if (a.available !== b.available) {
+          return a.available ? -1 : 1;
+        }
         return a.name.localeCompare(b.name);
       });
 
       const prices = locations
         .map((l) => priceByLocation.get(l.name))
-        .filter((p): p is number => typeof p === 'number' && !Number.isNaN(p));
+        .filter((p): p is number => typeof p === "number" && !Number.isNaN(p));
       const minPrice = prices.length ? Math.min(...prices) : 0;
 
       return {
-        name: t.name,
-        description: t.description,
-        cores: t.cores,
-        memory: t.memory,
-        disk: t.disk,
-        cpuType: t.cpu_type,
         architecture: t.architecture,
-        pricePerMonth: minPrice,
+        cores: t.cores,
+        cpuType: t.cpu_type,
+        description: t.description,
+        disk: t.disk,
         locations,
+        memory: t.memory,
+        name: t.name,
+        pricePerMonth: minPrice,
       };
     })
     .filter((t) => t.locations.length > 0)
-    .sort(
-      (a, b) =>
-        a.memory - b.memory ||
-        a.cores - b.cores ||
-        a.pricePerMonth - b.pricePerMonth
+    .toSorted(
+      (a, b) => a.memory - b.memory || a.cores - b.cores || a.pricePerMonth - b.pricePerMonth,
     );
 
-  return { serverTypes: types, imageArchitecture: image.architecture, currency };
-}
+  return { currency, imageArchitecture: image.architecture, serverTypes: types };
+};

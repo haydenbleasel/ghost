@@ -1,11 +1,13 @@
-export type MinecraftConfig = {
+export interface MinecraftConfig {
   name: string;
   rconPassword: string;
   timezone?: string;
-};
+}
 
-export function buildMinecraftCompose(config: MinecraftConfig): string {
-  const timezone = config.timezone ?? 'UTC';
+const escape = (value: string): string => value.replaceAll('"', '\\"');
+
+export const buildMinecraftCompose = (config: MinecraftConfig): string => {
+  const timezone = config.timezone ?? "UTC";
   return `services:
   minecraft:
     image: itzg/minecraft-server:latest
@@ -34,8 +36,4 @@ export function buildMinecraftCompose(config: MinecraftConfig): string {
       - /var/lib/ghost/game/backups:/backups
     restart: unless-stopped
 `;
-}
-
-function escape(value: string): string {
-  return value.replace(/"/g, '\\"');
-}
+};

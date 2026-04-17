@@ -1,26 +1,26 @@
-import crypto from 'node:crypto';
-import { prisma } from '@/lib/db';
-import { verifyBootstrapJwt } from '@/lib/agent/bootstrap';
-import { hookTokens } from '@/lib/workflows/hook-tokens';
-import { enrollRequestSchema, enrollResponseSchema } from '@/protocol';
-import { NextResponse } from 'next/server';
-import { resumeHook } from 'workflow/api';
+import crypto from "node:crypto";
+import { prisma } from "@/lib/db";
+import { verifyBootstrapJwt } from "@/lib/agent/bootstrap";
+import { hookTokens } from "@/lib/workflows/hook-tokens";
+import { enrollRequestSchema, enrollResponseSchema } from "@/protocol";
+import { NextResponse } from "next/server";
+import { resumeHook } from "workflow/api";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
-export async function POST(request: Request) {
+export const POST = async (request: Request) => {
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
   const parsed = enrollRequestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Invalid body', details: parsed.error.flatten() },
-      { status: 400 }
+      { details: parsed.error.flatten(), error: "Invalid body" },
+      { status: 400 },
     );
   }
 
@@ -28,10 +28,7 @@ export async function POST(request: Request) {
   try {
     claims = await verifyBootstrapJwt(parsed.data.bootstrapToken);
   } catch {
-    return NextResponse.json(
-      { error: 'Invalid bootstrap token' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Invalid bootstrap token" }, { status: 401 });
   }
 
   const enrollment = await prisma.agentEnrollment.findUnique({
@@ -39,41 +36,39 @@ export async function POST(request: Request) {
   });
 
   if (!enrollment) {
-    return NextResponse.json(
-      { error: 'Enrollment not registered' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Enrollment not registered" }, { status: 401 });
   }
 
   if (enrollment.burnedAt) {
-    return NextResponse.json({ error: 'Token already used' }, { status: 409 });
+    return NextResponse.json({ error: "Token already used" }, { status: 409 });
   }
 
   if (enrollment.expiresAt.getTime() < Date.now()) {
-    return NextResponse.json({ error: 'Token expired' }, { status: 401 });
+    return NextResponse.json({ error: "Token expired" }, { status: 401 });
   }
 
   if (enrollment.serverId !== claims.serverId) {
-    return NextResponse.json({ error: 'Server mismatch' }, { status: 401 });
+    return NextResponse.json({ error: "Server mismatch" }, { status: 401 });
   }
 
   const agentId = `agt_${crypto.randomUUID()}`;
 
-  const [, , agent] = await prisma.$transaction([
+  await prisma.$transaction([
     prisma.agentEnrollment.update({
-      where: { jti: claims.jti },
       data: { burnedAt: new Date() },
+      where: { jti: claims.jti },
     }),
     prisma.agent.deleteMany({ where: { serverId: claims.serverId } }),
-    prisma.agent.create({
-      data: {
-        id: agentId,
-        serverId: claims.serverId,
-        publicKey: parsed.data.publicKey,
-        sessionVersion: 0,
-      },
-    }),
   ]);
+
+  const agent = await prisma.agent.create({
+    data: {
+      id: agentId,
+      publicKey: parsed.data.publicKey,
+      serverId: claims.serverId,
+      sessionVersion: 0,
+    },
+  });
 
   const response = enrollResponseSchema.parse({
     agentId: agent.id,
@@ -82,6 +77,7 @@ export async function POST(request: Request) {
   });
 
   try {
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- resumeHook requires an explicit payload
     await resumeHook(hookTokens.enrolled(agent.serverId), undefined);
   } catch {
     // Provision workflow may have already moved past enrollment (or not yet
@@ -90,4 +86,4 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(response);
-}
+};

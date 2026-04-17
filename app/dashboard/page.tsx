@@ -1,6 +1,6 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
   EmptyContent,
@@ -8,17 +8,30 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/components/ui/empty';
-import { prisma } from '@/lib/db';
-import { requireUser } from '@/lib/session';
-import { ServerIcon } from 'lucide-react';
-import Link from 'next/link';
+} from "@/components/ui/empty";
+import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/session";
+import { ServerIcon } from "lucide-react";
+import Link from "next/link";
+
+const statusVariant = (state: string): "default" | "secondary" | "destructive" | "outline" => {
+  if (state === "running") {
+    return "default";
+  }
+  if (state === "failed" || state === "lost") {
+    return "destructive";
+  }
+  if (state === "unhealthy") {
+    return "secondary";
+  }
+  return "outline";
+};
 
 const DashboardPage = async () => {
   const user = await requireUser();
   const servers = await prisma.server.findMany({
-    where: { userId: user.id, deletedAt: null },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
+    where: { deletedAt: null, userId: user.id },
   });
 
   if (servers.length === 0) {
@@ -59,24 +72,19 @@ const DashboardPage = async () => {
             </div>
             <Badge
               variant={
-                server.desiredState === 'deleted'
-                  ? 'destructive'
+                server.desiredState === "deleted"
+                  ? "destructive"
                   : statusVariant(server.observedState)
               }
             >
-              {server.desiredState === 'deleted'
-                ? 'deleting'
-                : server.observedState}
+              {server.desiredState === "deleted" ? "deleting" : server.observedState}
             </Badge>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between text-sm">
-              <span className="font-mono text-muted-foreground">
-                {server.ipv4 ?? '—'}
-              </span>
+              <span className="font-mono text-muted-foreground">{server.ipv4 ?? "—"}</span>
               <span className="text-muted-foreground">
-                Phase:{' '}
-                {server.desiredState === 'deleted' ? 'deleting' : server.phase}
+                Phase: {server.desiredState === "deleted" ? "deleting" : server.phase}
               </span>
             </div>
           </CardContent>
@@ -85,14 +93,5 @@ const DashboardPage = async () => {
     </div>
   );
 };
-
-function statusVariant(
-  state: string
-): 'default' | 'secondary' | 'destructive' | 'outline' {
-  if (state === 'running') return 'default';
-  if (state === 'failed' || state === 'lost') return 'destructive';
-  if (state === 'unhealthy') return 'secondary';
-  return 'outline';
-}
 
 export default DashboardPage;

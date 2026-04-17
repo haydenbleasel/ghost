@@ -1,34 +1,31 @@
-import { prisma } from '@/lib/db';
-import { AgentAuthError, verifyAgentRequest } from '@/lib/agent/signing';
-import { rotateKeyRequestSchema } from '@/protocol';
-import { NextResponse } from 'next/server';
+import { prisma } from "@/lib/db";
+import { AgentAuthError, verifyAgentRequest } from "@/lib/agent/signing";
+import { rotateKeyRequestSchema } from "@/protocol";
+import { NextResponse } from "next/server";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
-export async function POST(request: Request) {
+export const POST = async (request: Request) => {
   try {
     const { verified, body } = await verifyAgentRequest(request);
     const parsed = rotateKeyRequestSchema.safeParse(JSON.parse(body));
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid body" }, { status: 400 });
     }
 
     const agent = await prisma.agent.update({
-      where: { id: verified.agentId },
       data: {
         publicKey: parsed.data.newPublicKey,
         sessionVersion: { increment: 1 },
       },
+      where: { id: verified.agentId },
     });
 
     return NextResponse.json({ sessionVersion: agent.sessionVersion });
   } catch (error) {
     if (error instanceof AgentAuthError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.status }
-      );
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     throw error;
   }
-}
+};

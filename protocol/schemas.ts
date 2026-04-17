@@ -1,10 +1,5 @@
-import { z } from 'zod';
-import {
-  COMMAND_STATUSES,
-  COMMAND_TYPES,
-  LOG_STREAMS,
-  PHASES,
-} from './constants';
+import { z } from "zod";
+import { COMMAND_STATUSES, LOG_STREAMS, PHASES } from "./constants";
 
 export const enrollRequestSchema = z.object({
   bootstrapToken: z.string().min(1),
@@ -25,31 +20,31 @@ export const rotateKeyRequestSchema = z.object({
 export type RotateKeyRequest = z.infer<typeof rotateKeyRequestSchema>;
 
 export const heartbeatSchema = z.object({
-  uptimeSeconds: z.number().int().nonnegative(),
-  dockerState: z.enum(['running', 'stopped', 'missing', 'error']),
   cpuPercent: z.number().min(0).max(100).optional(),
-  memUsedBytes: z.number().int().nonnegative().optional(),
-  memTotalBytes: z.number().int().positive().optional(),
-  diskUsedBytes: z.number().int().nonnegative().optional(),
   diskTotalBytes: z.number().int().positive().optional(),
+  diskUsedBytes: z.number().int().nonnegative().optional(),
+  dockerState: z.enum(["running", "stopped", "missing", "error"]),
   lastCommandId: z.string().nullable().optional(),
+  memTotalBytes: z.number().int().positive().optional(),
+  memUsedBytes: z.number().int().nonnegative().optional(),
+  uptimeSeconds: z.number().int().nonnegative(),
 });
 export type Heartbeat = z.infer<typeof heartbeatSchema>;
 
 export const activityEventSchema = z.object({
-  clientEventId: z.string().min(1),
   agentSeq: z.number().int().nonnegative(),
-  phase: z.enum(PHASES),
+  clientEventId: z.string().min(1),
   message: z.string().min(1),
   metadata: z.record(z.string(), z.unknown()).optional(),
   occurredAt: z.string().datetime(),
+  phase: z.enum(PHASES),
 });
 export type ActivityEvent = z.infer<typeof activityEventSchema>;
 
 export const logLineSchema = z.object({
   agentSeq: z.number().int().nonnegative(),
-  stream: z.enum(LOG_STREAMS),
   line: z.string(),
+  stream: z.enum(LOG_STREAMS),
   ts: z.string().datetime(),
 });
 export type LogLine = z.infer<typeof logLineSchema>;
@@ -62,51 +57,51 @@ export type EventBatch = z.infer<typeof eventBatchSchema>;
 
 const startCommand = z.object({
   id: z.string().min(1),
-  type: z.literal('START'),
-  payload: z.object({}).strict(),
   issuedAt: z.string().datetime(),
+  payload: z.object({}).strict(),
+  type: z.literal("START"),
 });
 const stopCommand = z.object({
   id: z.string().min(1),
-  type: z.literal('STOP'),
-  payload: z.object({}).strict(),
   issuedAt: z.string().datetime(),
+  payload: z.object({}).strict(),
+  type: z.literal("STOP"),
 });
 const restartCommand = z.object({
   id: z.string().min(1),
-  type: z.literal('RESTART'),
-  payload: z.object({ clientIntentId: z.string().min(1) }),
   issuedAt: z.string().datetime(),
+  payload: z.object({ clientIntentId: z.string().min(1) }),
+  type: z.literal("RESTART"),
 });
 const deleteCommand = z.object({
   id: z.string().min(1),
-  type: z.literal('DELETE'),
-  payload: z.object({}).strict(),
   issuedAt: z.string().datetime(),
+  payload: z.object({}).strict(),
+  type: z.literal("DELETE"),
 });
 const updateConfigCommand = z.object({
   id: z.string().min(1),
-  type: z.literal('UPDATE_CONFIG'),
+  issuedAt: z.string().datetime(),
   payload: z.object({
     compose: z.string().min(1),
     env: z.record(z.string(), z.string()).optional(),
   }),
-  issuedAt: z.string().datetime(),
+  type: z.literal("UPDATE_CONFIG"),
 });
 const uploadBackupCommand = z.object({
   id: z.string().min(1),
-  type: z.literal('UPLOAD_BACKUP'),
-  payload: z.object({ destinationUrl: z.string().url() }),
   issuedAt: z.string().datetime(),
+  payload: z.object({ destinationUrl: z.string().url() }),
+  type: z.literal("UPLOAD_BACKUP"),
 });
 const fetchLogsCommand = z.object({
   id: z.string().min(1),
-  type: z.literal('FETCH_LOGS'),
-  payload: z.object({ tail: z.number().int().positive().optional() }),
   issuedAt: z.string().datetime(),
+  payload: z.object({ tail: z.number().int().positive().optional() }),
+  type: z.literal("FETCH_LOGS"),
 });
 
-export const commandSchema = z.discriminatedUnion('type', [
+export const commandSchema = z.discriminatedUnion("type", [
   startCommand,
   stopCommand,
   restartCommand,
@@ -123,9 +118,9 @@ export const commandEnvelopeSchema = z.object({
 export type CommandEnvelope = z.infer<typeof commandEnvelopeSchema>;
 
 export const commandAckSchema = z.object({
-  status: z.enum(COMMAND_STATUSES),
-  result: z.record(z.string(), z.unknown()).optional(),
-  error: z.string().optional(),
   durationMs: z.number().int().nonnegative(),
+  error: z.string().optional(),
+  result: z.record(z.string(), z.unknown()).optional(),
+  status: z.enum(COMMAND_STATUSES),
 });
 export type CommandAck = z.infer<typeof commandAckSchema>;

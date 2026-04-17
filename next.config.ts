@@ -1,31 +1,31 @@
-import { env } from '@/lib/env';
-import withBundleAnalyzer from '@next/bundle-analyzer';
-import { withSentryConfig } from '@sentry/nextjs';
-import type { NextConfig } from 'next';
-import { withWorkflow } from 'workflow/next';
+import { env } from "@/lib/env";
+import withBundleAnalyzer from "@next/bundle-analyzer";
+import { withSentryConfig } from "@sentry/nextjs";
+import type { NextConfig } from "next";
+import { withWorkflow } from "workflow/next";
 
 const otelRegex = /@opentelemetry\/instrumentation/;
 
 let config: NextConfig = {
   images: {
-    formats: ['image/avif', 'image/webp'],
+    formats: ["image/avif", "image/webp"],
   },
 
-  async rewrites() {
-    return [
+  rewrites() {
+    return Promise.resolve([
       {
-        source: '/ingest/static/:path*',
-        destination: 'https://us-assets.i.posthog.com/static/:path*',
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+        source: "/ingest/static/:path*",
       },
       {
-        source: '/ingest/:path*',
-        destination: 'https://us.i.posthog.com/:path*',
+        destination: "https://us.i.posthog.com/:path*",
+        source: "/ingest/:path*",
       },
       {
-        source: '/ingest/decide',
-        destination: 'https://us.i.posthog.com/decide',
+        destination: "https://us.i.posthog.com/decide",
+        source: "/ingest/decide",
       },
-    ];
+    ]);
   },
 
   webpack(cfg) {
@@ -36,20 +36,20 @@ let config: NextConfig = {
 
 if (env.VERCEL) {
   config = withSentryConfig(
-    { ...config, transpilePackages: ['@sentry/nextjs'] },
+    { ...config, transpilePackages: ["@sentry/nextjs"] },
     {
+      automaticVercelMonitors: true,
+      disableLogger: true,
       org: env.SENTRY_ORG,
       project: env.SENTRY_PROJECT,
       silent: !env.CI,
+      tunnelRoute: "/monitoring",
       widenClientFileUpload: true,
-      tunnelRoute: '/monitoring',
-      disableLogger: true,
-      automaticVercelMonitors: true,
-    }
+    },
   );
 }
 
-if (env.ANALYZE === 'true') {
+if (env.ANALYZE === "true") {
   config = withBundleAnalyzer()(config);
 }
 

@@ -1,12 +1,12 @@
-import 'server-only';
-import { prisma } from '@/lib/db';
-import type { Command } from '@/protocol';
-import { Prisma } from '@prisma/client';
-import { ulid } from 'ulid';
+import "server-only";
+import { prisma } from "@/lib/db";
+import type { Command } from "@/protocol";
+import { Prisma } from "@prisma/client";
+import { ulid } from "ulid";
 
-export async function enqueueCommand(input: {
+export const enqueueCommand = async (input: {
   serverId: string;
-  type: Command['type'];
+  type: Command["type"];
   payload: Record<string, unknown>;
   /**
    * Stable deduplication key (typically a workflow step ID). When supplied,
@@ -14,37 +14,35 @@ export async function enqueueCommand(input: {
    * don't double-queue commands.
    */
   idempotencyKey?: string;
-}): Promise<Command> {
-  const id = input.idempotencyKey
-    ? `cmd_${input.idempotencyKey}`
-    : `cmd_${ulid()}`;
+}): Promise<Command> => {
+  const id = input.idempotencyKey ? `cmd_${input.idempotencyKey}` : `cmd_${ulid()}`;
   const issuedAt = new Date();
 
   try {
     await prisma.command.create({
       data: {
         id,
-        serverId: input.serverId,
-        type: input.type,
-        payload: input.payload as object,
-        status: 'pending',
         issuedAt,
+        payload: input.payload as object,
+        serverId: input.serverId,
+        status: "pending",
+        type: input.type,
       },
     });
   } catch (error) {
     if (
       input.idempotencyKey &&
       error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
+      error.code === "P2002"
     ) {
       const existing = await prisma.command.findUniqueOrThrow({
         where: { id },
       });
       return {
         id: existing.id,
-        type: existing.type as Command['type'],
-        payload: existing.payload as Record<string, unknown>,
         issuedAt: existing.issuedAt.toISOString(),
+        payload: existing.payload as Record<string, unknown>,
+        type: existing.type as Command["type"],
       } as Command;
     }
     throw error;
@@ -52,56 +50,55 @@ export async function enqueueCommand(input: {
 
   return {
     id,
-    type: input.type,
-    payload: input.payload,
     issuedAt: issuedAt.toISOString(),
+    payload: input.payload,
+    type: input.type,
   } as Command;
-}
+};
 
-export async function claimPendingCommands(
-  serverId: string,
-  max = 5
-): Promise<Command[]> {
+export const claimPendingCommands = async (serverId: string, max = 5): Promise<Command[]> => {
   const pending = await prisma.command.findMany({
-    where: { serverId, status: 'pending' },
-    orderBy: { issuedAt: 'asc' },
+    orderBy: { issuedAt: "asc" },
     take: max,
+    where: { serverId, status: "pending" },
   });
 
-  if (pending.length === 0) return [];
+  if (pending.length === 0) {
+    return [];
+  }
 
   const ids = pending.map((c: { id: string }) => c.id);
   await prisma.command.updateMany({
+    data: { deliveredAt: new Date(), status: "delivered" },
     where: { id: { in: ids } },
-    data: { status: 'delivered', deliveredAt: new Date() },
   });
 
   return pending.map(
     (command): Command =>
       ({
         id: command.id,
-        type: command.type as Command['type'],
-        payload: command.payload as Record<string, unknown>,
         issuedAt: command.issuedAt.toISOString(),
-      }) as Command
+        payload: command.payload as Record<string, unknown>,
+        type: command.type as Command["type"],
+      }) as Command,
   );
-}
+};
 
-export async function ackCommand(input: {
+export const ackCommand = async (input: {
   commandId: string;
-  status: 'succeeded' | 'failed';
+  status: "succeeded" | "failed";
   durationMs: number;
   result?: Record<string, unknown>;
   error?: string;
-}): Promise<void> {
+}): Promise<void> => {
   await prisma.command.update({
-    where: { id: input.commandId },
     data: {
-      status: input.status,
       ackedAt: new Date(),
       durationMs: input.durationMs,
-      result: input.result as object | undefined,
       error: input.error,
+      result: input.result as object | undefined,
+      status: input.status,
     },
+    where: { id: input.commandId },
   });
-}
+};

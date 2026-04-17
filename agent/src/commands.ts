@@ -1,140 +1,151 @@
-import type { State } from './config';
-import { saveState } from './config';
-import type { EventBuffer } from './events';
+import { setTimeout as delay } from "node:timers/promises";
+import type { Command } from "../../protocol";
+import { commandEnvelopeSchema } from "../../protocol";
+import type { State } from "./config";
+import { saveState } from "./config";
 import {
-  composeDown,
   composeRemove,
   composeRestart,
   composeStop,
   composeUp,
-  probeContainerState,
   startLogTail,
   stopLogTail,
   writeCompose,
-} from './docker';
-import { signedFetch } from './signing';
-import { type Command, commandEnvelopeSchema } from '../../protocol';
+} from "./docker";
+import type { EventBuffer } from "./events";
+import { signedFetch } from "./signing";
 
-const MINECRAFT_CONTAINER = 'ghost-minecraft';
+const MINECRAFT_CONTAINER = "ghost-minecraft";
 
-async function ackCommand(
+const sleep = async (ms: number, signal: AbortSignal): Promise<void> => {
+  try {
+    await delay(ms, undefined, { signal });
+  } catch {
+    // aborted
+  }
+};
+
+const ackCommand = async (
   state: State,
   commandId: string,
-  status: 'succeeded' | 'failed',
+  status: "succeeded" | "failed",
   durationMs: number,
-  error?: string
-): Promise<void> {
+  error?: string,
+): Promise<void> => {
   const res = await signedFetch({
-    method: 'POST',
-    url: `${state.apiBaseUrl}/api/agent/commands/${commandId}/ack`,
     agentId: state.agentId,
+    body: { durationMs, error, status },
+    method: "POST",
     privateKey: state.privateKey,
-    body: { status, durationMs, error },
+    url: `${state.apiBaseUrl}/api/agent/commands/${commandId}/ack`,
   });
-  if (!res.ok) console.warn(`ack failed ${res.status}`);
-}
+  if (!res.ok) {
+    console.warn(`ack failed ${res.status}`);
+  }
+};
 
-export async function executeCommand(
+export const executeCommand = async (
   state: State,
   command: Command,
-  buffer: EventBuffer
-): Promise<void> {
+  buffer: EventBuffer,
+): Promise<void> => {
   if (state.lastExecutedCommandId === command.id) {
-    await ackCommand(state, command.id, 'succeeded', 0);
+    await ackCommand(state, command.id, "succeeded", 0);
     return;
   }
 
   const started = Date.now();
   try {
     switch (command.type) {
-      case 'UPDATE_CONFIG': {
+      case "UPDATE_CONFIG": {
         await writeCompose(command.payload.compose);
         buffer.enqueueActivity({
-          phase: 'installing',
-          message: 'Compose written; pulling image',
+          message: "Compose written; pulling image",
+          phase: "installing",
         });
         await composeUp();
         buffer.enqueueActivity({
-          phase: 'starting',
-          message: 'Container started',
+          message: "Container started",
+          phase: "starting",
         });
         startLogTail(MINECRAFT_CONTAINER, buffer);
-        buffer.enqueueActivity({ phase: 'healthy', message: 'Game is healthy' });
+        buffer.enqueueActivity({ message: "Game is healthy", phase: "healthy" });
         break;
       }
-      case 'START': {
+      case "START": {
         await composeUp();
         startLogTail(MINECRAFT_CONTAINER, buffer);
-        buffer.enqueueActivity({ phase: 'starting', message: 'Starting game' });
+        buffer.enqueueActivity({ message: "Starting game", phase: "starting" });
         break;
       }
-      case 'STOP': {
+      case "STOP": {
         stopLogTail();
         await composeStop();
-        buffer.enqueueActivity({ phase: 'stopped', message: 'Game stopped' });
+        buffer.enqueueActivity({ message: "Game stopped", phase: "stopped" });
         break;
       }
-      case 'RESTART': {
+      case "RESTART": {
         await composeRestart();
         startLogTail(MINECRAFT_CONTAINER, buffer);
         buffer.enqueueActivity({
-          phase: 'starting',
-          message: 'Game restarting',
+          message: "Game restarting",
+          phase: "starting",
         });
         break;
       }
-      case 'DELETE': {
+      case "DELETE": {
         stopLogTail();
-        await composeRemove().catch(() => {});
+        try {
+          await composeRemove();
+        } catch {
+          // ignore
+        }
         buffer.enqueueActivity({
-          phase: 'deleting',
-          message: 'Draining; host will shut down',
+          message: "Draining; host will shut down",
+          phase: "deleting",
         });
         await buffer.flush();
         setTimeout(() => {
-          Bun.spawn({ cmd: ['shutdown', '-h', 'now'] });
+          Bun.spawn({ cmd: ["shutdown", "-h", "now"] });
         }, 1500).unref();
         break;
       }
-      default:
+      default: {
         break;
+      }
     }
 
     state.lastExecutedCommandId = command.id;
     await saveState(state);
-    await ackCommand(state, command.id, 'succeeded', Date.now() - started);
+    await ackCommand(state, command.id, "succeeded", Date.now() - started);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'unknown';
+    const message = error instanceof Error ? error.message : "unknown";
     buffer.enqueueActivity({
-      phase: 'errored',
       message: `Command ${command.type} failed: ${message}`,
+      phase: "errored",
     });
-    await ackCommand(
-      state,
-      command.id,
-      'failed',
-      Date.now() - started,
-      message
-    );
+    await ackCommand(state, command.id, "failed", Date.now() - started, message);
   }
-}
+};
 
-export async function pollCommands(
+export const pollCommands = async (
   state: State,
   buffer: EventBuffer,
-  signal: AbortSignal
-): Promise<void> {
+  signal: AbortSignal,
+): Promise<void> => {
   while (!signal.aborted) {
     try {
       const res = await signedFetch({
-        method: 'GET',
-        url: `${state.apiBaseUrl}/api/agent/commands?wait=25`,
         agentId: state.agentId,
+        method: "GET",
         privateKey: state.privateKey,
         signal,
+        url: `${state.apiBaseUrl}/api/agent/commands?wait=25`,
       });
 
-      if (res.status === 204) continue;
+      if (res.status === 204) {
+        continue;
+      }
       if (!res.ok) {
         console.warn(`poll got ${res.status}`);
         await sleep(2000, signal);
@@ -146,19 +157,11 @@ export async function pollCommands(
         await executeCommand(state, command, buffer);
       }
     } catch (error) {
-      if (signal.aborted) return;
-      console.warn('poll error', error);
+      if (signal.aborted) {
+        return;
+      }
+      console.warn("poll error", error);
       await sleep(5000, signal);
     }
   }
-}
-
-function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener('abort', () => {
-      clearTimeout(t);
-      resolve();
-    });
-  });
-}
+};

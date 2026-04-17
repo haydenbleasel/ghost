@@ -1,36 +1,33 @@
-import { prisma } from '@/lib/db';
-import { requireUser } from '@/lib/session';
-import { notFound } from 'next/navigation';
-import { ServerDetail } from './_components/detail';
+import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/session";
+import { notFound } from "next/navigation";
+import { ServerDetail } from "./_components/detail";
 
-const ServerPage = async ({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) => {
+const ServerPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const user = await requireUser();
   const { id } = await params;
 
   const server = await prisma.server.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
     include: { agent: { select: { lastHeartbeatAt: true } } },
+    where: { deletedAt: null, id, userId: user.id },
   });
 
-  if (!server) notFound();
+  if (!server) {
+    notFound();
+  }
 
   return (
     <ServerDetail
       server={{
-        id: server.id,
-        name: server.name,
-        game: server.game,
-        ipv4: server.ipv4,
-        phase: server.phase,
-        observedState: server.observedState,
         desiredState: server.desiredState,
         errorReason: server.errorReason,
-        lastHeartbeatAt:
-          server.agent?.lastHeartbeatAt?.toISOString() ?? null,
+        game: server.game,
+        id: server.id,
+        ipv4: server.ipv4,
+        lastHeartbeatAt: server.agent?.lastHeartbeatAt?.toISOString() ?? null,
+        name: server.name,
+        observedState: server.observedState,
+        phase: server.phase,
       }}
     />
   );

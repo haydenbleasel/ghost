@@ -1,12 +1,12 @@
-'use client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { signIn } from '@/lib/auth-client';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
+"use client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { signIn } from "@/lib/auth-client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const SignInPage = () => {
   const router = useRouter();
@@ -17,15 +17,15 @@ const SignInPage = () => {
     const form = new FormData(event.currentTarget);
     setPending(true);
     const { error } = await signIn.email({
-      email: String(form.get('email')),
-      password: String(form.get('password')),
+      email: String(form.get("email")),
+      password: String(form.get("password")),
     });
     setPending(false);
     if (error) {
-      toast.error(error.message ?? 'Sign in failed');
+      toast.error(error.message ?? "Sign in failed");
       return;
     }
-    router.push('/dashboard');
+    router.push("/dashboard");
     router.refresh();
   };
 
@@ -47,10 +47,10 @@ const SignInPage = () => {
         />
       </div>
       <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? 'Signing in…' : 'Sign in'}
+        {pending ? "Signing in…" : "Sign in"}
       </Button>
       <p className="text-center text-sm text-muted-foreground">
-        No account?{' '}
+        No account?{" "}
         <Link className="underline" href="/sign-up">
           Create one
         </Link>

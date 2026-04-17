@@ -6,27 +6,24 @@ import { AppContainer } from "./_components/app-container";
 import { AppSidebar } from "./_components/app-sidebar";
 
 const DashboardLayout = async ({ children }: { children: ReactNode }) => {
-	const user = await requireUser();
-	const servers = await prisma.server.findMany({
-		where: { userId: user.id, deletedAt: null },
-		orderBy: { createdAt: "desc" },
-		select: { id: true, name: true, game: true, observedState: true },
-	});
+  const user = await requireUser();
+  const servers = await prisma.server.findMany({
+    orderBy: { createdAt: "desc" },
+    select: { game: true, id: true, name: true, observedState: true },
+    where: { deletedAt: null, userId: user.id },
+  });
 
-	return (
-		<SidebarProvider className="bg-sidebar">
-			<AppSidebar
-				servers={servers}
-				user={{ name: user.name ?? null, email: user.email }}
-			/>
-			<SidebarTrigger className="absolute top-3 left-3 z-50 text-muted-foreground" />
-			<AppContainer>
-				<div className="flex-1 px-6 py-20">
-					<div className="mx-auto w-full max-w-5xl">{children}</div>
-				</div>
-			</AppContainer>
-		</SidebarProvider>
-	);
+  return (
+    <SidebarProvider className="bg-sidebar">
+      <AppSidebar servers={servers} user={{ email: user.email, name: user.name ?? null }} />
+      <SidebarTrigger className="absolute top-3 left-3 z-50 text-muted-foreground" />
+      <AppContainer>
+        <div className="flex-1 px-6 py-20">
+          <div className="mx-auto w-full max-w-5xl">{children}</div>
+        </div>
+      </AppContainer>
+    </SidebarProvider>
+  );
 };
 
 export default DashboardLayout;

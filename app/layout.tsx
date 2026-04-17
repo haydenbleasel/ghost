@@ -1,18 +1,18 @@
-import './styles.css';
-import { Toaster } from '@/components/ui/sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { fonts } from '@/lib/fonts';
-import { ThemeProvider } from '@/providers/theme';
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
+import "./styles.css";
+import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import type { ReactNode } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { fonts } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
+import { ThemeProvider } from "@/providers/theme";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: 'Ghost',
-  description: 'Simple, reliable dedicated game servers.',
+  description: "Simple, reliable dedicated game servers.",
+  title: "Ghost",
 };
 
 const RootLayout = ({ children }: { children: ReactNode }) => (
