@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { games } from '@/games';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
+import { getHetznerCatalog } from '@/lib/hetzner/catalog';
 import { requireUser } from '@/lib/session';
 import { provisionServer } from '@/lib/workflows/provision-server';
 import { NextResponse } from 'next/server';
@@ -14,8 +14,8 @@ export const runtime = 'nodejs';
 const createServerSchema = z.object({
   name: z.string().min(3).max(40),
   game: z.enum(games.map((g) => g.id) as [string, ...string[]]),
-  location: z.string().optional(),
-  serverType: z.string().optional(),
+  location: z.string().min(1),
+  serverType: z.string().min(1),
 });
 
 export async function GET() {
@@ -42,6 +42,44 @@ export async function POST(request: Request) {
     );
   }
 
+  const game = games.find((g) => g.id === parsed.data.game);
+  if (!game) {
+    return NextResponse.json({ error: 'Unknown game' }, { status: 400 });
+  }
+
+  const catalog = await getHetznerCatalog();
+  const type = catalog.serverTypes.find(
+    (t) => t.name === parsed.data.serverType
+  );
+  if (!type) {
+    return NextResponse.json(
+      { error: 'Unknown server type' },
+      { status: 400 }
+    );
+  }
+  if (
+    type.memory < game.requirements.memory ||
+    type.cores < game.requirements.cpu
+  ) {
+    return NextResponse.json(
+      { error: 'Server type does not meet game requirements' },
+      { status: 400 }
+    );
+  }
+  const location = type.locations.find((l) => l.name === parsed.data.location);
+  if (!location) {
+    return NextResponse.json(
+      { error: 'Region not supported for this server type' },
+      { status: 400 }
+    );
+  }
+  if (!location.available) {
+    return NextResponse.json(
+      { error: 'Region is temporarily unavailable. Please pick another.' },
+      { status: 409 }
+    );
+  }
+
   const id = ulid();
   const rconPassword = crypto.randomBytes(16).toString('hex');
 
@@ -51,8 +89,8 @@ export async function POST(request: Request) {
       userId: user.id,
       name: parsed.data.name,
       game: parsed.data.game,
-      location: parsed.data.location ?? env.HETZNER_LOCATION,
-      serverType: parsed.data.serverType ?? env.HETZNER_SERVER_TYPE,
+      location: parsed.data.location,
+      serverType: parsed.data.serverType,
       rconPassword,
       desiredState: 'running',
       observedState: 'pending',

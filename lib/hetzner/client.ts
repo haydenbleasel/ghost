@@ -129,4 +129,72 @@ export async function rebootServer(id: number): Promise<void> {
   await hetznerFetch(`/servers/${id}/actions/reboot`, { method: 'POST' });
 }
 
+type HetznerLocationInfo = {
+  id: number;
+  name: string;
+  description: string;
+  country: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  network_zone: string;
+};
+
+type HetznerServerTypePrice = {
+  location: string;
+  price_monthly: { gross: string };
+};
+
+export type HetznerServerType = {
+  id: number;
+  name: string;
+  description: string;
+  cores: number;
+  memory: number;
+  disk: number;
+  cpu_type: 'shared' | 'dedicated';
+  architecture: 'x86' | 'arm';
+  deprecated: boolean | null;
+  prices: HetznerServerTypePrice[];
+};
+
+export type HetznerDatacenter = {
+  id: number;
+  name: string;
+  location: HetznerLocationInfo;
+  server_types: {
+    supported: number[];
+    available: number[];
+    available_for_migration: number[];
+  };
+};
+
+export type HetznerImage = {
+  id: number;
+  architecture: 'x86' | 'arm';
+  status: string;
+};
+
+export async function listServerTypes(): Promise<HetznerServerType[]> {
+  const { server_types } = await hetznerFetch<{
+    server_types: HetznerServerType[];
+  }>('/server_types?per_page=50', { next: { revalidate: 60 } });
+  return server_types;
+}
+
+export async function listDatacenters(): Promise<HetznerDatacenter[]> {
+  const { datacenters } = await hetznerFetch<{
+    datacenters: HetznerDatacenter[];
+  }>('/datacenters', { next: { revalidate: 60 } });
+  return datacenters;
+}
+
+export async function getImage(id: number | string): Promise<HetznerImage> {
+  const { image } = await hetznerFetch<{ image: HetznerImage }>(
+    `/images/${id}`,
+    { next: { revalidate: 3600 } }
+  );
+  return image;
+}
+
 export type { HetznerServer };
