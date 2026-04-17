@@ -21,8 +21,8 @@ const stateSchema = z.object({
 export type Bootstrap = z.infer<typeof bootstrapSchema>;
 export type State = z.infer<typeof stateSchema>;
 
-const BOOTSTRAP_PATH = process.env.ULTRABEAM_BOOTSTRAP_PATH ?? '/etc/ultrabeam/bootstrap.json';
-const STATE_PATH = process.env.ULTRABEAM_STATE_PATH ?? '/var/lib/ultrabeam/state.json';
+const BOOTSTRAP_PATH = process.env.GHOST_BOOTSTRAP_PATH ?? '/etc/ghost/bootstrap.json';
+const STATE_PATH = process.env.GHOST_STATE_PATH ?? '/var/lib/ghost/state.json';
 const STATE_DIR = STATE_PATH.replace(/\/[^/]+$/, '');
 
 export async function loadBootstrap(): Promise<Bootstrap | null> {

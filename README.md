@@ -1,13 +1,13 @@
-# Ultrabeam
+# Ghost
 
-Open-source control plane for dedicated game servers. Next.js on Vercel, game VMs on Hetzner Cloud, coordinated via a tiny `ultrabeam-agent` that runs on each VM.
+Open-source control plane for dedicated game servers. Next.js on Vercel, game VMs on Hetzner Cloud, coordinated via a tiny `ghost-agent` that runs on each VM.
 
 MVP supports Minecraft. Clean provisioning activity logs, live console streaming, start/stop/restart/delete — no SSH, no Kubernetes, no Pterodactyl.
 
 ## Architecture
 
 ```
-Browser ──SSE──▶ Next.js (Vercel) ──long-poll──▶ ultrabeam-agent (Hetzner VM)
+Browser ──SSE──▶ Next.js (Vercel) ──long-poll──▶ ghost-agent (Hetzner VM)
                      │                                 │
                      ├── Prisma → Neon Postgres        └── Docker → game container
                      ├── Upstash Redis (event seq)
@@ -15,7 +15,7 @@ Browser ──SSE──▶ Next.js (Vercel) ──long-poll──▶ ultrabeam-a
 ```
 
 - **Vercel Workflow SDK** (`workflow`) runs the durable provisioning + teardown workflows. Steps emit structured activity events that the UI streams via SSE.
-- **Hetzner VMs** are created from a prebaked snapshot (Docker + `ultrabeam-agent` preinstalled). `cloud-init` only writes a per-server bootstrap token.
+- **Hetzner VMs** are created from a prebaked snapshot (Docker + `ghost-agent` preinstalled). `cloud-init` only writes a per-server bootstrap token.
 - **Agent protocol** — Ed25519-signed requests, long-poll for commands, batched event/log POSTs. The agent never accepts inbound connections.
 - **Auth** — Better Auth (email + password to start) on the same Postgres.
 
@@ -72,13 +72,13 @@ SENTRY_PROJECT=
 
 ## Building the gold image
 
-One-time ~10 min process on Hetzner. Produces a snapshot with Ubuntu + Docker + `ultrabeam-agent` + the game's Docker image pre-pulled, so first provision is instant.
+One-time ~10 min process on Hetzner. Produces a snapshot with Ubuntu + Docker + `ghost-agent` + the game's Docker image pre-pulled, so first provision is instant.
 
 ### Prereqs
 
 ```bash
 brew install hcloud
-hcloud context create ultrabeam              # paste your HETZNER_TOKEN
+hcloud context create ghost                  # paste your HETZNER_TOKEN
 hcloud ssh-key create --name laptop --public-key-from-file ~/.ssh/id_ed25519.pub
 ```
 
@@ -86,30 +86,30 @@ hcloud ssh-key create --name laptop --public-key-from-file ~/.ssh/id_ed25519.pub
 
 ```bash
 pnpm agent:build
-# → dist/ultrabeam-agent  (Linux x86_64, ~100 MB)
+# → dist/ghost-agent  (Linux x86_64, ~100 MB)
 ```
 
 ### 2. Spin up a throwaway builder VM
 
 ```bash
 hcloud server create \
-  --name ultrabeam-image-builder \
+  --name ghost-image-builder \
   --type cx22 \
   --image ubuntu-24.04 \
   --location nbg1 \
   --ssh-key laptop
 
-BUILDER_IP=$(hcloud server ip ultrabeam-image-builder)
+BUILDER_IP=$(hcloud server ip ghost-image-builder)
 ssh -o StrictHostKeyChecking=accept-new root@$BUILDER_IP 'echo ok'
 ```
 
 ### 3. Copy the agent + scripts onto it
 
 ```bash
-scp dist/ultrabeam-agent             root@$BUILDER_IP:/usr/local/bin/
-scp scripts/ultrabeam-agent.service  root@$BUILDER_IP:/etc/systemd/system/
+scp dist/ghost-agent             root@$BUILDER_IP:/usr/local/bin/
+scp scripts/ghost-agent.service  root@$BUILDER_IP:/etc/systemd/system/
 scp scripts/build-image.sh           root@$BUILDER_IP:/root/
-ssh root@$BUILDER_IP 'chmod +x /usr/local/bin/ultrabeam-agent /root/build-image.sh'
+ssh root@$BUILDER_IP 'chmod +x /usr/local/bin/ghost-agent /root/build-image.sh'
 ```
 
 ### 4. Run the build script
@@ -123,14 +123,14 @@ Installs Docker, enables the agent systemd unit, opens port 22, and pre-pulls `i
 ### 5. Shut down and snapshot
 
 ```bash
-hcloud server shutdown ultrabeam-image-builder
+hcloud server shutdown ghost-image-builder
 # wait until status = off (~20s)
-hcloud server describe ultrabeam-image-builder -o format='{{.Status}}'
+hcloud server describe ghost-image-builder -o format='{{.Status}}'
 
 hcloud server create-image \
   --type snapshot \
-  --description ultrabeam-gold-minecraft \
-  ultrabeam-image-builder
+  --description ghost-gold-minecraft \
+  ghost-image-builder
 ```
 
 Grab the snapshot ID from the output (or `hcloud image list --type snapshot`).
@@ -139,7 +139,7 @@ Grab the snapshot ID from the output (or `hcloud image list --type snapshot`).
 
 ```bash
 echo "HETZNER_IMAGE_ID=<snapshot-id>" >> .env
-hcloud server delete ultrabeam-image-builder
+hcloud server delete ghost-image-builder
 ```
 
 ### Adding more games later
@@ -156,8 +156,8 @@ Add `docker pull <image>` lines to `scripts/build-image.sh`, rebuild the snapsho
 
 ## Agent protocol
 
-- `POST /api/agent/enroll` — exchanges a one-shot bootstrap JWT (minted by the workflow, written to `/etc/ultrabeam/bootstrap.json` by cloud-init) for a persistent Ed25519 public key registration.
-- All subsequent agent calls carry `X-Ultrabeam-{Agent,Ts,Nonce,Sig}` headers. Sig is `ed25519(method || path || ts || nonce || body)`. Timestamp skew tolerance: 60s. Nonce TTL: 5 min.
+- `POST /api/agent/enroll` — exchanges a one-shot bootstrap JWT (minted by the workflow, written to `/etc/ghost/bootstrap.json` by cloud-init) for a persistent Ed25519 public key registration.
+- All subsequent agent calls carry `X-Ghost-{Agent,Ts,Nonce,Sig}` headers. Sig is `ed25519(method || path || ts || nonce || body)`. Timestamp skew tolerance: 60s. Nonce TTL: 5 min.
 - `GET /api/agent/commands?wait=25` — long-poll, up to 25s DB polling interval ~750ms. Returns `{commands: []}` or 204.
 - `POST /api/agent/commands/:id/ack`, `POST /api/agent/events`, `POST /api/agent/heartbeat`, `POST /api/agent/rotate-key`.
 
@@ -167,7 +167,7 @@ Add `docker pull <image>` lines to `scripts/build-image.sh`, rebuild the snapsho
 - `pnpm build` — prisma generate + next build
 - `pnpm db:push` / `db:migrate` / `db:studio`
 - `pnpm agent:dev` — run agent with Bun for local testing
-- `pnpm agent:build` — cross-compile Linux binary to `dist/ultrabeam-agent`
+- `pnpm agent:build` — cross-compile Linux binary to `dist/ghost-agent`
 
 ## License
 

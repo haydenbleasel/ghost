@@ -9,13 +9,13 @@ export function buildMinecraftCompose(config: MinecraftConfig): string {
   return `services:
   minecraft:
     image: itzg/minecraft-server:latest
-    container_name: ultrabeam-minecraft
+    container_name: ghost-minecraft
     ports:
       - "25565:25565"
     environment:
       EULA: "TRUE"
       SERVER_NAME: "${escape(config.name)}"
-      MOTD: "${escape(config.name)} - Powered by Ultrabeam"
+      MOTD: "${escape(config.name)} - Powered by Ghost"
       DIFFICULTY: "normal"
       MODE: "survival"
       MEMORY: "4G"
@@ -30,8 +30,8 @@ export function buildMinecraftCompose(config: MinecraftConfig): string {
       ONLINE_MODE: "true"
       VIEW_DISTANCE: "10"
     volumes:
-      - /var/lib/ultrabeam/game/data:/data
-      - /var/lib/ultrabeam/game/backups:/backups
+      - /var/lib/ghost/game/data:/data
+      - /var/lib/ghost/game/backups:/backups
     restart: unless-stopped
 `;
 }

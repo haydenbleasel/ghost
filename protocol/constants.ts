@@ -53,11 +53,11 @@ export const LOG_STREAMS = ['stdout', 'stderr'] as const;
 export type LogStream = (typeof LOG_STREAMS)[number];
 
 export const AGENT_HEADERS = {
-  AGENT: 'x-ultrabeam-agent',
-  TIMESTAMP: 'x-ultrabeam-ts',
-  NONCE: 'x-ultrabeam-nonce',
-  SIGNATURE: 'x-ultrabeam-sig',
-  BATCH: 'x-ultrabeam-batch-id',
+  AGENT: 'x-ghost-agent',
+  TIMESTAMP: 'x-ghost-ts',
+  NONCE: 'x-ghost-nonce',
+  SIGNATURE: 'x-ghost-sig',
+  BATCH: 'x-ghost-batch-id',
 } as const;
 
 export const TIMESTAMP_SKEW_MS = 60_000;

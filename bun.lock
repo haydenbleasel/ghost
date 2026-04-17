@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "ultrabeam",
+      "name": "ghost",
       "dependencies": {
         "@next/third-parties": "16.2.4",
         "@noble/ed25519": "^3.1.0",

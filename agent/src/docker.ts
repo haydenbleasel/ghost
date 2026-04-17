@@ -2,7 +2,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { spawn, type Subprocess } from 'bun';
 import type { EventBuffer } from './events';
 
-const COMPOSE_DIR = process.env.ULTRABEAM_COMPOSE_DIR ?? '/var/lib/ultrabeam/game';
+const COMPOSE_DIR = process.env.GHOST_COMPOSE_DIR ?? '/var/lib/ghost/game';
 const COMPOSE_PATH = `${COMPOSE_DIR}/docker-compose.yml`;
 
 export async function writeCompose(content: string): Promise<void> {
@@ -54,7 +54,7 @@ export async function probeContainerState(): Promise<
   });
   const text = await new Response(proc.stdout).text();
   await proc.exited;
-  if (text.includes('ultrabeam-')) return 'running';
+  if (text.includes('ghost-')) return 'running';
 
   const psa = spawn({
     cmd: ['docker', 'ps', '-a', '--format', '{{.Names}}'],
@@ -62,7 +62,7 @@ export async function probeContainerState(): Promise<
   });
   const all = await new Response(psa.stdout).text();
   await psa.exited;
-  if (all.includes('ultrabeam-')) return 'stopped';
+  if (all.includes('ghost-')) return 'stopped';
   return 'missing';
 }
 

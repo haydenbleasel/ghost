@@ -1,11 +1,11 @@
 {
-  "name": "ultrabeam-agent",
+  "name": "ghost-agent",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "bun run src/index.ts",
-    "build": "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/ultrabeam-agent"
+    "build": "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/ghost-agent"
   },
   "dependencies": {
     "@noble/ed25519": "^3.1.0",

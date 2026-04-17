@@ -7,7 +7,7 @@ type MetadataGenerator = Omit<Metadata, 'description' | 'title'> & {
   image?: string;
 };
 
-const applicationName = 'Ultrabeam';
+const applicationName = 'Ghost';
 const author: Metadata['authors'] = {
   name: 'Hayden Bleasel',
   url: 'https://haydenbleasel.com/',

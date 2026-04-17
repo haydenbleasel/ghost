@@ -40,14 +40,14 @@ function buildCloudInit(input: {
 
   return `#cloud-config
 write_files:
-  - path: /etc/ultrabeam/bootstrap.json
+  - path: /etc/ghost/bootstrap.json
     owner: root:root
     permissions: '0600'
     content: |
       ${JSON.stringify(bootstrap)}
 runcmd:
   - systemctl daemon-reload
-  - systemctl enable --now ultrabeam-agent.service
+  - systemctl enable --now ghost-agent.service
   - ufw allow 25565/tcp || true ${MINECRAFT_PORT_COMMENT}
 `;
 }
@@ -85,7 +85,7 @@ export async function stepCreateHetznerServer(serverId: string) {
     apiBaseUrl: env.NEXT_PUBLIC_APP_URL,
   });
 
-  const hetznerName = `ultrabeam-${serverId.toLowerCase().slice(-12)}-${crypto
+  const hetznerName = `ghost-${serverId.toLowerCase().slice(-12)}-${crypto
     .randomBytes(2)
     .toString('hex')}`;
 
@@ -248,7 +248,7 @@ export async function stepMarkFailed(input: { serverId: string; reason: string }
   'use step';
   await prisma.server.update({
     where: { id: input.serverId },
-    data: { observedState: 'failed', phase: 'errored' },
+    data: { observedState: 'failed', errorReason: input.reason },
   });
   await emitActivity({
     serverId: input.serverId,

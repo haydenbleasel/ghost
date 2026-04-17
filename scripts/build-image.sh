@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Build the Ultrabeam gold image on a fresh Hetzner Ubuntu 24.04 VM.
+# Build the Ghost gold image on a fresh Hetzner Ubuntu 24.04 VM.
 #
 # One-shot setup:
 #   1. Create a throwaway Hetzner server from `ubuntu-24.04`.
-#   2. Copy ./dist/ultrabeam-agent (Bun-compiled linux binary) to the VM:
-#        scp ./dist/ultrabeam-agent root@<ip>:/usr/local/bin/
-#        scp ./scripts/ultrabeam-agent.service root@<ip>:/etc/systemd/system/
+#   2. Copy ./dist/ghost-agent (Bun-compiled linux binary) to the VM:
+#        scp ./dist/ghost-agent root@<ip>:/usr/local/bin/
+#        scp ./scripts/ghost-agent.service root@<ip>:/etc/systemd/system/
 #        scp ./scripts/build-image.sh root@<ip>:/root/
 #   3. ssh root@<ip> 'bash /root/build-image.sh'
 #   4. Once finished (clean shutdown), create the snapshot:
 #        hcloud server shutdown <id>
-#        hcloud server create-image --type snapshot --description 'ultrabeam-gold' <server>
+#        hcloud server create-image --type snapshot --description 'ghost-gold' <server>
 #   5. Capture the snapshot ID into HETZNER_IMAGE_ID in your Vercel env.
 #   6. Delete the throwaway server.
 set -euxo pipefail
@@ -47,15 +47,15 @@ ufw allow 22/tcp
 ufw --force enable
 
 # Layout
-mkdir -p /etc/ultrabeam /var/lib/ultrabeam/game
-chmod 700 /etc/ultrabeam /var/lib/ultrabeam
+mkdir -p /etc/ghost /var/lib/ghost/game
+chmod 700 /etc/ghost /var/lib/ghost
 
 # Agent binary and service expected to have been scp'd in before this script runs
-test -x /usr/local/bin/ultrabeam-agent || { echo 'missing agent binary'; exit 1; }
-test -f /etc/systemd/system/ultrabeam-agent.service || { echo 'missing service unit'; exit 1; }
+test -x /usr/local/bin/ghost-agent || { echo 'missing agent binary'; exit 1; }
+test -f /etc/systemd/system/ghost-agent.service || { echo 'missing service unit'; exit 1; }
 
 systemctl daemon-reload
-systemctl enable ultrabeam-agent.service
+systemctl enable ghost-agent.service
 
 # Pre-pull game images so first provision is instant
 docker pull itzg/minecraft-server:latest

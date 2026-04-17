@@ -15,7 +15,7 @@ import {
 import { signedFetch } from './signing';
 import { type Command, commandEnvelopeSchema } from '../../protocol';
 
-const MINECRAFT_CONTAINER = 'ultrabeam-minecraft';
+const MINECRAFT_CONTAINER = 'ghost-minecraft';
 
 async function ackCommand(
   state: State,

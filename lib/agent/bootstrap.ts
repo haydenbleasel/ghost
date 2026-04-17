@@ -5,8 +5,8 @@ import { BOOTSTRAP_TTL_SECONDS } from '@/protocol';
 import { SignJWT, jwtVerify } from 'jose';
 
 const secret = new TextEncoder().encode(env.BOOTSTRAP_JWT_SECRET);
-const ISSUER = 'ultrabeam';
-const AUDIENCE = 'ultrabeam-agent';
+const ISSUER = 'ghost';
+const AUDIENCE = 'ghost-agent';
 
 export async function mintBootstrapJwt(input: {
   serverId: string;

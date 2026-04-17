@@ -1,19 +1,19 @@
 [Unit]
-Description=Ultrabeam Agent
+Description=Ghost Agent
 After=network-online.target docker.service
 Wants=network-online.target
 Requires=docker.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/ultrabeam-agent
+ExecStart=/usr/local/bin/ghost-agent
 Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
 Environment=NODE_ENV=production
 # Allow writing state and compose files
-ReadWritePaths=/var/lib/ultrabeam /etc/ultrabeam
+ReadWritePaths=/var/lib/ghost /etc/ghost
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true

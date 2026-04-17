@@ -8,16 +8,16 @@ async function main() {
   const state = await loadState();
 
   if (state) {
-    console.log(`[ultrabeam-agent] loaded state for ${state.serverId}`);
+    console.log(`[ghost-agent] loaded state for ${state.serverId}`);
   } else {
     const bootstrap = await loadBootstrap();
     if (!bootstrap) {
-      console.error('[ultrabeam-agent] no bootstrap config found');
+      console.error('[ghost-agent] no bootstrap config found');
       process.exit(1);
     }
-    console.log(`[ultrabeam-agent] enrolling server ${bootstrap.serverId}`);
+    console.log(`[ghost-agent] enrolling server ${bootstrap.serverId}`);
     const enrolled = await enroll(bootstrap);
-    console.log(`[ultrabeam-agent] enrolled as ${enrolled.agentId}`);
+    console.log(`[ghost-agent] enrolled as ${enrolled.agentId}`);
     return run(enrolled);
   }
 
@@ -48,6 +48,6 @@ async function run(state: Awaited<ReturnType<typeof loadState>>) {
 }
 
 await main().catch((error) => {
-  console.error('[ultrabeam-agent] fatal', error);
+  console.error('[ghost-agent] fatal', error);
   process.exit(1);
 });
