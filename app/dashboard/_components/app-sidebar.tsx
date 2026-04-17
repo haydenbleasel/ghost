@@ -1,8 +1,10 @@
 "use client";
 
 import { ChevronsUpDown, LayoutDashboard, LogOut, Plus, Server, User } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { games } from "@/games";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,11 +101,21 @@ export const AppSidebar = ({ servers, user }: { servers: SidebarServer[]; user: 
               ) : (
                 servers.map((server) => {
                   const href = `/dashboard/${server.id}`;
+                  const game = games.find((g) => g.id === server.game);
                   return (
                     <SidebarMenuItem key={server.id}>
                       <SidebarMenuButton asChild isActive={pathname === href} tooltip={server.name}>
                         <Link href={href}>
-                          <Server />
+                          {game ? (
+                            <Image
+                              src={game.image}
+                              alt={game.name}
+                              className="size-4 shrink-0 rounded-xs object-cover"
+                              placeholder="blur"
+                            />
+                          ) : (
+                            <Server />
+                          )}
                           <span className="flex-1 truncate">{server.name}</span>
                           <span
                             className={cn(

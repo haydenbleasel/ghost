@@ -164,13 +164,12 @@ export const ServerDetail = ({ server: initial }: { server: ServerView }) => {
         name={server.name}
         game={server.game}
         ipv4={server.ipv4}
-        phase={server.phase}
         observedState={server.observedState}
         pending={Boolean(pending)}
         onCommand={sendCommand}
         onDelete={onDelete}
       />
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="flex flex-col gap-6">
         <ActivityStream serverId={server.id} />
         <LogsStream serverId={server.id} />
       </div>

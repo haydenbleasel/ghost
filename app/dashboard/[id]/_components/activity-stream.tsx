@@ -1,5 +1,4 @@
 "use client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useRef, useState } from "react";
 
 interface ActivityItem {
@@ -27,11 +26,8 @@ export const ActivityStream = ({ serverId }: { serverId: string }) => {
       es = new EventSource(`/api/servers/${serverId}/activity/stream?cursor=${cursorRef.current}`);
       es.addEventListener("activity", (event) => {
         const data = JSON.parse((event as MessageEvent).data) as ActivityItem;
-        if (data.seq <= cursorRef.current) {
-          return;
-        }
-        cursorRef.current = data.seq;
-        setEvents((prev) => [...prev, data]);
+        cursorRef.current = Math.max(cursorRef.current, data.seq);
+        setEvents((prev) => (prev.some((e) => e.seq === data.seq) ? prev : [...prev, data]));
       });
       es.addEventListener("close", () => {
         es?.close();
@@ -54,26 +50,31 @@ export const ActivityStream = ({ serverId }: { serverId: string }) => {
   }, [serverId]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Activity</CardTitle>
-      </CardHeader>
-      <CardContent className="h-80 overflow-auto">
-        <ol className="space-y-2 text-sm">
+    <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
+      <div className="px-4 pt-2 pb-1">
+        <h2 className="text-sm font-medium text-muted-foreground">Activity</h2>
+      </div>
+      <div className="rounded-2xl bg-background p-2 shadow-sm/5">
+        <ol className="flex max-h-80 flex-col gap-1 overflow-auto">
           {events.map((event) => (
-            <li key={event.id} className="flex items-start gap-3 border-l-2 border-muted pl-3">
+            <li
+              key={event.seq}
+              className="flex flex-row items-center gap-4 rounded-lg px-3 py-2 text-sm"
+            >
               <span className="font-mono text-xs text-muted-foreground">
                 {new Date(event.occurredAt).toLocaleTimeString()}
               </span>
-              <div>
-                <span className="font-medium">{event.phase}</span>
-                <span className="ml-2 text-muted-foreground">{event.message}</span>
-              </div>
+              <span className="font-medium">{event.phase}</span>
+              <span className="text-muted-foreground">{event.message}</span>
             </li>
           ))}
-          {events.length === 0 && <li className="text-muted-foreground">Waiting for events…</li>}
+          {events.length === 0 && (
+            <li className="rounded-lg px-3 py-2 text-sm text-muted-foreground">
+              Waiting for events…
+            </li>
+          )}
         </ol>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 };

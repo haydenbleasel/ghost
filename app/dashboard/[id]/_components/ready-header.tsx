@@ -1,15 +1,31 @@
 "use client";
+import {
+  CheckIcon,
+  CopyIcon,
+  MoreHorizontalIcon,
+  PlayIcon,
+  RotateCcwIcon,
+  SquareIcon,
+  Trash2Icon,
+} from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { games } from "@/games";
+import { cn } from "@/lib/utils";
 
 interface Props {
   name: string;
   game: string;
   ipv4: string | null;
-  phase: string;
   observedState: string;
   pending: boolean;
   onCommand: (type: "START" | "STOP" | "RESTART") => void;
@@ -17,9 +33,6 @@ interface Props {
 }
 
 const badgeVariant = (state: string): "default" | "secondary" | "destructive" | "outline" => {
-  if (state === "running") {
-    return "default";
-  }
   if (state === "failed" || state === "lost") {
     return "destructive";
   }
@@ -29,68 +42,113 @@ const badgeVariant = (state: string): "default" | "secondary" | "destructive" | 
   return "outline";
 };
 
+const stateClassName = (state: string): string => {
+  if (state === "running") {
+    return "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-600";
+  }
+  return "";
+};
+
 export const ReadyHeader = ({
   name,
   game: gameId,
   ipv4,
-  phase,
   observedState,
   pending,
   onCommand,
   onDelete,
 }: Props) => {
   const game = games.find((g) => g.id === gameId);
+  const [copied, setCopied] = useState(false);
+
+  const copyIp = async () => {
+    if (!ipv4) {
+      return;
+    }
+    await navigator.clipboard.writeText(ipv4);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          {game && (
-            <Image
-              src={game.image}
-              alt={game.name}
-              className="size-14 shrink-0 rounded-lg object-cover"
-              placeholder="blur"
-            />
-          )}
-          <div>
-            <CardTitle className="text-2xl">{name}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {game?.name ?? gameId}
-              {ipv4 ? ` · ${ipv4}` : ""}
-            </p>
+    <div className="flex flex-row items-center justify-between gap-4">
+      <div className="flex items-center gap-4">
+        {game && (
+          <Image
+            src={game.image}
+            alt={game.name}
+            className="size-14 shrink-0 rounded-lg object-cover"
+            placeholder="blur"
+          />
+        )}
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="font-medium tracking-tight text-2xl">{name}</p>
+            <Badge
+              variant={badgeVariant(observedState)}
+              className={cn("capitalize", stateClassName(observedState))}
+            >
+              {observedState}
+            </Badge>
           </div>
+          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+            <span>{game?.name ?? gameId}</span>
+            {ipv4 && (
+              <>
+                <span>·</span>
+                <span>{ipv4}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Copy IP address"
+                  onClick={copyIp}
+                  className="size-5 text-muted-foreground hover:text-foreground"
+                >
+                  {copied ? <CheckIcon className="size-3" /> : <CopyIcon className="size-3" />}
+                </Button>
+              </>
+            )}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Badge variant={badgeVariant(observedState)}>{observedState}</Badge>
-          <Badge variant="outline">{phase}</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
-        <Button
-          onClick={() => onCommand("START")}
-          disabled={pending || observedState !== "stopped"}
-        >
-          Start
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => onCommand("STOP")}
-          disabled={pending || observedState !== "running"}
-        >
-          Stop
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => onCommand("RESTART")}
-          disabled={pending || observedState !== "running"}
-        >
-          Restart
-        </Button>
-        <Button variant="destructive" onClick={onDelete} disabled={pending}>
-          Delete
-        </Button>
-      </CardContent>
-    </Card>
+      </div>
+      <div className="flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Server actions">
+              <MoreHorizontalIcon />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onSelect={() => onCommand("START")}
+              disabled={pending || observedState !== "stopped"}
+            >
+              <PlayIcon />
+              Start
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => onCommand("STOP")}
+              disabled={pending || observedState !== "running"}
+            >
+              <SquareIcon />
+              Stop
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => onCommand("RESTART")}
+              disabled={pending || observedState !== "running"}
+            >
+              <RotateCcwIcon />
+              Restart
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onSelect={onDelete} disabled={pending}>
+              <Trash2Icon />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   );
 };

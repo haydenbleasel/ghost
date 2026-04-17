@@ -1,5 +1,4 @@
 "use client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useRef, useState } from "react";
 
 interface LogItem {
@@ -28,7 +27,9 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
       es.addEventListener("log", (event) => {
         const data = JSON.parse((event as MessageEvent).data) as LogItem;
         cursorRef.current = Math.max(cursorRef.current, data.seq);
-        setLines((prev) => [...prev.slice(-500), data]);
+        setLines((prev) =>
+          prev.some((l) => l.seq === data.seq) ? prev : [...prev.slice(-500), data],
+        );
       });
       es.addEventListener("close", () => {
         es.close();
@@ -51,23 +52,25 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
   }, [lines]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Console</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
+      <div className="px-4 pt-2 pb-1">
+        <h2 className="text-sm font-medium text-muted-foreground">Console</h2>
+      </div>
+      <div className="rounded-2xl bg-background p-2 shadow-sm/5">
         <div
           ref={scrollRef}
-          className="h-80 overflow-auto rounded-md bg-black p-3 font-mono text-xs text-green-400"
+          className="flex max-h-80 flex-col gap-1 overflow-auto px-3 py-2 font-mono text-xs"
         >
-          {lines.length === 0 && <span className="text-muted-foreground">Waiting for logs…</span>}
+          {lines.length === 0 && (
+            <span className="text-sm text-muted-foreground">Waiting for logs…</span>
+          )}
           {lines.map((line) => (
-            <div key={line.id} className="whitespace-pre-wrap">
+            <span key={line.seq} className="whitespace-pre-wrap">
               {line.line}
-            </div>
+            </span>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 };
