@@ -16,12 +16,10 @@ import { cn } from "@/lib/utils";
 import { Cobe } from "./cobe";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  type FieldValue,
-  SettingsFields,
-  type SettingsValuesRecord,
-} from "../../[id]/_components/game-settings-form";
-import { getDefaults, type SettingsSchema } from "@/games";
+import { SettingsFields } from "../../[id]/_components/game-settings-form";
+import type { FieldValue, SettingsValuesRecord } from "../../[id]/_components/game-settings-form";
+import { getDefaults } from "@/games";
+import type { SettingsSchema } from "@/games";
 
 const VISIBLE_ALL_SIZES = 3;
 
@@ -149,17 +147,10 @@ interface SizeStepProps {
   eligibleTypes: CatalogServerType[];
   typeName: string;
   setTypeName: (value: string) => void;
-  selectedGameName: string | undefined;
   currency: string;
 }
 
-const SizeStep = ({
-  eligibleTypes,
-  typeName,
-  setTypeName,
-  selectedGameName,
-  currency,
-}: SizeStepProps) => {
+const SizeStep = ({ eligibleTypes, typeName, setTypeName, currency }: SizeStepProps) => {
   if (eligibleTypes.length === 0) {
     return (
       <p className="rounded-md border border-border bg-muted/50 p-3 text-muted-foreground text-sm">
@@ -305,6 +296,132 @@ const StepIndicator = ({ step }: StepIndicatorProps) => (
   </ol>
 );
 
+interface GameStepProps {
+  games: GameOption[];
+  gameId: string;
+  setGameId: (value: string) => void;
+}
+
+const GameStep = ({ games, gameId, setGameId }: GameStepProps) => (
+  <section className="space-y-2">
+    <Label>Choose a game</Label>
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {games.map((game) => (
+        <label
+          key={game.id}
+          className={cn(
+            "relative cursor-pointer overflow-hidden rounded-lg border-2 transition",
+            gameId === game.id ? "border-primary" : "border-border hover:border-muted-foreground",
+          )}
+        >
+          <input
+            type="radio"
+            name="game"
+            value={game.id}
+            checked={gameId === game.id}
+            onChange={(e) => setGameId(e.target.value)}
+            className="sr-only"
+          />
+          <Image
+            src={game.image}
+            alt={game.name}
+            className="aspect-square w-full object-cover"
+            placeholder="blur"
+          />
+          <div className="p-2">
+            <div className="font-medium text-sm">{game.name}</div>
+            <div className="text-muted-foreground text-xs">
+              {game.requirements.memory} GB · {game.requirements.cpu} vCPU
+            </div>
+          </div>
+        </label>
+      ))}
+    </div>
+  </section>
+);
+
+interface NameStepProps {
+  name: string;
+  setName: (value: string) => void;
+  selectedGame: GameOption | undefined;
+  selectedType: CatalogServerType | undefined;
+  locationName: string;
+  settings: SettingsValuesRecord;
+  setSettingField: (key: string, value: FieldValue) => void;
+  currency: string;
+}
+
+const SummaryRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="flex justify-between gap-4">
+    <dt className="text-muted-foreground">{label}</dt>
+    <dd className="font-medium">{children}</dd>
+  </div>
+);
+
+const NameStep = ({
+  name,
+  setName,
+  selectedGame,
+  selectedType,
+  locationName,
+  settings,
+  setSettingField,
+  currency,
+}: NameStepProps) => {
+  const locationCity = selectedType?.locations.find((l) => l.name === locationName)?.city;
+  return (
+    <section className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Server name</Label>
+        <Input
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          minLength={3}
+          maxLength={40}
+          placeholder="My server"
+          autoFocus
+        />
+      </div>
+      {selectedGame && (
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button type="button" variant="ghost" size="sm" className="group w-full">
+              <span className="group-data-[state=open]:hidden">Customize game settings</span>
+              <span className="hidden group-data-[state=open]:inline">Hide settings</span>
+              <ChevronDown className="transition-transform group-data-[state=open]:rotate-180" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="flex flex-col gap-1 rounded-md border border-border bg-background p-1">
+            <SettingsFields
+              schema={selectedGame.settings}
+              values={settings}
+              onChange={setSettingField}
+            />
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+      <dl className="grid gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
+        <SummaryRow label="Game">{selectedGame?.name}</SummaryRow>
+        {selectedType && (
+          <SummaryRow label="Size">
+            {selectedType.cores} vCPU · {selectedType.memory} GB RAM · {selectedType.disk} GB SSD
+          </SummaryRow>
+        )}
+        <SummaryRow label="Location">{locationCity ?? locationName}</SummaryRow>
+        {selectedType && (
+          <SummaryRow label="Price">
+            <span className="tabular-nums">
+              {formatPrice(selectedType.pricePerMonth, currency)}/mo
+            </span>
+          </SummaryRow>
+        )}
+      </dl>
+    </section>
+  );
+};
+
 interface SubmitArgs {
   gameId: string;
   locationName: string;
@@ -421,45 +538,7 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       <StepIndicator step={step} />
 
-      {step === 0 && (
-        <section className="space-y-2">
-          <Label>Choose a game</Label>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {games.map((game) => (
-              <label
-                key={game.id}
-                className={cn(
-                  "relative cursor-pointer overflow-hidden rounded-lg border-2 transition",
-                  gameId === game.id
-                    ? "border-primary"
-                    : "border-border hover:border-muted-foreground",
-                )}
-              >
-                <input
-                  type="radio"
-                  name="game"
-                  value={game.id}
-                  checked={gameId === game.id}
-                  onChange={(e) => setGameId(e.target.value)}
-                  className="sr-only"
-                />
-                <Image
-                  src={game.image}
-                  alt={game.name}
-                  className="aspect-square w-full object-cover"
-                  placeholder="blur"
-                />
-                <div className="p-2">
-                  <div className="font-medium text-sm">{game.name}</div>
-                  <div className="text-muted-foreground text-xs">
-                    {game.requirements.memory} GB · {game.requirements.cpu} vCPU
-                  </div>
-                </div>
-              </label>
-            ))}
-          </div>
-        </section>
-      )}
+      {step === 0 && <GameStep games={games} gameId={gameId} setGameId={setGameId} />}
 
       {step === 1 && (
         <section className="space-y-2">
@@ -468,7 +547,6 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
             eligibleTypes={eligibleTypes}
             typeName={typeName}
             setTypeName={setTypeName}
-            selectedGameName={selectedGame?.name}
             currency={currency}
           />
         </section>
@@ -486,68 +564,16 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
       )}
 
       {step === 3 && (
-        <section className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Server name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              minLength={3}
-              maxLength={40}
-              placeholder="My server"
-              autoFocus
-            />
-          </div>
-          {selectedGame && (
-            <Collapsible>
-              <CollapsibleTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="group w-full">
-                  <span className="group-data-[state=open]:hidden">Customize game settings</span>
-                  <span className="hidden group-data-[state=open]:inline">Hide settings</span>
-                  <ChevronDown className="transition-transform group-data-[state=open]:rotate-180" />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="flex flex-col gap-1 rounded-md border border-border bg-background p-1">
-                <SettingsFields
-                  schema={selectedGame.settings}
-                  values={settings}
-                  onChange={setSettingField}
-                />
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-          <dl className="grid gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Game</dt>
-              <dd className="font-medium">{selectedGame?.name}</dd>
-            </div>
-            {selectedType && (
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Size</dt>
-                <dd className="font-medium">
-                  {selectedType.cores} vCPU · {selectedType.memory} GB RAM · {selectedType.disk} GB
-                  SSD
-                </dd>
-              </div>
-            )}
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Location</dt>
-              <dd className="font-medium">
-                {selectedType?.locations.find((l) => l.name === locationName)?.city ?? locationName}
-              </dd>
-            </div>
-            {selectedType && (
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Price</dt>
-                <dd className="font-medium tabular-nums">
-                  {formatPrice(selectedType.pricePerMonth, currency)}/mo
-                </dd>
-              </div>
-            )}
-          </dl>
-        </section>
+        <NameStep
+          name={name}
+          setName={setName}
+          selectedGame={selectedGame}
+          selectedType={selectedType}
+          locationName={locationName}
+          settings={settings}
+          setSettingField={setSettingField}
+          currency={currency}
+        />
       )}
 
       <div className="flex items-center justify-between gap-2">

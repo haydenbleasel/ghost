@@ -80,8 +80,9 @@ const SettingInput = ({ id, field, value, onChange }: InputProps) => {
         />
       );
     }
-    default:
+    default: {
       return null;
+    }
   }
 };
 

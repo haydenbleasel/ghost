@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { getHetznerCatalog } from "@/lib/hetzner/catalog";
 import { requireUser } from "@/lib/session";
 import { provisionServer } from "@/lib/workflows/provision-server";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { ulid } from "ulid";
 import { start } from "workflow/api";

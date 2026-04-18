@@ -20,18 +20,19 @@ const SignInPage = () => {
       return;
     }
     autofillStarted.current = true;
-    authClient.signIn
-      .passkey({ autoFill: true })
-      .then((result) => {
+    const run = async () => {
+      try {
+        const result = await authClient.signIn.passkey({ autoFill: true });
         if (result?.error || !result?.data) {
           return;
         }
         router.push("/dashboard");
         router.refresh();
-      })
-      .catch(() => {
+      } catch {
         // autofill is best-effort; ignore failures
-      });
+      }
+    };
+    run();
   }, [router]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -68,13 +69,7 @@ const SignInPage = () => {
       <h1 className="text-2xl font-semibold">Sign in</h1>
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          required
-          autoComplete="username webauthn"
-        />
+        <Input id="email" name="email" type="email" required autoComplete="username webauthn" />
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>

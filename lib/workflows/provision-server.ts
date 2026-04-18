@@ -18,13 +18,14 @@ const MAX_INSTALL_WAIT_SECONDS = 900;
 
 type InstallOutcome = "healthy" | "cancelled" | "errored" | "timeout";
 
-const waitForInstall = async (
+const waitForInstall = (
   phaseHook: AsyncIterable<Phase>,
   cancelled: PromiseLike<"cancelled">,
 ): Promise<InstallOutcome> => {
-  const timeout = sleep(`${MAX_INSTALL_WAIT_SECONDS}s`).then(
-    () => "timeout" as const,
-  );
+  const timeout = (async (): Promise<InstallOutcome> => {
+    await sleep(`${MAX_INSTALL_WAIT_SECONDS}s`);
+    return "timeout";
+  })();
   const phases = (async (): Promise<InstallOutcome> => {
     for await (const phase of phaseHook) {
       if (phase === "healthy" || phase === "ready") {
