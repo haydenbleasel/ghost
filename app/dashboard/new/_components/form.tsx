@@ -14,6 +14,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
 import { Cobe } from "./cobe";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 const VISIBLE_ALL_SIZES = 3;
 
@@ -28,9 +30,10 @@ interface SizeCardProps {
   type: CatalogServerType;
   selected: boolean;
   currency: string;
+  recommended?: boolean;
 }
 
-const SizeCard = ({ type, selected, currency }: SizeCardProps) => (
+const SizeCard = ({ type, selected, currency, recommended }: SizeCardProps) => (
   <label
     className={cn(
       "flex cursor-pointer items-center justify-between gap-4 rounded-md border-2 p-3 transition",
@@ -40,20 +43,19 @@ const SizeCard = ({ type, selected, currency }: SizeCardProps) => (
     <div className="flex items-center gap-3">
       <RadioGroupItem value={type.name} id={`type-${type.name}`} />
       <div>
-        <div className="font-medium text-sm uppercase">
-          {type.name}
-          <span className="ml-2 font-normal text-muted-foreground text-xs lowercase">
-            {type.cpuType} {type.architecture}
-          </span>
-        </div>
+        <div className="font-medium text-sm uppercase">{type.name}</div>
         <div className="text-muted-foreground text-xs">
-          {type.cores} vCPU · {type.memory} GB RAM · {type.disk} GB SSD
+          {type.cores} vCPU · {type.memory} GB RAM · {type.disk} GB SSD · {type.cpuType}{" "}
+          {type.architecture}
         </div>
       </div>
     </div>
-    <div className="text-right text-sm tabular-nums">
-      {formatPrice(type.pricePerMonth, currency)}
-      <span className="text-muted-foreground">/mo</span>
+    <div className="flex items-center gap-3">
+      {recommended && <Badge className="bg-blue-500 text-white">Recommended</Badge>}
+      <div className="text-right text-sm tabular-nums">
+        {formatPrice(type.pricePerMonth, currency)}
+        <span className="text-muted-foreground">/mo</span>
+      </div>
     </div>
   </label>
 );
@@ -151,19 +153,21 @@ const SizeStep = ({
   const visibleRest = rest.slice(0, VISIBLE_ALL_SIZES);
   const hiddenRest = rest.slice(VISIBLE_ALL_SIZES);
   return (
-    <RadioGroup value={typeName} onValueChange={setTypeName} className="space-y-5">
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
-            Recommended for {selectedGameName}
-          </span>
-        </div>
-        <SizeCard type={recommended} selected={typeName === recommended.name} currency={currency} />
-      </div>
+    <RadioGroup value={typeName} onValueChange={setTypeName}>
+      <SizeCard
+        type={recommended}
+        selected={typeName === recommended.name}
+        currency={currency}
+        recommended
+      />
       {rest.length > 0 && (
         <div className="space-y-2">
-          <div className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
-            All sizes
+          <div className="flex items-center gap-3 py-2">
+            <Separator className="flex-1" />
+            <div className="shrink-0 font-medium text-xs uppercase tracking-wide text-muted-foreground">
+              All sizes
+            </div>
+            <Separator className="flex-1" />
           </div>
           <div className="grid gap-2">
             {visibleRest.map((type) => (
@@ -177,7 +181,7 @@ const SizeStep = ({
           </div>
           {hiddenRest.length > 0 && (
             <Collapsible>
-              <CollapsibleContent className="grid gap-2 pt-2">
+              <CollapsibleContent className="grid gap-2">
                 {hiddenRest.map((type) => (
                   <SizeCard
                     key={type.name}
