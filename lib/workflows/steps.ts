@@ -50,13 +50,13 @@ runcmd:
 export const stepCreateHetznerServer = async (serverId: string) => {
   "use step";
 
-  const server = await prisma.server.findUniqueOrThrow({
+  const server = await prisma.server.findUnique({
     where: { id: serverId },
   });
-  if (server.desiredState === "deleted") {
+  if (!server || server.desiredState === "deleted") {
     return {
       cancelled: true as const,
-      hetznerServerId: server.hetznerServerId ? Number(server.hetznerServerId) : null,
+      hetznerServerId: server?.hetznerServerId ? Number(server.hetznerServerId) : null,
     };
   }
   if (server.hetznerServerId) {
@@ -115,7 +115,7 @@ export const stepCreateHetznerServer = async (serverId: string) => {
   }
   const created = data.server;
 
-  const updated = await prisma.server.update({
+  const { count } = await prisma.server.updateMany({
     data: {
       hetznerServerId: String(created.id),
       ipv4: created.public_net.ipv4?.ip ?? null,
@@ -124,8 +124,15 @@ export const stepCreateHetznerServer = async (serverId: string) => {
     },
     where: { id: serverId },
   });
+  const updated =
+    count > 0
+      ? await prisma.server.findUnique({
+          select: { desiredState: true },
+          where: { id: serverId },
+        })
+      : null;
 
-  if (updated.desiredState === "deleted") {
+  if (!updated || updated.desiredState === "deleted") {
     const { error: delError, response: delResponse } = await hetzner.DELETE("/servers/{id}", {
       params: { path: { id: created.id } },
     });
@@ -168,10 +175,13 @@ export const stepGetHetznerStatus = async (hetznerServerId: number) => {
 
 export const stepMarkHetznerRunning = async (input: { serverId: string; ipv4: string | null }) => {
   "use step";
-  await prisma.server.update({
+  const { count } = await prisma.server.updateMany({
     data: { ipv4: input.ipv4, phase: "booting" },
     where: { id: input.serverId },
   });
+  if (count === 0) {
+    return;
+  }
   await emitActivity({
     message: "Waiting for VM boot and agent handshake",
     metadata: { ipv4: input.ipv4 },
@@ -191,10 +201,13 @@ export const stepReadAgent = async (serverId: string) => {
 
 export const stepAgentConnected = async (serverId: string) => {
   "use step";
-  await prisma.server.update({
+  const { count } = await prisma.server.updateMany({
     data: { observedState: "provisioning", phase: "agent_connected" },
     where: { id: serverId },
   });
+  if (count === 0) {
+    return;
+  }
   await emitActivity({
     message: "Agent connected",
     phase: "agent_connected",
@@ -205,9 +218,12 @@ export const stepAgentConnected = async (serverId: string) => {
 export const stepSendInstallConfig = async (serverId: string) => {
   "use step";
   const { stepId } = getStepMetadata();
-  const server = await prisma.server.findUniqueOrThrow({
+  const server = await prisma.server.findUnique({
     where: { id: serverId },
   });
+  if (!server) {
+    return;
+  }
 
   const compose = buildMinecraftCompose({
     name: server.name,
@@ -221,10 +237,13 @@ export const stepSendInstallConfig = async (serverId: string) => {
     type: "UPDATE_CONFIG",
   });
 
-  await prisma.server.update({
+  const { count } = await prisma.server.updateMany({
     data: { phase: "installing" },
     where: { id: serverId },
   });
+  if (count === 0) {
+    return;
+  }
 
   await emitActivity({
     message: "Writing compose and pulling image",
@@ -233,21 +252,15 @@ export const stepSendInstallConfig = async (serverId: string) => {
   });
 };
 
-export const stepReadPhase = async (serverId: string) => {
-  "use step";
-  const server = await prisma.server.findUniqueOrThrow({
-    select: { desiredState: true, observedState: true, phase: true },
-    where: { id: serverId },
-  });
-  return server;
-};
-
 export const stepMarkReady = async (serverId: string) => {
   "use step";
-  await prisma.server.update({
+  const { count } = await prisma.server.updateMany({
     data: { observedState: "running", phase: "ready" },
     where: { id: serverId },
   });
+  if (count === 0) {
+    return;
+  }
   await emitActivity({
     message: "Server ready",
     phase: "ready",
@@ -257,10 +270,13 @@ export const stepMarkReady = async (serverId: string) => {
 
 export const stepMarkFailed = async (input: { serverId: string; reason: string }) => {
   "use step";
-  await prisma.server.update({
+  const { count } = await prisma.server.updateMany({
     data: { errorReason: input.reason, observedState: "failed" },
     where: { id: input.serverId },
   });
+  if (count === 0) {
+    return;
+  }
   await emitActivity({
     message: `Provision failed: ${input.reason}`,
     metadata: { reason: input.reason },
@@ -307,7 +323,7 @@ export const stepDeleteHetzner = async (serverId: string) => {
 
 export const stepMarkDeleted = async (serverId: string) => {
   "use step";
-  await prisma.server.update({
+  const { count } = await prisma.server.updateMany({
     data: {
       deletedAt: new Date(),
       observedState: "deleted",
@@ -315,6 +331,9 @@ export const stepMarkDeleted = async (serverId: string) => {
     },
     where: { id: serverId },
   });
+  if (count === 0) {
+    return;
+  }
   await emitActivity({
     message: "Server deleted",
     phase: "deleted",
@@ -327,9 +346,13 @@ export const stepSignalCancelProvision = async (serverId: string) => {
   await safeResumeHook(hookTokens.cancel(serverId));
 };
 
-export const stepSignalProvisionDone = async (serverId: string) => {
+export const stepReadPhase = async (serverId: string): Promise<Phase | null> => {
   "use step";
-  await safeResumeHook(hookTokens.provisionDone(serverId));
+  const server = await prisma.server.findUnique({
+    select: { phase: true },
+    where: { id: serverId },
+  });
+  return (server?.phase as Phase | undefined) ?? null;
 };
 
 export const stepReadDesiredState = async (serverId: string) => {

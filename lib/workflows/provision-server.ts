@@ -10,7 +10,6 @@ import {
   stepMarkReady,
   stepReadDesiredState,
   stepSendInstallConfig,
-  stepSignalProvisionDone,
 } from "./steps";
 
 const MAX_HETZNER_WAIT_SECONDS = 300;
@@ -153,7 +152,5 @@ export const provisionServer = async (input: { serverId: string }) => {
       return;
     }
     throw error;
-  } finally {
-    await stepSignalProvisionDone(serverId);
   }
 };

@@ -25,7 +25,7 @@ export const listFiles = async (
   relativePath: string,
 ): Promise<{ path: string; entries: FileEntry[] }> => {
   const abs = resolveInRoot(relativePath);
-  await mkdir(DATA_ROOT, { recursive: true });
+  await mkdir(abs, { recursive: true });
   const dirents = await readdir(abs, { withFileTypes: true });
   const entries: FileEntry[] = [];
   for (const dirent of dirents) {
