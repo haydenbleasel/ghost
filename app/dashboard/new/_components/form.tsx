@@ -43,10 +43,11 @@ const SizeCard = ({ type, selected, currency, recommended }: SizeCardProps) => (
     <div className="flex items-center gap-3">
       <RadioGroupItem value={type.name} id={`type-${type.name}`} />
       <div>
-        <div className="font-medium text-sm uppercase">{type.name}</div>
-        <div className="text-muted-foreground text-xs">
-          {type.cores} vCPU · {type.memory} GB RAM · {type.disk} GB SSD · {type.cpuType}{" "}
-          {type.architecture}
+        <div className="font-medium text-sm">
+          {type.cores} vCPU · {type.memory} GB RAM · {type.disk} GB SSD
+        </div>
+        <div className="text-muted-foreground text-xs capitalize">
+          {type.cpuType} · {type.architecture}
         </div>
       </div>
     </div>
@@ -467,10 +468,15 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
               <dt className="text-muted-foreground">Game</dt>
               <dd className="font-medium">{selectedGame?.name}</dd>
             </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Size</dt>
-              <dd className="font-medium uppercase">{typeName}</dd>
-            </div>
+            {selectedType && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Size</dt>
+                <dd className="font-medium">
+                  {selectedType.cores} vCPU · {selectedType.memory} GB RAM · {selectedType.disk} GB
+                  SSD
+                </dd>
+              </div>
+            )}
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Location</dt>
               <dd className="font-medium">
