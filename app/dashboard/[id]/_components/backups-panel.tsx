@@ -277,36 +277,41 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
   };
 
   return (
-    <Panel>
-      <PanelCard className="flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-0.5 px-3 py-1">
-          <span className="text-sm font-medium">Automatic backups</span>
-          <span className="text-xs text-muted-foreground">
-            Daily snapshots taken by Hetzner, retained for 7 days.
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
+    <>
+      <Panel
+        title="Automatic backups"
+        action={
           <Switch
             checked={backupsEnabled}
             disabled={toggling}
             onCheckedChange={toggleBackups}
             aria-label="Enable automatic backups"
           />
+        }
+      >
+        <PanelCard className="px-4 py-3 text-sm text-muted-foreground">
+          Daily snapshots taken by Hetzner, retained for 7 days.
+        </PanelCard>
+      </Panel>
+
+      <Panel
+        title="Backups"
+        action={
           <Button type="button" variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
             <CameraIcon />
             Create backup
           </Button>
-        </div>
-      </PanelCard>
-
-      <PanelCard className="flex flex-col gap-1">
-        {renderImageList({
-          images,
-          loadError,
-          onDelete: setDeleteTarget,
-          onRestore: setRestoreTarget,
-        })}
-      </PanelCard>
+        }
+      >
+        <PanelCard className="flex flex-col gap-1">
+          {renderImageList({
+            images,
+            loadError,
+            onDelete: setDeleteTarget,
+            onRestore: setRestoreTarget,
+          })}
+        </PanelCard>
+      </Panel>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
@@ -383,6 +388,6 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Panel>
+    </>
   );
 };
