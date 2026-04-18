@@ -27,13 +27,17 @@ interface Props {
   game: string;
   ipv4: string | null;
   observedState: string;
+  desiredState: string;
   pending: boolean;
   onCommand: (type: "START" | "STOP" | "RESTART") => void;
   onDelete: () => void;
 }
 
-const badgeVariant = (state: string): "default" | "secondary" | "destructive" | "outline" => {
-  if (state === "failed" || state === "lost") {
+const badgeVariant = (
+  state: string,
+  deleting: boolean,
+): "default" | "secondary" | "destructive" | "outline" => {
+  if (deleting || state === "failed" || state === "lost") {
     return "destructive";
   }
   if (state === "unhealthy") {
@@ -42,7 +46,10 @@ const badgeVariant = (state: string): "default" | "secondary" | "destructive" | 
   return "outline";
 };
 
-const stateClassName = (state: string): string => {
+const stateClassName = (state: string, deleting: boolean): string => {
+  if (deleting) {
+    return "";
+  }
   if (state === "running") {
     return "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-600";
   }
@@ -54,10 +61,13 @@ export const ReadyHeader = ({
   game: gameId,
   ipv4,
   observedState,
+  desiredState,
   pending,
   onCommand,
   onDelete,
 }: Props) => {
+  const deleting = desiredState === "deleted";
+  const label = deleting ? "deleting" : observedState;
   const game = games.find((g) => g.id === gameId);
   const [copied, setCopied] = useState(false);
 
@@ -85,10 +95,10 @@ export const ReadyHeader = ({
           <div className="flex items-center gap-2">
             <p className="font-medium tracking-tight text-2xl">{name}</p>
             <Badge
-              variant={badgeVariant(observedState)}
-              className={cn("capitalize", stateClassName(observedState))}
+              variant={badgeVariant(observedState, deleting)}
+              className={cn("capitalize", stateClassName(observedState, deleting))}
             >
-              {observedState}
+              {label}
             </Badge>
           </div>
           <p className="flex items-center gap-1 text-sm text-muted-foreground">

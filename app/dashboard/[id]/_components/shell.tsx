@@ -179,6 +179,7 @@ export const ServerShell = ({ server: initial, eligibleTypes, currency, children
     <ServerProvider value={{ currency, eligibleTypes, server, updateServer }}>
       <div className="grid gap-8">
         <ReadyHeader
+          desiredState={server.desiredState}
           game={server.game}
           ipv4={server.ipv4}
           name={server.name}
