@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { Panel, PanelCard } from "@/components/panel";
 
 interface ActivityItem {
   id: string;
@@ -50,8 +51,8 @@ export const ActivityStream = ({ serverId }: { serverId: string }) => {
   }, [serverId]);
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-      <div className="rounded-2xl bg-background p-2 shadow-sm/5">
+    <Panel>
+      <PanelCard>
         <ol className="flex max-h-80 flex-col gap-1 overflow-auto">
           {events.map((event) => (
             <li
@@ -71,7 +72,7 @@ export const ActivityStream = ({ serverId }: { serverId: string }) => {
             </li>
           )}
         </ol>
-      </div>
-    </section>
+      </PanelCard>
+    </Panel>
   );
 };

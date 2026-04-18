@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Panel, PanelCard } from "@/components/panel";
 import { CpuPanel } from "../_components/cpu-panel";
 import { DiskPanel } from "../_components/disk-panel";
 import { GraphsRangePanel } from "../_components/graphs-range-panel";
@@ -19,11 +20,11 @@ const GraphsTab = () => {
 
   if (server.observedState !== "running") {
     return (
-      <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-        <div className="rounded-2xl bg-background p-6 text-sm text-muted-foreground shadow-sm/5">
+      <Panel>
+        <PanelCard className="p-6 text-sm text-muted-foreground">
           Metrics are only available while the server is running.
-        </div>
-      </section>
+        </PanelCard>
+      </Panel>
     );
   }
 

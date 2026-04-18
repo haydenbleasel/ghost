@@ -1,5 +1,6 @@
 "use client";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { Panel, PanelCard } from "@/components/panel";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
 import { formatBytes, formatTime } from "./use-server-metrics";
@@ -17,11 +18,8 @@ interface Props {
 }
 
 export const DiskPanel = ({ data, loading, range }: Props) => (
-  <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-    <div className="px-4 pt-2 pb-1">
-      <h2 className="text-sm font-medium text-muted-foreground">Disk bandwidth</h2>
-    </div>
-    <div className="rounded-2xl bg-background p-3 shadow-sm/5">
+  <Panel title="Disk bandwidth">
+    <PanelCard className="p-3">
       {loading ? (
         <div className="flex aspect-[8/3] items-center justify-center text-muted-foreground text-sm">
           Loading…
@@ -73,6 +71,6 @@ export const DiskPanel = ({ data, loading, range }: Props) => (
           </LineChart>
         </ChartContainer>
       )}
-    </div>
-  </section>
+    </PanelCard>
+  </Panel>
 );

@@ -1,5 +1,6 @@
 "use client";
 import { CheckIcon, CircleXIcon } from "lucide-react";
+import { Panel, PanelCard } from "@/components/panel";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
@@ -62,11 +63,8 @@ export const ProvisioningStatus = ({
   const errorIndex = errored && currentIndex === -1 ? 0 : currentIndex;
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-      <div className="px-4 pt-2 pb-1">
-        <h2 className="text-sm font-medium text-muted-foreground">Provisioning your server</h2>
-      </div>
-      <div className="grid gap-2 rounded-2xl bg-background p-2 shadow-sm/5">
+    <Panel title="Provisioning your server">
+      <PanelCard className="grid gap-2">
         {STEPS.map((step) => {
           const stepStart = PHASE_ORDER.indexOf(step.phases[0]);
           const stepEnd = stepStart + step.phases.length - 1;
@@ -93,7 +91,7 @@ export const ProvisioningStatus = ({
             </div>
           );
         })}
-      </div>
-    </section>
+      </PanelCard>
+    </Panel>
   );
 };

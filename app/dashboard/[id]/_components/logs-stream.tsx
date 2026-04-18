@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { Panel, PanelCard } from "@/components/panel";
 
 interface LogItem {
   id: string;
@@ -52,8 +53,8 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
   }, [lines]);
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-      <div className="rounded-2xl bg-background p-2 shadow-sm/5">
+    <Panel>
+      <PanelCard>
         <div
           ref={scrollRef}
           className="flex max-h-80 flex-col gap-1 overflow-auto px-3 py-2 font-mono text-xs"
@@ -67,7 +68,7 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
             </span>
           ))}
         </div>
-      </div>
-    </section>
+      </PanelCard>
+    </Panel>
   );
 };

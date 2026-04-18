@@ -1,3 +1,5 @@
+import { Panel, PanelCard } from "@/components/panel";
+
 interface Specs {
   typeName: string;
   cores: number;
@@ -39,8 +41,8 @@ export const DetailsPanel = ({ specs, location }: Props) => {
   const locationLabel = formatLocation(location);
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-      <div className="flex flex-col gap-1 rounded-2xl bg-background p-2 shadow-sm/5">
+    <Panel>
+      <PanelCard className="flex flex-col gap-1">
         {specs ? (
           <>
             <Row label="Server type" value={specs.typeName} />
@@ -56,7 +58,7 @@ export const DetailsPanel = ({ specs, location }: Props) => {
             Server specs are unavailable.
           </div>
         )}
-      </div>
-    </section>
+      </PanelCard>
+    </Panel>
   );
 };

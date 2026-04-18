@@ -32,6 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Panel, PanelCard } from "@/components/panel";
 
 interface Image {
   id: number;
@@ -276,8 +277,8 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
   };
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-      <div className="flex items-center justify-between gap-4 rounded-2xl bg-background p-2 shadow-sm/5">
+    <Panel>
+      <PanelCard className="flex items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5 px-3 py-1">
           <span className="text-sm font-medium">Automatic backups</span>
           <span className="text-xs text-muted-foreground">
@@ -296,16 +297,16 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
             Create backup
           </Button>
         </div>
-      </div>
+      </PanelCard>
 
-      <div className="flex flex-col gap-1 rounded-2xl bg-background p-2 shadow-sm/5">
+      <PanelCard className="flex flex-col gap-1">
         {renderImageList({
           images,
           loadError,
           onDelete: setDeleteTarget,
           onRestore: setRestoreTarget,
         })}
-      </div>
+      </PanelCard>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
@@ -382,6 +383,6 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </section>
+    </Panel>
   );
 };

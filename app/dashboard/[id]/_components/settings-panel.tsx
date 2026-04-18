@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Panel, PanelCard } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -77,8 +78,8 @@ export const SettingsPanel = ({
   };
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-      <div className="flex flex-col gap-1 rounded-2xl bg-background p-2 shadow-sm/5">
+    <Panel>
+      <PanelCard className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-3">
           <div className="flex flex-col gap-0.5">
             <span className="text-sm font-medium">Rescale</span>
@@ -108,7 +109,7 @@ export const SettingsPanel = ({
             </Tooltip>
           )}
         </div>
-      </div>
+      </PanelCard>
       <Dialog open={rescaleOpen} onOpenChange={setRescaleOpen}>
         <DialogContent className="max-h-[80vh] overflow-hidden sm:max-w-lg">
           <DialogHeader>
@@ -176,6 +177,6 @@ export const SettingsPanel = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </section>
+    </Panel>
   );
 };

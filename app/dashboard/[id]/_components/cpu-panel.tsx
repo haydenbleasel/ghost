@@ -1,5 +1,6 @@
 "use client";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Panel, PanelCard } from "@/components/panel";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
 import { formatTime } from "./use-server-metrics";
@@ -16,11 +17,8 @@ interface Props {
 }
 
 export const CpuPanel = ({ data, loading, range }: Props) => (
-  <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-    <div className="px-4 pt-2 pb-1">
-      <h2 className="text-sm font-medium text-muted-foreground">CPU</h2>
-    </div>
-    <div className="rounded-2xl bg-background p-3 shadow-sm/5">
+  <Panel title="CPU">
+    <PanelCard className="p-3">
       {loading ? (
         <div className="flex aspect-[8/3] items-center justify-center text-muted-foreground text-sm">
           Loading…
@@ -73,6 +71,6 @@ export const CpuPanel = ({ data, loading, range }: Props) => (
           </AreaChart>
         </ChartContainer>
       )}
-    </div>
-  </section>
+    </PanelCard>
+  </Panel>
 );

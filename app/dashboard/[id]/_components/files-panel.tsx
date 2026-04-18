@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Panel, PanelCard } from "@/components/panel";
 
 interface FileEntry {
   name: string;
@@ -311,8 +312,8 @@ export const FilesPanel = ({ serverId }: Props) => {
   const crumbs = path ? path.split("/").filter(Boolean) : [];
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-      <div className="flex items-center justify-between gap-4 rounded-2xl bg-background p-2 shadow-sm/5">
+    <Panel>
+      <PanelCard className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2 px-3 py-1">
           <Breadcrumb>
             <BreadcrumbList>
@@ -367,16 +368,16 @@ export const FilesPanel = ({ serverId }: Props) => {
             Install from URL
           </Button>
         </div>
-      </div>
+      </PanelCard>
 
-      <div className="flex flex-col gap-1 rounded-2xl bg-background p-2 shadow-sm/5">
+      <PanelCard className="flex flex-col gap-1">
         {renderEntryList({
           entries,
           loadError,
           onDelete: setDeleteTarget,
           onOpenDir: (name) => setPath(joinPath(path, name)),
         })}
-      </div>
+      </PanelCard>
 
       <Dialog onOpenChange={setUrlDialogOpen} open={urlDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -438,6 +439,6 @@ export const FilesPanel = ({ serverId }: Props) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </section>
+    </Panel>
   );
 };

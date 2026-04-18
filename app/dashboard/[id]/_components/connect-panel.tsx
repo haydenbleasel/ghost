@@ -1,6 +1,7 @@
 "use client";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useState } from "react";
+import { Panel, PanelCard } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { games } from "@/games";
 
@@ -37,17 +38,17 @@ export const ConnectPanel = ({ game: gameId, ipv4 }: Props) => {
 
   if (!ipv4) {
     return (
-      <section className="rounded-2xl bg-sidebar p-2">
-        <div className="rounded-2xl bg-background p-6 text-sm text-muted-foreground shadow-sm/5">
+      <Panel>
+        <PanelCard className="p-6 text-sm text-muted-foreground">
           No IP address assigned yet.
-        </div>
-      </section>
+        </PanelCard>
+      </Panel>
     );
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl bg-sidebar p-2">
-      <div className="flex flex-col gap-4 rounded-2xl bg-background p-4 shadow-sm/5">
+    <Panel>
+      <PanelCard className="flex flex-col gap-4 p-4">
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium text-muted-foreground">Server address</span>
           <div className="flex items-center gap-2">
@@ -87,7 +88,7 @@ export const ConnectPanel = ({ game: gameId, ipv4 }: Props) => {
             </div>
           </>
         )}
-      </div>
-    </section>
+      </PanelCard>
+    </Panel>
   );
 };
