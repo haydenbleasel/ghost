@@ -1,5 +1,6 @@
 import "server-only";
 import { env } from "@/lib/env";
+import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
@@ -12,7 +13,7 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: false,
   },
-  plugins: [nextCookies()],
+  plugins: [passkey({ rpName: "Ultrabeam" }), nextCookies()],
   secret: env.BETTER_AUTH_SECRET,
   session: {
     expiresIn: 60 * 60 * 24 * 30,

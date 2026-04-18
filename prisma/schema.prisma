@@ -18,6 +18,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  passkeys      Passkey[]
   servers       Server[]
 
   @@map("users")
@@ -65,6 +66,25 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@map("verifications")
+}
+
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime? @default(now())
+  aaguid       String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkeys")
 }
 
 // ─── App models ─────────────────────────────────────────────────

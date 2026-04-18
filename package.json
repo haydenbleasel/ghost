@@ -22,6 +22,7 @@
     "fix": "ultracite fix"
   },
   "dependencies": {
+    "@better-auth/passkey": "^1.6.5",
     "@next/third-parties": "16.2.4",
     "@noble/ed25519": "^3.1.0",
     "@nosecone/next": "1.4.0",

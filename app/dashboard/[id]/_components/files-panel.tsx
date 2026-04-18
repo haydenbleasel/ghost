@@ -58,7 +58,7 @@ interface Props {
   serverId: string;
 }
 
-const DEFAULT_PATH = "mods";
+const DEFAULT_PATH = "";
 
 const formatSize = (bytes: number): string => {
   if (bytes < 1024) {

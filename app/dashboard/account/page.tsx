@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/session";
 import { AccountPanel } from "./_components/account-panel";
+import { PasskeysPanel } from "./_components/passkeys-panel";
 
 const AccountPage = async () => {
   const user = await requireUser();
@@ -17,6 +18,7 @@ const AccountPage = async () => {
           name: user.name ?? "",
         }}
       />
+      <PasskeysPanel />
     </div>
   );
 };
