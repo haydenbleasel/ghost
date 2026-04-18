@@ -78,7 +78,7 @@ export const SettingsPanel = ({
   };
 
   return (
-    <Panel>
+    <Panel title="Server Settings">
       <PanelCard className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-3">
           <div className="flex flex-col gap-0.5">

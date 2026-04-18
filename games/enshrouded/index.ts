@@ -1,8 +1,14 @@
+import type { ComposeConfig } from "../compose";
+import { resolveSettings } from "../settings";
 import image from "./image.jpg";
 import { buildEnshroudedCompose } from "./install";
+import { enshroudedSettings } from "./settings";
+
+const buildCompose = (config: ComposeConfig, raw: unknown): string =>
+  buildEnshroudedCompose(config, resolveSettings(enshroudedSettings, raw));
 
 export const enshrouded = {
-  buildCompose: buildEnshroudedCompose,
+  buildCompose,
   description: "A game of survival, crafting, and action on a sprawling voxel-based continent.",
   enabled: true,
   gamedigId: "enshrouded",
@@ -27,4 +33,5 @@ export const enshrouded = {
     cpu: 2,
     memory: 4,
   },
+  settings: enshroudedSettings,
 } as const;

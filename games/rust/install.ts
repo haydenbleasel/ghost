@@ -1,9 +1,11 @@
 import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
+import type { RustSettings } from "./settings";
 
-export const buildRustCompose = (config: ComposeConfig): string => {
+export const buildRustCompose = (config: ComposeConfig, settings: RustSettings): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
+  const description = settings.description || `${config.name} - Powered by Ghost`;
   return `services:
   rust:
     image: didstopia/rust-server:latest
@@ -17,14 +19,14 @@ export const buildRustCompose = (config: ComposeConfig): string => {
       RUST_SERVER_STARTUP_ARGUMENTS: "-batchmode -load -nographics"
       RUST_SERVER_IDENTITY: "ghost"
       RUST_SERVER_NAME: "${escape(config.name)}"
-      RUST_SERVER_DESCRIPTION: "${escape(config.name)} - Powered by Ghost"
-      RUST_SERVER_MAXPLAYERS: "50"
-      RUST_SERVER_WORLDSIZE: "3000"
-      RUST_SERVER_SEED: "12345"
+      RUST_SERVER_DESCRIPTION: "${escape(description)}"
+      RUST_SERVER_MAXPLAYERS: "${settings.maxPlayers}"
+      RUST_SERVER_WORLDSIZE: "${settings.worldSize}"
+      RUST_SERVER_SEED: "${settings.seed}"
       RUST_SERVER_PORT: "28015"
       RUST_RCON_PASSWORD: "${escape(config.rconPassword)}"
       RUST_RCON_PORT: "28016"
-      RUST_RCON_WEB: "1"
+      RUST_RCON_WEB: "${settings.rconWeb ? 1 : 0}"
       TZ: "${timezone}"
     volumes:
       - /var/lib/ghost/game/data:/steamcmd/rust

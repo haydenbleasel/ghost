@@ -1,9 +1,11 @@
 import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
+import type { PalworldSettings } from "./settings";
 
-export const buildPalworldCompose = (config: ComposeConfig): string => {
+export const buildPalworldCompose = (config: ComposeConfig, settings: PalworldSettings): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
+  const description = settings.description || `${config.name} - Powered by Ghost`;
   return `services:
   palworld:
     image: thijsvanloef/palworld-server-docker:latest
@@ -17,16 +19,18 @@ export const buildPalworldCompose = (config: ComposeConfig): string => {
       PUID: "1000"
       PGID: "1000"
       PORT: "8211"
-      PLAYERS: "16"
-      MULTITHREADING: "true"
+      PLAYERS: "${settings.maxPlayers}"
+      MULTITHREADING: "${settings.multithreading}"
       COMMUNITY: "true"
       RCON_ENABLED: "true"
       RCON_PORT: "25575"
+      DIFFICULTY: "${settings.difficulty}"
+      PVP: "${settings.pvp}"
       TZ: "${timezone}"
       ADMIN_PASSWORD: "${escape(config.rconPassword)}"
       SERVER_PASSWORD: "${escape(config.rconPassword)}"
       SERVER_NAME: "${escape(config.name)}"
-      SERVER_DESCRIPTION: "${escape(config.name)} - Powered by Ghost"
+      SERVER_DESCRIPTION: "${escape(description)}"
     volumes:
       - /var/lib/ghost/game/data:/palworld
     ulimits:

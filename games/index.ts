@@ -12,3 +12,12 @@ export type Game = (typeof games)[number];
 export const getGame = (id: string): Game | undefined => games.find((g) => g.id === id);
 
 export { type ComposeConfig, type GamePort, buildUfwRules, GAME_CONTAINER_NAME } from "./compose";
+export {
+  defineSettings,
+  getDefaults,
+  resolveSettings,
+  type SettingField,
+  type SettingsSchema,
+  type SettingsValues,
+  validateSettings,
+} from "./settings";

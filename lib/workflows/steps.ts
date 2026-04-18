@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
-import { buildUfwRules, type GamePort, getGame } from "@/games";
+import { buildUfwRules, getGame } from "@/games";
+import type { GamePort } from "@/games";
 import { mintBootstrapJwt } from "@/lib/agent/bootstrap";
 import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
@@ -18,6 +19,42 @@ const safeResumeHook = async (token: string, payload?: unknown): Promise<void> =
     // Hook not found: the target workflow either hasn't registered it yet
     // or has already exited. Either way, the signal is a no-op.
   }
+};
+
+const postCreateHetznerServer = async (input: {
+  image: string;
+  location: string;
+  name: string;
+  serverType: string;
+  sshKeys: string[] | undefined;
+  userData: string;
+}) => {
+  const { data, error, response } = await hetzner.POST("/servers", {
+    body: {
+      image: input.image,
+      location: input.location,
+      name: input.name,
+      public_net: { enable_ipv4: true, enable_ipv6: false },
+      server_type: input.serverType,
+      ssh_keys: input.sshKeys,
+      start_after_create: true,
+      user_data: input.userData,
+    },
+  });
+  if (!response.ok) {
+    const body = error as { error?: { code?: string; message?: string } } | undefined;
+    const code = body?.error?.code ?? String(response.status);
+    const message = body?.error?.message ?? response.statusText;
+    const apiError = new HetznerApiError(response.status, code, message);
+    if (apiError.isClientError) {
+      throw new FatalError(apiError.message);
+    }
+    throw apiError;
+  }
+  if (!data?.server) {
+    throw new Error("Hetzner server creation returned no server");
+  }
+  return data.server;
 };
 
 const buildCloudInit = (input: {
@@ -96,32 +133,14 @@ export const stepCreateHetznerServer = async (serverId: string) => {
         .filter(Boolean)
     : undefined;
 
-  const { data, error, response } = await hetzner.POST("/servers", {
-    body: {
-      image: env.HETZNER_IMAGE_ID,
-      location: server.location,
-      name: hetznerName,
-      public_net: { enable_ipv4: true, enable_ipv6: false },
-      server_type: server.serverType,
-      ssh_keys: sshKeys,
-      start_after_create: true,
-      user_data: userData,
-    },
+  const created = await postCreateHetznerServer({
+    image: env.HETZNER_IMAGE_ID,
+    location: server.location,
+    name: hetznerName,
+    serverType: server.serverType,
+    sshKeys,
+    userData,
   });
-  if (!response.ok) {
-    const body = error as { error?: { code?: string; message?: string } } | undefined;
-    const code = body?.error?.code ?? String(response.status);
-    const message = body?.error?.message ?? response.statusText;
-    const apiError = new HetznerApiError(response.status, code, message);
-    if (apiError.isClientError) {
-      throw new FatalError(apiError.message);
-    }
-    throw apiError;
-  }
-  if (!data?.server) {
-    throw new Error("Hetzner server creation returned no server");
-  }
-  const created = data.server;
 
   const { count } = await prisma.server.updateMany({
     data: {
@@ -238,10 +257,13 @@ export const stepSendInstallConfig = async (serverId: string) => {
     throw new FatalError(`Unknown game: ${server.game}`);
   }
 
-  const compose = game.buildCompose({
-    name: server.name,
-    rconPassword: server.rconPassword,
-  });
+  const compose = game.buildCompose(
+    {
+      name: server.name,
+      rconPassword: server.rconPassword,
+    },
+    server.settings,
+  );
 
   await enqueueCommand({
     idempotencyKey: stepId,

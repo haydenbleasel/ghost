@@ -1,7 +1,11 @@
 import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
+import type { EnshroudedSettings } from "./settings";
 
-export const buildEnshroudedCompose = (config: ComposeConfig): string => {
+export const buildEnshroudedCompose = (
+  config: ComposeConfig,
+  settings: EnshroudedSettings,
+): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
   return `services:
@@ -15,7 +19,8 @@ export const buildEnshroudedCompose = (config: ComposeConfig): string => {
     environment:
       SERVER_NAME: "${escape(config.name)}"
       SERVER_PASSWORD: "${escape(config.rconPassword)}"
-      SERVER_SLOTS: "16"
+      SERVER_SLOTS: "${settings.slots}"
+      VOICE_CHAT_MODE: "${settings.voiceChat ? "proximity" : "none"}"
       GAME_PORT: "15636"
       QUERY_PORT: "27015"
       TZ: "${timezone}"

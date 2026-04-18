@@ -32,6 +32,7 @@ export interface ServerView {
   backupsEnabled: boolean;
   specs: Specs | null;
   location: ServerLocation | null;
+  settings: Record<string, unknown>;
 }
 
 interface Value {

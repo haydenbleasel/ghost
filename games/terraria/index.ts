@@ -1,8 +1,14 @@
+import type { ComposeConfig } from "../compose";
+import { resolveSettings } from "../settings";
 import image from "./image.jpg";
 import { buildTerrariaCompose } from "./install";
+import { terrariaSettings } from "./settings";
+
+const buildCompose = (config: ComposeConfig, raw: unknown): string =>
+  buildTerrariaCompose(config, resolveSettings(terrariaSettings, raw));
 
 export const terraria = {
-  buildCompose: buildTerrariaCompose,
+  buildCompose,
   description: "Dig, fight, explore, build! Nothing is impossible in this 2D adventure game.",
   enabled: true,
   gamedigId: "terrariatshock",
@@ -27,4 +33,5 @@ export const terraria = {
     cpu: 1,
     memory: 2,
   },
+  settings: terrariaSettings,
 } as const;

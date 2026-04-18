@@ -1,8 +1,14 @@
+import type { ComposeConfig } from "../compose";
+import { resolveSettings } from "../settings";
 import image from "./image.jpg";
 import { buildPalworldCompose } from "./install";
+import { palworldSettings } from "./settings";
+
+const buildCompose = (config: ComposeConfig, raw: unknown): string =>
+  buildPalworldCompose(config, resolveSettings(palworldSettings, raw));
 
 export const palworld = {
-  buildCompose: buildPalworldCompose,
+  buildCompose,
   description: 'Fight, farm, build and work alongside mysterious creatures called "Pals".',
   enabled: true,
   gamedigId: "palworld",
@@ -33,4 +39,5 @@ export const palworld = {
     cpu: 4,
     memory: 16,
   },
+  settings: palworldSettings,
 } as const;

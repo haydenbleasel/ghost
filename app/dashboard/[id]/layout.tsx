@@ -71,6 +71,7 @@ const ServerLayout = async ({
         observedState: server.observedState,
         phase: server.phase,
         serverType: server.serverType,
+        settings: (server.settings ?? {}) as Record<string, unknown>,
         specs,
       }}
     >

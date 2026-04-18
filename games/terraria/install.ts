@@ -1,9 +1,11 @@
 import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
+import type { TerrariaSettings } from "./settings";
 
-export const buildTerrariaCompose = (config: ComposeConfig): string => {
+export const buildTerrariaCompose = (config: ComposeConfig, settings: TerrariaSettings): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
+  const motd = settings.motd || `${config.name} - Powered by Ghost`;
   return `services:
   terraria:
     image: ryshe/terraria:latest
@@ -16,11 +18,11 @@ export const buildTerrariaCompose = (config: ComposeConfig): string => {
       - "7878:7878/tcp"
     environment:
       WORLD_FILENAME: "ghost.wld"
-      AUTOCREATE: "2"
-      DIFFICULTY: "1"
-      MAXPLAYERS: "16"
+      AUTOCREATE: "${settings.worldSize}"
+      DIFFICULTY: "${settings.difficulty}"
+      MAXPLAYERS: "${settings.maxPlayers}"
       WORLDNAME: "${escape(config.name)}"
-      MOTD: "${escape(config.name)} - Powered by Ghost"
+      MOTD: "${escape(motd)}"
       PASSWORD: "${escape(config.rconPassword)}"
       TZ: "${timezone}"
     volumes:

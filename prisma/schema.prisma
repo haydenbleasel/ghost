@@ -120,6 +120,7 @@ model Server {
   phase           String            @default("queued")
   errorReason     String?
   rconPassword    String
+  settings        Json              @default("{}")
   backupsEnabled  Boolean           @default(false)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt

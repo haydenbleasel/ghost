@@ -1,7 +1,11 @@
 import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
+import type { MinecraftSettings } from "./settings";
 
-export const buildMinecraftCompose = (config: ComposeConfig): string => {
+export const buildMinecraftCompose = (
+  config: ComposeConfig,
+  settings: MinecraftSettings,
+): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
   return `services:
@@ -14,19 +18,20 @@ export const buildMinecraftCompose = (config: ComposeConfig): string => {
       EULA: "TRUE"
       SERVER_NAME: "${escape(config.name)}"
       MOTD: "${escape(config.name)} - Powered by Ghost"
-      DIFFICULTY: "normal"
-      MODE: "survival"
+      DIFFICULTY: "${settings.difficulty}"
+      MODE: "${settings.mode}"
       MEMORY: "6G"
       TZ: "${timezone}"
       ENABLE_RCON: "true"
       RCON_PASSWORD: "${escape(config.rconPassword)}"
       OVERRIDE_SERVER_PROPERTIES: "true"
-      ENABLE_COMMAND_BLOCK: "true"
-      SPAWN_PROTECTION: "0"
-      MAX_PLAYERS: "20"
-      ALLOW_NETHER: "true"
-      ONLINE_MODE: "true"
-      VIEW_DISTANCE: "10"
+      ENABLE_COMMAND_BLOCK: "${settings.enableCommandBlock}"
+      SPAWN_PROTECTION: "${settings.spawnProtection}"
+      MAX_PLAYERS: "${settings.maxPlayers}"
+      ALLOW_NETHER: "${settings.allowNether}"
+      ONLINE_MODE: "${settings.onlineMode}"
+      PVP: "${settings.pvp}"
+      VIEW_DISTANCE: "${settings.viewDistance}"
     volumes:
       - /var/lib/ghost/game/data:/data
       - /var/lib/ghost/game/backups:/backups

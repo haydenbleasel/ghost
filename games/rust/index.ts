@@ -1,8 +1,14 @@
+import type { ComposeConfig } from "../compose";
+import { resolveSettings } from "../settings";
 import image from "./image.jpg";
 import { buildRustCompose } from "./install";
+import { rustSettings } from "./settings";
+
+const buildCompose = (config: ComposeConfig, raw: unknown): string =>
+  buildRustCompose(config, resolveSettings(rustSettings, raw));
 
 export const rust = {
-  buildCompose: buildRustCompose,
+  buildCompose,
   description: "The only aim in Rust is to survive when everything on the island wants you to die.",
   enabled: true,
   gamedigId: "rust",
@@ -33,4 +39,5 @@ export const rust = {
     cpu: 4,
     memory: 8,
   },
+  settings: rustSettings,
 } as const;

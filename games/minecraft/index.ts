@@ -1,8 +1,14 @@
+import type { ComposeConfig } from "../compose";
+import { resolveSettings } from "../settings";
 import image from "./image.jpg";
 import { buildMinecraftCompose } from "./install";
+import { minecraftSettings } from "./settings";
+
+const buildCompose = (config: ComposeConfig, raw: unknown): string =>
+  buildMinecraftCompose(config, resolveSettings(minecraftSettings, raw));
 
 export const minecraft = {
-  buildCompose: buildMinecraftCompose,
+  buildCompose,
   description: "Minecraft is a sandbox game where you can build your own world.",
   enabled: true,
   gamedigId: "minecraft",
@@ -27,4 +33,5 @@ export const minecraft = {
     cpu: 2,
     memory: 8,
   },
+  settings: minecraftSettings,
 } as const;
