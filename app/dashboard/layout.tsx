@@ -16,7 +16,7 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
   return (
     <SidebarProvider className="bg-sidebar">
       <AppSidebar servers={servers} user={{ email: user.email, name: user.name ?? null }} />
-      <SidebarTrigger className="absolute top-3 left-3 z-50 text-muted-foreground" />
+      <SidebarTrigger className="fixed top-3 left-3 z-50 text-muted-foreground" />
       <AppContainer>
         <div className="flex-1 px-6 py-20">
           <div className="mx-auto w-full max-w-5xl">{children}</div>
