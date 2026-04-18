@@ -15,6 +15,7 @@ import {
 import type { EventBuffer } from "./events";
 import { deleteFile, installFromUrl, listFiles } from "./files";
 import { signedFetch } from "./signing";
+import { downloadAndStageAgent, swapBinaryInPlace } from "./update";
 
 const MINECRAFT_CONTAINER = "ghost-minecraft";
 
@@ -126,6 +127,27 @@ export const executeCommand = async (
         const installed = await installFromUrl(command.payload);
         result = { destPath: command.payload.destPath, ...installed };
         break;
+      }
+      case "UPDATE_AGENT": {
+        buffer.enqueueActivity({
+          message: `Staging new agent${
+            command.payload.version ? ` ${command.payload.version}` : ""
+          }`,
+          phase: "installing",
+        });
+        const { stagedPath, bytes } = await downloadAndStageAgent(command.payload);
+        await swapBinaryInPlace(stagedPath);
+        result = { bytes, version: command.payload.version };
+        state.lastExecutedCommandId = command.id;
+        await saveState(state);
+        buffer.enqueueActivity({
+          message: "Restarting to new agent",
+          phase: "installing",
+        });
+        await buffer.flush();
+        await ackCommand(state, command.id, "succeeded", Date.now() - started, undefined, result);
+        setTimeout(() => process.exit(0), 500).unref();
+        return;
       }
       default: {
         break;

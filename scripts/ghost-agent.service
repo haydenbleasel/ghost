@@ -12,8 +12,8 @@ RestartSec=5
 StandardOutput=journal
 StandardError=journal
 Environment=NODE_ENV=production
-# Allow writing state and compose files
-ReadWritePaths=/var/lib/ghost /etc/ghost
+# Allow writing state, compose files, and self-updating the binary
+ReadWritePaths=/var/lib/ghost /etc/ghost /usr/local/bin
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true

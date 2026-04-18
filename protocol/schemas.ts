@@ -112,6 +112,16 @@ const filesDeleteCommand = z.object({
   payload: z.object({ path: z.string().min(1) }),
   type: z.literal("FILES_DELETE"),
 });
+const updateAgentCommand = z.object({
+  id: z.string().min(1),
+  issuedAt: z.string().datetime(),
+  payload: z.object({
+    sha256: z.string().regex(/^[0-9a-f]{64}$/i),
+    url: z.string().url(),
+    version: z.string().optional(),
+  }),
+  type: z.literal("UPDATE_AGENT"),
+});
 const filesInstallFromUrlCommand = z.object({
   id: z.string().min(1),
   issuedAt: z.string().datetime(),
@@ -137,6 +147,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   filesListCommand,
   filesDeleteCommand,
   filesInstallFromUrlCommand,
+  updateAgentCommand,
 ]);
 
 export const fileEntrySchema = z.object({

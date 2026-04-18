@@ -82,6 +82,12 @@ export const stepCreateHetznerServer = async (serverId: string) => {
     .randomBytes(2)
     .toString("hex")}`;
 
+  const sshKeys = env.HETZNER_ADMIN_SSH_KEYS
+    ? env.HETZNER_ADMIN_SSH_KEYS.split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : undefined;
+
   const { data, error, response } = await hetzner.POST("/servers", {
     body: {
       image: env.HETZNER_IMAGE_ID,
@@ -89,6 +95,7 @@ export const stepCreateHetznerServer = async (serverId: string) => {
       name: hetznerName,
       public_net: { enable_ipv4: true, enable_ipv6: false },
       server_type: server.serverType,
+      ssh_keys: sshKeys,
       start_after_create: true,
       user_data: userData,
     },

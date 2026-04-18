@@ -19,6 +19,7 @@ export const env = createEnv({
     BOOTSTRAP_JWT_SECRET: process.env.BOOTSTRAP_JWT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     DIRECT_URL: process.env.DIRECT_URL,
+    HETZNER_ADMIN_SSH_KEYS: process.env.HETZNER_ADMIN_SSH_KEYS,
     HETZNER_IMAGE_ID: process.env.HETZNER_IMAGE_ID,
     HETZNER_LOCATION: process.env.HETZNER_LOCATION,
     HETZNER_SERVER_TYPE: process.env.HETZNER_SERVER_TYPE,
@@ -45,6 +46,7 @@ export const env = createEnv({
 
     DATABASE_URL: z.string().min(1).url(),
     DIRECT_URL: z.string().min(1).url().optional(),
+    HETZNER_ADMIN_SSH_KEYS: z.string().optional(),
     HETZNER_IMAGE_ID: z.string().min(1),
     HETZNER_LOCATION: z.string().min(1).default("nbg1"),
 

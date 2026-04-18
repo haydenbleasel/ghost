@@ -14,6 +14,7 @@
     "migrate": "prisma format && prisma generate && prisma db push",
     "agent:build": "cd agent && bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/ghost-agent",
     "agent:dev": "cd agent && bun run src/index.ts",
+    "agent:release": "bun scripts/release-agent.ts",
     "snapshot": "bash scripts/build-snapshot.sh",
     "codegen": "openapi-typescript https://docs.hetzner.cloud/cloud.spec.json -o lib/hetzner/schema.ts",
     "workflow:ui": "workflow inspect runs --web",

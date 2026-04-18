@@ -41,6 +41,7 @@ export const COMMAND_TYPES = [
   "FILES_LIST",
   "FILES_DELETE",
   "FILES_INSTALL_FROM_URL",
+  "UPDATE_AGENT",
 ] as const;
 export type CommandType = (typeof COMMAND_TYPES)[number];
 
