@@ -16,6 +16,7 @@ const NewServerPage = async () => {
       image: g.image,
       name: g.name,
       requirements: { cpu: g.requirements.cpu, memory: g.requirements.memory },
+      settings: g.settings,
     }));
 
   return (

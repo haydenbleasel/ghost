@@ -16,6 +16,12 @@ import { cn } from "@/lib/utils";
 import { Cobe } from "./cobe";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  type FieldValue,
+  SettingsFields,
+  type SettingsValuesRecord,
+} from "../../[id]/_components/game-settings-form";
+import { getDefaults, type SettingsSchema } from "@/games";
 
 const VISIBLE_ALL_SIZES = 3;
 
@@ -77,6 +83,7 @@ export interface GameOption {
   description: string;
   image: StaticImageData;
   requirements: { cpu: number; memory: number };
+  settings: SettingsSchema;
 }
 
 interface Props {
@@ -303,6 +310,7 @@ interface SubmitArgs {
   locationName: string;
   trimmedName: string;
   typeName: string;
+  settings: SettingsValuesRecord;
 }
 
 const postServer = async (args: SubmitArgs) => {
@@ -312,6 +320,7 @@ const postServer = async (args: SubmitArgs) => {
       location: args.locationName,
       name: args.trimmedName,
       serverType: args.typeName,
+      settings: args.settings,
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
@@ -340,6 +349,18 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
 
   const [typeName, setTypeName] = useState(() => eligibleTypes[0]?.name ?? "");
   const [locationName, setLocationName] = useState(() => firstAvailableLocation(eligibleTypes[0]));
+  const [settings, setSettings] = useState<SettingsValuesRecord>(() =>
+    selectedGame ? (getDefaults(selectedGame.settings) as SettingsValuesRecord) : {},
+  );
+
+  useEffect(() => {
+    if (selectedGame) {
+      setSettings(getDefaults(selectedGame.settings) as SettingsValuesRecord);
+    }
+  }, [selectedGame]);
+
+  const setSettingField = (key: string, value: FieldValue) =>
+    setSettings((prev) => ({ ...prev, [key]: value }));
 
   const selectedType = eligibleTypes.find((t) => t.name === typeName);
 
@@ -364,7 +385,13 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
     }
     setPending(true);
     try {
-      const server = await postServer({ gameId, locationName, trimmedName, typeName });
+      const server = await postServer({
+        gameId,
+        locationName,
+        settings,
+        trimmedName,
+        typeName,
+      });
       router.push(`/dashboard/${server.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not create server");
@@ -473,6 +500,24 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
               autoFocus
             />
           </div>
+          {selectedGame && (
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button type="button" variant="ghost" size="sm" className="group w-full">
+                  <span className="group-data-[state=open]:hidden">Customize game settings</span>
+                  <span className="hidden group-data-[state=open]:inline">Hide settings</span>
+                  <ChevronDown className="transition-transform group-data-[state=open]:rotate-180" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="flex flex-col gap-1 rounded-md border border-border bg-background p-1">
+                <SettingsFields
+                  schema={selectedGame.settings}
+                  values={settings}
+                  onChange={setSettingField}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          )}
           <dl className="grid gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Game</dt>

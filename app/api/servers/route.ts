@@ -1,9 +1,10 @@
 import crypto from "node:crypto";
-import { games } from "@/games";
+import { games, validateSettings } from "@/games";
 import { prisma } from "@/lib/db";
 import { getHetznerCatalog } from "@/lib/hetzner/catalog";
 import { requireUser } from "@/lib/session";
 import { provisionServer } from "@/lib/workflows/provision-server";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { ulid } from "ulid";
 import { start } from "workflow/api";
@@ -16,6 +17,7 @@ const createServerSchema = z.object({
   location: z.string().min(1),
   name: z.string().min(3).max(40),
   serverType: z.string().min(1),
+  settings: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const GET = async () => {
@@ -72,6 +74,15 @@ export const POST = async (request: Request) => {
     );
   }
 
+  let settings: Record<string, unknown> = {};
+  if (parsed.data.settings) {
+    const validation = validateSettings(game.settings, parsed.data.settings);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+    settings = validation.data as Record<string, unknown>;
+  }
+
   const id = ulid();
   const rconPassword = crypto.randomBytes(16).toString("hex");
 
@@ -86,6 +97,7 @@ export const POST = async (request: Request) => {
       phase: "queued",
       rconPassword,
       serverType: parsed.data.serverType,
+      settings: settings as Prisma.InputJsonValue,
       userId: user.id,
     },
   });

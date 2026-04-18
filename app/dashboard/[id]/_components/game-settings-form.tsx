@@ -15,7 +15,8 @@ import type { SettingField, SettingsSchema } from "@/games";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-type FieldValue = string | number | boolean;
+export type FieldValue = string | number | boolean;
+export type SettingsValuesRecord = Record<string, FieldValue>;
 
 interface InputProps {
   id: string;
@@ -79,9 +80,8 @@ const SettingInput = ({ id, field, value, onChange }: InputProps) => {
         />
       );
     }
-    default: {
+    default:
       return null;
-    }
   }
 };
 
@@ -109,6 +109,29 @@ const SettingRow = ({ fieldKey, field, value, onChange }: RowProps) => {
   );
 };
 
+interface FieldsProps {
+  schema: SettingsSchema;
+  values: SettingsValuesRecord;
+  onChange: (key: string, value: FieldValue) => void;
+}
+
+export const SettingsFields = ({ schema, values, onChange }: FieldsProps) => {
+  const entries = useMemo(() => Object.entries(schema), [schema]);
+  return (
+    <>
+      {entries.map(([key, field]) => (
+        <SettingRow
+          key={key}
+          fieldKey={key}
+          field={field}
+          value={values[key]}
+          onChange={(value) => onChange(key, value)}
+        />
+      ))}
+    </>
+  );
+};
+
 interface Props {
   serverId: string;
   schema: SettingsSchema;
@@ -126,12 +149,11 @@ const valuesEqual = (a: Record<string, unknown>, b: Record<string, unknown>): bo
 };
 
 export const GameSettingsForm = ({ serverId, schema, initialValues }: Props) => {
-  const entries = useMemo(() => Object.entries(schema), [schema]);
-  const [values, setValues] = useState<Record<string, FieldValue>>(
-    () => initialValues as Record<string, FieldValue>,
+  const [values, setValues] = useState<SettingsValuesRecord>(
+    () => initialValues as SettingsValuesRecord,
   );
-  const [baseline, setBaseline] = useState<Record<string, FieldValue>>(
-    () => initialValues as Record<string, FieldValue>,
+  const [baseline, setBaseline] = useState<SettingsValuesRecord>(
+    () => initialValues as SettingsValuesRecord,
   );
   const [saving, setSaving] = useState(false);
 
@@ -155,7 +177,7 @@ export const GameSettingsForm = ({ serverId, schema, initialValues }: Props) => 
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error ?? "Failed to save settings");
       }
-      const json = (await res.json()) as { settings: Record<string, FieldValue> };
+      const json = (await res.json()) as { settings: SettingsValuesRecord };
       setBaseline(json.settings);
       setValues(json.settings);
       toast.success("Settings saved");
@@ -169,15 +191,7 @@ export const GameSettingsForm = ({ serverId, schema, initialValues }: Props) => 
   return (
     <Panel title="Game Settings">
       <PanelCard className="flex flex-col gap-1">
-        {entries.map(([key, field]) => (
-          <SettingRow
-            key={key}
-            fieldKey={key}
-            field={field}
-            value={values[key]}
-            onChange={(value) => setField(key, value)}
-          />
-        ))}
+        <SettingsFields schema={schema} values={values} onChange={setField} />
         <div className="flex items-center justify-end gap-2 px-3 py-2">
           {dirty && (
             <Button type="button" variant="ghost" size="sm" onClick={reset} disabled={saving}>
