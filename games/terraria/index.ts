@@ -1,8 +1,10 @@
 import image from "./image.jpg";
+import { buildTerrariaCompose } from "./install";
 
 export const terraria = {
+  buildCompose: buildTerrariaCompose,
   description: "Dig, fight, explore, build! Nothing is impossible in this 2D adventure game.",
-  enabled: false,
+  enabled: true,
   gamedigId: "terrariatshock",
   id: "terraria",
   image,

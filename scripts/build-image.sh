@@ -57,8 +57,14 @@ test -f /etc/systemd/system/ghost-agent.service || { echo 'missing service unit'
 systemctl daemon-reload
 systemctl enable ghost-agent.service
 
-# Pre-pull game images so first provision is instant
+# Pre-pull game images so first provision is instant.
+# Keep in sync with games/<game>/install.ts `image:` fields.
 docker pull itzg/minecraft-server:latest
+docker pull lloesche/valheim-server:latest
+docker pull thijsvanloef/palworld-server-docker:latest
+docker pull sknnr/enshrouded-dedicated-server:latest
+docker pull didstopia/rust-server:latest
+docker pull ryshe/terraria:latest
 
 # Minimize image size
 apt-get clean

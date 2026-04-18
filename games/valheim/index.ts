@@ -1,6 +1,8 @@
 import image from "./image.jpg";
+import { buildValheimCompose } from "./install";
 
 export const valheim = {
+  buildCompose: buildValheimCompose,
   description: "A Viking-themed action RPG where you explore, craft, build, and survive.",
   enabled: true,
   gamedigId: "valheim",

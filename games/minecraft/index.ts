@@ -1,6 +1,8 @@
 import image from "./image.jpg";
+import { buildMinecraftCompose } from "./install";
 
 export const minecraft = {
+  buildCompose: buildMinecraftCompose,
   description: "Minecraft is a sandbox game where you can build your own world.",
   enabled: true,
   gamedigId: "minecraft",

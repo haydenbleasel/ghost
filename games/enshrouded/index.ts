@@ -1,8 +1,10 @@
 import image from "./image.jpg";
+import { buildEnshroudedCompose } from "./install";
 
 export const enshrouded = {
+  buildCompose: buildEnshroudedCompose,
   description: "A game of survival, crafting, and action on a sprawling voxel-based continent.",
-  enabled: false,
+  enabled: true,
   gamedigId: "enshrouded",
   id: "enshrouded",
   image,

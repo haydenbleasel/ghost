@@ -32,7 +32,7 @@ PREVIOUS_IMAGE_ID="${HETZNER_IMAGE_ID:-}"
 export HCLOUD_TOKEN="$HETZNER_TOKEN"
 
 BUILDER_NAME="ghost-image-builder"
-SNAPSHOT_DESC="ghost-gold-minecraft"
+SNAPSHOT_DESC="ghost-gold"
 SSH_OPTS=(
   -o UserKnownHostsFile=/dev/null
   -o StrictHostKeyChecking=no

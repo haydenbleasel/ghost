@@ -1,8 +1,10 @@
 import image from "./image.jpg";
+import { buildRustCompose } from "./install";
 
 export const rust = {
+  buildCompose: buildRustCompose,
   description: "The only aim in Rust is to survive when everything on the island wants you to die.",
-  enabled: false,
+  enabled: true,
   gamedigId: "rust",
   id: "rust",
   image,

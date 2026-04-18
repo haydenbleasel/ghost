@@ -17,7 +17,7 @@ import { deleteFile, installFromUrl, listFiles } from "./files";
 import { signedFetch } from "./signing";
 import { downloadAndStageAgent, swapBinaryInPlace } from "./update";
 
-const MINECRAFT_CONTAINER = "ghost-minecraft";
+const GAME_CONTAINER = "ghost-game";
 
 const sleep = async (ms: number, signal: AbortSignal): Promise<void> => {
   try {
@@ -72,13 +72,13 @@ export const executeCommand = async (
           message: "Container started",
           phase: "starting",
         });
-        startLogTail(MINECRAFT_CONTAINER, buffer);
+        startLogTail(GAME_CONTAINER, buffer);
         buffer.enqueueActivity({ message: "Game is healthy", phase: "healthy" });
         break;
       }
       case "START": {
         await composeUp();
-        startLogTail(MINECRAFT_CONTAINER, buffer);
+        startLogTail(GAME_CONTAINER, buffer);
         buffer.enqueueActivity({ message: "Starting game", phase: "starting" });
         break;
       }
@@ -90,7 +90,7 @@ export const executeCommand = async (
       }
       case "RESTART": {
         await composeRestart();
-        startLogTail(MINECRAFT_CONTAINER, buffer);
+        startLogTail(GAME_CONTAINER, buffer);
         buffer.enqueueActivity({
           message: "Game restarting",
           phase: "starting",

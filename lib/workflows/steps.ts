@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { buildMinecraftCompose } from "@/games/minecraft/install";
+import { buildUfwRules, type GamePort, getGame } from "@/games";
 import { mintBootstrapJwt } from "@/lib/agent/bootstrap";
 import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
@@ -20,18 +20,20 @@ const safeResumeHook = async (token: string, payload?: unknown): Promise<void> =
   }
 };
 
-const MINECRAFT_PORT_COMMENT = "# opened via ufw in cloud-init";
-
 const buildCloudInit = (input: {
   serverId: string;
   bootstrapToken: string;
   apiBaseUrl: string;
+  ports: readonly GamePort[];
 }): string => {
   const bootstrap = {
     apiBaseUrl: input.apiBaseUrl,
     bootstrapToken: input.bootstrapToken,
     serverId: input.serverId,
   };
+  const ufwRules = buildUfwRules(input.ports)
+    .map((rule) => `  - ${rule}`)
+    .join("\n");
 
   return `#cloud-config
 write_files:
@@ -43,7 +45,7 @@ write_files:
 runcmd:
   - systemctl daemon-reload
   - systemctl enable --now ghost-agent.service
-  - ufw allow 25565/tcp || true ${MINECRAFT_PORT_COMMENT}
+${ufwRules}
 `;
 };
 
@@ -66,6 +68,11 @@ export const stepCreateHetznerServer = async (serverId: string) => {
     };
   }
 
+  const game = getGame(server.game);
+  if (!game) {
+    throw new FatalError(`Unknown game: ${server.game}`);
+  }
+
   const { token, jti, expiresAt } = await mintBootstrapJwt({ serverId });
 
   await prisma.agentEnrollment.create({
@@ -75,6 +82,7 @@ export const stepCreateHetznerServer = async (serverId: string) => {
   const userData = buildCloudInit({
     apiBaseUrl: env.NEXT_PUBLIC_APP_URL,
     bootstrapToken: token,
+    ports: game.ports,
     serverId,
   });
 
@@ -225,7 +233,12 @@ export const stepSendInstallConfig = async (serverId: string) => {
     return;
   }
 
-  const compose = buildMinecraftCompose({
+  const game = getGame(server.game);
+  if (!game) {
+    throw new FatalError(`Unknown game: ${server.game}`);
+  }
+
+  const compose = game.buildCompose({
     name: server.name,
     rconPassword: server.rconPassword,
   });

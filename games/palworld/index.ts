@@ -1,8 +1,10 @@
 import image from "./image.jpg";
+import { buildPalworldCompose } from "./install";
 
 export const palworld = {
+  buildCompose: buildPalworldCompose,
   description: 'Fight, farm, build and work alongside mysterious creatures called "Pals".',
-  enabled: false,
+  enabled: true,
   gamedigId: "palworld",
   id: "palworld",
   image,

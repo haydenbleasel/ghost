@@ -1,17 +1,13 @@
-export interface MinecraftConfig {
-  name: string;
-  rconPassword: string;
-  timezone?: string;
-}
+import type { ComposeConfig } from "../compose";
+import { escapeComposeValue } from "../compose";
 
-const escape = (value: string): string => value.replaceAll('"', '\\"');
-
-export const buildMinecraftCompose = (config: MinecraftConfig): string => {
+export const buildMinecraftCompose = (config: ComposeConfig): string => {
   const timezone = config.timezone ?? "UTC";
+  const escape = escapeComposeValue;
   return `services:
   minecraft:
     image: itzg/minecraft-server:latest
-    container_name: ghost-minecraft
+    container_name: ghost-game
     ports:
       - "25565:25565"
     environment:
