@@ -19,39 +19,24 @@ const MAX_INSTALL_WAIT_SECONDS = 900;
 type InstallOutcome = "healthy" | "cancelled" | "errored" | "timeout";
 
 const waitForInstall = async (
-  phaseHook: PromiseLike<Phase>,
+  phaseHook: AsyncIterable<Phase>,
   cancelled: PromiseLike<"cancelled">,
 ): Promise<InstallOutcome> => {
-  const deadline = Date.now() + MAX_INSTALL_WAIT_SECONDS * 1000;
-  while (Date.now() < deadline) {
-    const remainingSeconds = Math.max(1, Math.ceil((deadline - Date.now()) / 1000));
-    const phasePromise = (async () => {
-      const phase = await phaseHook;
-      return { kind: "phase" as const, phase };
-    })();
-    const cancelPromise = (async () => {
-      const value = await cancelled;
-      return { kind: "cancelled" as const, value };
-    })();
-    const timerPromise = (async () => {
-      await sleep(`${remainingSeconds}s`);
-      return { kind: "timeout" as const };
-    })();
-    const event = await Promise.race([phasePromise, cancelPromise, timerPromise]);
-    if (event.kind === "cancelled") {
-      return "cancelled";
+  const timeout = sleep(`${MAX_INSTALL_WAIT_SECONDS}s`).then(
+    () => "timeout" as const,
+  );
+  const phases = (async (): Promise<InstallOutcome> => {
+    for await (const phase of phaseHook) {
+      if (phase === "healthy" || phase === "ready") {
+        return "healthy";
+      }
+      if (phase === "errored") {
+        return "errored";
+      }
     }
-    if (event.kind === "timeout") {
-      return "timeout";
-    }
-    if (event.phase === "healthy" || event.phase === "ready") {
-      return "healthy";
-    }
-    if (event.phase === "errored") {
-      return "errored";
-    }
-  }
-  return "timeout";
+    return "timeout";
+  })();
+  return Promise.race([phases, cancelled, timeout]);
 };
 
 export const provisionServer = async (input: { serverId: string }) => {
