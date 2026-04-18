@@ -473,8 +473,9 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
   useEffect(() => {
     if (selectedGame) {
       setSettings(getDefaults(selectedGame.settings) as SettingsValuesRecord);
+      setTypeName(eligibleTypes[0]?.name ?? "");
     }
-  }, [selectedGame]);
+  }, [selectedGame, eligibleTypes]);
 
   const setSettingField = (key: string, value: FieldValue) =>
     setSettings((prev) => ({ ...prev, [key]: value }));
