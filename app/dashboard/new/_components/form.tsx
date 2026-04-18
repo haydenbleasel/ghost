@@ -1,6 +1,6 @@
 "use client";
 import type { Marker } from "cobe";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Cpu, HardDrive, MemoryStick, Server } from "lucide-react";
 import Image from "next/image";
 import type { StaticImageData } from "next/image";
 import { useRouter } from "next/navigation";
@@ -42,13 +42,23 @@ const SizeCard = ({ type, selected, currency, recommended }: SizeCardProps) => (
   >
     <div className="flex items-center gap-3">
       <RadioGroupItem value={type.name} id={`type-${type.name}`} />
-      <div>
-        <div className="font-medium text-sm">
-          {type.cores} vCPU · {type.memory} GB RAM · {type.disk} GB SSD
-        </div>
-        <div className="text-muted-foreground text-xs capitalize">
-          {type.cpuType} · {type.architecture}
-        </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <span className="flex items-center gap-1">
+          <Cpu className="size-3.5 text-muted-foreground" />
+          {type.cores} <span className="text-muted-foreground">vCPU</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <MemoryStick className="size-3.5 text-muted-foreground" />
+          {type.memory} <span className="text-muted-foreground">GB</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <HardDrive className="size-3.5 text-muted-foreground" />
+          {type.disk} <span className="text-muted-foreground">GB</span>
+        </span>
+        <span className="flex items-center gap-1 capitalize">
+          <Server className="size-3.5 text-muted-foreground" />
+          {type.architecture}
+        </span>
       </div>
     </div>
     <div className="flex items-center gap-3">
