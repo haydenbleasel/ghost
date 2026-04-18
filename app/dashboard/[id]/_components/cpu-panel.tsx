@@ -2,7 +2,8 @@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
-import { type CpuPoint, formatTime, type RangeKey } from "./use-server-metrics";
+import { formatTime } from "./use-server-metrics";
+import type { CpuPoint, RangeKey } from "./use-server-metrics";
 
 const cpuConfig = {
   cpu: { color: "var(--chart-1)", label: "CPU %" },

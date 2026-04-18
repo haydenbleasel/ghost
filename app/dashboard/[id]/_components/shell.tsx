@@ -2,7 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSelectedLayoutSegment } from "next/navigation";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -20,7 +21,8 @@ import { games } from "@/games";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { ProvisioningStatus } from "./provisioning-status";
 import { ReadyHeader } from "./ready-header";
-import { ServerProvider, type ServerView } from "./server-context";
+import { ServerProvider } from "./server-context";
+import type { ServerView } from "./server-context";
 
 const PROVISIONING_PHASES = new Set([
   "queued",
@@ -39,6 +41,7 @@ const TABS = [
   { label: "Console", value: "console" },
   { label: "Graphs", value: "graphs" },
   { label: "Backups", value: "backups" },
+  { label: "Files", value: "files" },
   { label: "Details", value: "details" },
   { label: "Settings", value: "settings" },
 ] as const;
@@ -53,8 +56,7 @@ interface Props {
 export const ServerShell = ({ server: initial, eligibleTypes, currency, children }: Props) => {
   const router = useRouter();
   const segment = useSelectedLayoutSegment();
-  const activeTab =
-    segment && TABS.some((tab) => tab.value === segment) ? segment : "connect";
+  const activeTab = segment && TABS.some((tab) => tab.value === segment) ? segment : "connect";
   const [server, setServer] = useState(initial);
   const [pending, setPending] = useState<null | string>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -113,8 +115,7 @@ export const ServerShell = ({ server: initial, eligibleTypes, currency, children
     }
   };
 
-  const updateServer = (patch: Partial<ServerView>) =>
-    setServer((prev) => ({ ...prev, ...patch }));
+  const updateServer = (patch: Partial<ServerView>) => setServer((prev) => ({ ...prev, ...patch }));
 
   const isProvisioning = PROVISIONING_PHASES.has(server.phase);
   const game = games.find((g) => g.id === server.game);

@@ -5,7 +5,8 @@ import { DiskPanel } from "../_components/disk-panel";
 import { GraphsRangePanel } from "../_components/graphs-range-panel";
 import { NetworkPanel } from "../_components/network-panel";
 import { useServer } from "../_components/server-context";
-import { type RangeKey, useServerMetrics } from "../_components/use-server-metrics";
+import { useServerMetrics } from "../_components/use-server-metrics";
+import type { RangeKey } from "../_components/use-server-metrics";
 
 const GraphsTab = () => {
   const { server } = useServer();

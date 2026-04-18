@@ -15,6 +15,7 @@ export const env = createEnv({
     ANALYZE: process.env.ANALYZE,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     BOOTSTRAP_JWT_SECRET: process.env.BOOTSTRAP_JWT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     DIRECT_URL: process.env.DIRECT_URL,
@@ -39,6 +40,7 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(32),
 
     BETTER_AUTH_URL: z.string().min(1).url(),
+    BLOB_READ_WRITE_TOKEN: z.string().min(1).startsWith("vercel_blob_rw_"),
     BOOTSTRAP_JWT_SECRET: z.string().min(32),
 
     DATABASE_URL: z.string().min(1).url(),

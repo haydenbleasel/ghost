@@ -100,6 +100,31 @@ const fetchLogsCommand = z.object({
   payload: z.object({ tail: z.number().int().positive().optional() }),
   type: z.literal("FETCH_LOGS"),
 });
+const filesListCommand = z.object({
+  id: z.string().min(1),
+  issuedAt: z.string().datetime(),
+  payload: z.object({ path: z.string() }),
+  type: z.literal("FILES_LIST"),
+});
+const filesDeleteCommand = z.object({
+  id: z.string().min(1),
+  issuedAt: z.string().datetime(),
+  payload: z.object({ path: z.string().min(1) }),
+  type: z.literal("FILES_DELETE"),
+});
+const filesInstallFromUrlCommand = z.object({
+  id: z.string().min(1),
+  issuedAt: z.string().datetime(),
+  payload: z.object({
+    destPath: z.string().min(1),
+    sha256: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/i)
+      .optional(),
+    url: z.string().url(),
+  }),
+  type: z.literal("FILES_INSTALL_FROM_URL"),
+});
 
 export const commandSchema = z.discriminatedUnion("type", [
   startCommand,
@@ -109,7 +134,24 @@ export const commandSchema = z.discriminatedUnion("type", [
   updateConfigCommand,
   uploadBackupCommand,
   fetchLogsCommand,
+  filesListCommand,
+  filesDeleteCommand,
+  filesInstallFromUrlCommand,
 ]);
+
+export const fileEntrySchema = z.object({
+  mtime: z.string().datetime(),
+  name: z.string(),
+  size: z.number().int().nonnegative(),
+  type: z.enum(["file", "dir"]),
+});
+export type FileEntry = z.infer<typeof fileEntrySchema>;
+
+export const filesListResultSchema = z.object({
+  entries: z.array(fileEntrySchema),
+  path: z.string(),
+});
+export type FilesListResult = z.infer<typeof filesListResultSchema>;
 export type Command = z.infer<typeof commandSchema>;
 
 export const commandEnvelopeSchema = z.object({

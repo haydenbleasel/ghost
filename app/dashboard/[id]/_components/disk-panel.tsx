@@ -2,12 +2,8 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
-import {
-  type DiskPoint,
-  formatBytes,
-  formatTime,
-  type RangeKey,
-} from "./use-server-metrics";
+import { formatBytes, formatTime } from "./use-server-metrics";
+import type { DiskPoint, RangeKey } from "./use-server-metrics";
 
 const diskConfig = {
   read: { color: "var(--chart-2)", label: "Read" },

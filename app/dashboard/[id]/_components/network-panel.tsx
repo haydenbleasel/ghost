@@ -2,12 +2,8 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
-import {
-  formatBytes,
-  formatTime,
-  type NetworkPoint,
-  type RangeKey,
-} from "./use-server-metrics";
+import { formatBytes, formatTime } from "./use-server-metrics";
+import type { NetworkPoint, RangeKey } from "./use-server-metrics";
 
 const networkConfig = {
   in: { color: "var(--chart-4)", label: "In" },

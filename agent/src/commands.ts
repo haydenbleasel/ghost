@@ -13,6 +13,7 @@ import {
   writeCompose,
 } from "./docker";
 import type { EventBuffer } from "./events";
+import { deleteFile, installFromUrl, listFiles } from "./files";
 import { signedFetch } from "./signing";
 
 const MINECRAFT_CONTAINER = "ghost-minecraft";
@@ -31,10 +32,11 @@ const ackCommand = async (
   status: "succeeded" | "failed",
   durationMs: number,
   error?: string,
+  result?: Record<string, unknown>,
 ): Promise<void> => {
   const res = await signedFetch({
     agentId: state.agentId,
-    body: { durationMs, error, status },
+    body: { durationMs, error, result, status },
     method: "POST",
     privateKey: state.privateKey,
     url: `${state.apiBaseUrl}/api/agent/commands/${commandId}/ack`,
@@ -55,6 +57,7 @@ export const executeCommand = async (
   }
 
   const started = Date.now();
+  let result: Record<string, unknown> | undefined;
   try {
     switch (command.type) {
       case "UPDATE_CONFIG": {
@@ -110,6 +113,20 @@ export const executeCommand = async (
         }, 1500).unref();
         break;
       }
+      case "FILES_LIST": {
+        result = await listFiles(command.payload.path);
+        break;
+      }
+      case "FILES_DELETE": {
+        await deleteFile(command.payload.path);
+        result = { path: command.payload.path };
+        break;
+      }
+      case "FILES_INSTALL_FROM_URL": {
+        const installed = await installFromUrl(command.payload);
+        result = { destPath: command.payload.destPath, ...installed };
+        break;
+      }
       default: {
         break;
       }
@@ -117,7 +134,7 @@ export const executeCommand = async (
 
     state.lastExecutedCommandId = command.id;
     await saveState(state);
-    await ackCommand(state, command.id, "succeeded", Date.now() - started);
+    await ackCommand(state, command.id, "succeeded", Date.now() - started, undefined, result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     buffer.enqueueActivity({

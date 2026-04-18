@@ -1,4 +1,5 @@
 import "server-only";
+import { setTimeout as sleep } from "node:timers/promises";
 import { prisma } from "@/lib/db";
 import type { Command } from "@/protocol";
 import { Prisma } from "@prisma/client";
@@ -82,6 +83,34 @@ export const claimPendingCommands = async (serverId: string, max = 5): Promise<C
         type: command.type as Command["type"],
       }) as Command,
   );
+};
+
+export const waitForCommand = async (
+  commandId: string,
+  timeoutMs = 15_000,
+): Promise<{
+  status: "succeeded" | "failed" | "timeout";
+  result?: Record<string, unknown>;
+  error?: string;
+}> => {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const command = await prisma.command.findUnique({
+      where: { id: commandId },
+    });
+    if (!command) {
+      return { error: "Command not found", status: "failed" };
+    }
+    if (command.status === "succeeded" || command.status === "failed") {
+      return {
+        error: command.error ?? undefined,
+        result: (command.result as Record<string, unknown> | null) ?? undefined,
+        status: command.status,
+      };
+    }
+    await sleep(250);
+  }
+  return { status: "timeout" };
 };
 
 export const ackCommand = async (input: {

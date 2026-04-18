@@ -74,9 +74,20 @@ export const formatBytes = (n: number): string => {
   return `${n.toFixed(0)} B/s`;
 };
 
-export type CpuPoint = { t: number; cpu: number };
-export type DiskPoint = { t: number; read: number; write: number };
-export type NetworkPoint = { t: number; in: number; out: number };
+export interface CpuPoint {
+  t: number;
+  cpu: number;
+}
+export interface DiskPoint {
+  t: number;
+  read: number;
+  write: number;
+}
+export interface NetworkPoint {
+  t: number;
+  in: number;
+  out: number;
+}
 
 export const useServerMetrics = (serverId: string, observedState: string, range: RangeKey) => {
   const [loading, setLoading] = useState(true);
