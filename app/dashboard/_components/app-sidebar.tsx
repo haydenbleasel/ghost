@@ -165,9 +165,11 @@ export const AppSidebar = ({ servers, user }: { servers: SidebarServer[]; user: 
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>
-                  <User />
-                  Account
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/account">
+                    <User />
+                    Account
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
