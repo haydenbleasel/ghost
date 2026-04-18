@@ -12,7 +12,7 @@ interface CobeProps {
 }
 
 const locationToAngles = (lat: number, long: number): [number, number] => [
-  Math.PI - (long * Math.PI) / 180 - Math.PI / 2,
+  Math.PI - ((long * Math.PI) / 180 - Math.PI / 2),
   (lat * Math.PI) / 180,
 ];
 
@@ -45,7 +45,7 @@ export const Cobe = ({ markers, focus, className }: CobeProps) => {
       height: 600 * 2,
       mapBrightness: 6,
       mapSamples: 16_000,
-      markerColor: [251 / 255, 100 / 255, 21 / 255],
+      markerColor: [59 / 255, 130 / 255, 246 / 255],
       markers,
       phi: 0,
       theta: 0.2,
