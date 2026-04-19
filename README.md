@@ -85,8 +85,6 @@ In `.env.local`:
 
 ```bash
 HETZNER_TOKEN=            # required
-HETZNER_LOCATION=nbg1     # optional, default nbg1
-HETZNER_SERVER_TYPE=cx23  # optional, default cx23
 HETZNER_SSH_KEY=laptop    # optional, default laptop (hcloud ssh-key name)
 ```
 
