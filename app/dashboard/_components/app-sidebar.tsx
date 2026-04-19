@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { games } from "@/games";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,7 @@ export interface SidebarServer {
 export interface SidebarUser {
   name: string | null;
   email: string;
+  hasImage: boolean;
 }
 
 const statusDotClass = (state: string) => {
@@ -141,9 +143,18 @@ export const AppSidebar = ({ servers, user }: { servers: SidebarServer[]; user: 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg" tooltip={user.email}>
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground text-sm font-medium">
-                    {initial}
-                  </div>
+                  <Avatar className="size-8 rounded-lg">
+                    {user.hasImage ? (
+                      <AvatarImage
+                        src="/api/account/avatar"
+                        alt={user.name ?? user.email}
+                        className="rounded-lg"
+                      />
+                    ) : null}
+                    <AvatarFallback className="rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
+                      {initial}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="grid flex-1 text-left leading-tight">
                     <span className="truncate text-sm font-medium">{user.name ?? user.email}</span>
                     {user.name ? (

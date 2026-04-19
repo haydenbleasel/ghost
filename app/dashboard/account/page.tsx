@@ -15,6 +15,7 @@ const AccountPage = async () => {
         user={{
           email: user.email,
           emailVerified: user.emailVerified,
+          hasImage: Boolean(user.image),
           name: user.name ?? "",
         }}
       />
