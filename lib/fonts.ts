@@ -1,24 +1,20 @@
-import { cn } from '@/lib/utils';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { cn } from "@/lib/utils";
+import { Geist, Geist_Mono } from "next/font/google";
 
 const sans = Geist({
-  display: 'swap',
+  display: "swap",
   preload: true,
-  weight: ['400', '500', '600', '700'],
-  subsets: ['latin'],
-  variable: '--font-sans',
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
 });
 
 const mono = Geist_Mono({
-  display: 'swap',
+  display: "swap",
   preload: true,
-  weight: '400',
-  subsets: ['latin'],
-  variable: '--font-mono',
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: "400",
 });
 
-export const fonts = cn(
-  sans.variable,
-  mono.variable,
-  'touch-manipulation font-sans antialiased'
-);
+export const fonts = cn(sans.variable, mono.variable, "touch-manipulation font-sans antialiased");

@@ -1,35 +1,43 @@
-import image from './image.jpg';
+import type { ComposeConfig } from "../compose";
+import { resolveSettings } from "../settings";
+import image from "./image.jpg";
+import { buildPalworldCompose } from "./install";
+import { palworldSettings } from "./settings";
+
+const buildCompose = (config: ComposeConfig, raw: unknown): string =>
+  buildPalworldCompose(config, resolveSettings(palworldSettings, raw));
 
 export const palworld = {
-  id: 'palworld',
-  gamedigId: 'palworld',
-  name: 'Palworld',
-  enabled: false,
+  buildCompose,
+  description: 'Fight, farm, build and work alongside mysterious creatures called "Pals".',
+  enabled: true,
+  gamedigId: "palworld",
+  id: "palworld",
   image,
-  description:
-    'Fight, farm, build and work alongside mysterious creatures called "Pals".',
+  name: "Palworld",
   ports: [
     // This is the default port for Palworld, used for game traffic.
     {
-      protocol: 'udp',
       from: 8211,
+      protocol: "udp",
       to: 8211,
     },
     // This is the port for Steam Query
     {
-      protocol: 'udp',
-      from: 27015,
-      to: 27015,
+      from: 27_015,
+      protocol: "udp",
+      to: 27_015,
     },
     // This is the port for RCON
     {
-      protocol: 'tcp',
-      from: 25575,
-      to: 25575,
+      from: 25_575,
+      protocol: "tcp",
+      to: 25_575,
     },
   ],
   requirements: {
     cpu: 4,
     memory: 16,
   },
+  settings: palworldSettings,
 } as const;

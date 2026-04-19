@@ -1,18 +1,25 @@
-import image from './image.jpg';
+import type { ComposeConfig } from "../compose";
+import { resolveSettings } from "../settings";
+import image from "./image.jpg";
+import { buildValheimCompose } from "./install";
+import { valheimSettings } from "./settings";
+
+const buildCompose = (config: ComposeConfig, raw: unknown): string =>
+  buildValheimCompose(config, resolveSettings(valheimSettings, raw));
 
 export const valheim = {
-  id: 'valheim',
-  gamedigId: 'valheim',
-  name: 'Valheim',
+  buildCompose,
+  description: "A Viking-themed action RPG where you explore, craft, build, and survive.",
   enabled: true,
+  gamedigId: "valheim",
+  id: "valheim",
   image,
-  description:
-    'A Viking-themed action RPG where you explore, craft, build, and survive.',
+  name: "Valheim",
   ports: [
     // This is the default port for Valheim, used for game traffic.
     {
-      protocol: 'udp',
       from: 2456,
+      protocol: "udp",
       to: 2458,
     },
   ],
@@ -20,4 +27,5 @@ export const valheim = {
     cpu: 2,
     memory: 4,
   },
+  settings: valheimSettings,
 } as const;

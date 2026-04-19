@@ -1,78 +1,66 @@
-import { vercel } from '@t3-oss/env-core/presets-zod';
-import { createEnv } from '@t3-oss/env-nextjs';
-import { z } from 'zod';
+import { vercel } from "@t3-oss/env-core/presets-zod";
+import { createEnv } from "@t3-oss/env-nextjs";
+import { z } from "zod";
 
 export const env = createEnv({
-  extends: [vercel()],
   client: {
-    // PostHog
-    NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1).startsWith('phc_'),
-    NEXT_PUBLIC_POSTHOG_HOST: z.string().min(1).url(),
-
-    // Google Analytics
-    NEXT_PUBLIC_GA_MEASUREMENT_ID: z
-      .string()
-      .min(1)
-      .startsWith('G-')
-      .optional(),
-
-    // Clerk
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1).startsWith('pk_'),
-    NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().min(1).startsWith('/'),
-    NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().min(1).startsWith('/'),
-    NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: z.string().min(1).startsWith('/'),
-    NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: z.string().min(1).startsWith('/'),
-
-    // Sentry (automatically by Sentry Integration in Vercel Marketplace)
+    NEXT_PUBLIC_APP_URL: z.string().min(1).url(),
+    NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().min(1).startsWith("G-").optional(),
+    NEXT_PUBLIC_POSTHOG_HOST: z.string().min(1).url().optional(),
+    NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1).startsWith("phc_").optional(),
     NEXT_PUBLIC_SENTRY_DSN: z.string().min(1).url().optional(),
   },
-  server: {
-    // Clerk
-    CLERK_SECRET_KEY: z.string().min(1).startsWith('sk_'),
-
-    // AWS
-    ULTRABEAM_AWS_ACCESS_KEY: z.string().min(1),
-    ULTRABEAM_AWS_SECRET_KEY: z.string().min(1),
-
-    // Stripe
-    STRIPE_SECRET_KEY: z.string().min(1),
-
-    // BetterStack
-    BETTERSTACK_API_KEY: z.string().min(1).optional(),
-    BETTERSTACK_URL: z.string().min(1).url().optional(),
-
-    // Sentry (automatically by Sentry Integration in Vercel Marketplace)
-    SENTRY_ORG: z.string().min(1).optional(),
-    SENTRY_PROJECT: z.string().min(1).optional(),
-
-    // Vercel (automatically by Vercel deployment)
-    NEXT_RUNTIME: z.enum(['nodejs', 'edge']).optional(),
-
-    // Optional, for bundle analysis
-    ANALYZE: z.string().optional(),
-  },
+  extends: [vercel()],
   runtimeEnv: {
-    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
-    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-    NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
-    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
-      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-    NEXT_PUBLIC_CLERK_SIGN_IN_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL,
-    NEXT_PUBLIC_CLERK_SIGN_UP_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL,
-    NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL:
-      process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL,
-    NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL:
-      process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL,
     ANALYZE: process.env.ANALYZE,
+    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
+    BOOTSTRAP_JWT_SECRET: process.env.BOOTSTRAP_JWT_SECRET,
+    DATABASE_URL: process.env.DATABASE_URL,
+    DIRECT_URL: process.env.DIRECT_URL,
+    HETZNER_ADMIN_SSH_KEYS: process.env.HETZNER_ADMIN_SSH_KEYS,
+    HETZNER_IMAGE_ID: process.env.HETZNER_IMAGE_ID,
+    HETZNER_LOCATION: process.env.HETZNER_LOCATION,
+    HETZNER_SERVER_TYPE: process.env.HETZNER_SERVER_TYPE,
+    HETZNER_TOKEN: process.env.HETZNER_TOKEN,
+    KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
+    KV_REST_API_URL: process.env.KV_REST_API_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
     NEXT_RUNTIME: process.env.NEXT_RUNTIME,
-    ULTRABEAM_AWS_ACCESS_KEY: process.env.ULTRABEAM_AWS_ACCESS_KEY,
-    ULTRABEAM_AWS_SECRET_KEY: process.env.ULTRABEAM_AWS_SECRET_KEY,
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-    BETTERSTACK_API_KEY: process.env.BETTERSTACK_API_KEY,
-    BETTERSTACK_URL: process.env.BETTERSTACK_URL,
     SENTRY_ORG: process.env.SENTRY_ORG,
     SENTRY_PROJECT: process.env.SENTRY_PROJECT,
-    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+  },
+  server: {
+    ANALYZE: z.string().optional(),
+    BETTER_AUTH_SECRET: z.string().min(32),
+
+    BETTER_AUTH_URL: z.string().min(1).url(),
+    BLOB_READ_WRITE_TOKEN: z.string().min(1).startsWith("vercel_blob_rw_"),
+    BOOTSTRAP_JWT_SECRET: z.string().min(32),
+
+    DATABASE_URL: z.string().min(1).url(),
+    DIRECT_URL: z.string().min(1).url().optional(),
+    HETZNER_ADMIN_SSH_KEYS: z.string().optional(),
+    HETZNER_IMAGE_ID: z.string().min(1),
+    HETZNER_LOCATION: z.string().min(1).default("nbg1"),
+
+    HETZNER_SERVER_TYPE: z.string().min(1).default("cx22"),
+
+    HETZNER_TOKEN: z.string().min(1),
+    KV_REST_API_TOKEN: z.string().min(1),
+
+    KV_REST_API_URL: z.string().min(1).url(),
+
+    NEXT_RUNTIME: z.enum(["nodejs", "edge"]).optional(),
+    SENTRY_ORG: z.string().min(1).optional(),
+
+    SENTRY_PROJECT: z.string().min(1).optional(),
+    STRIPE_SECRET_KEY: z.string().min(1).optional(),
   },
 });

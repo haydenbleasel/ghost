@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Better Auth ────────────────────────────────────────────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  passkeys      Passkey[]
+  servers       Server[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verifications")
+}
+
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime? @default(now())
+  aaguid       String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkeys")
+}
+
+// ─── App models ─────────────────────────────────────────────────
+
+enum DesiredState {
+  running
+  stopped
+  deleted
+}
+
+enum ObservedState {
+  pending
+  provisioning
+  running
+  unhealthy
+  lost
+  stopped
+  failed
+  deleted
+}
+
+model Server {
+  id              String            @id
+  userId          String
+  name            String
+  game            String
+  location        String
+  serverType      String
+  hetznerServerId String?           @unique
+  ipv4            String?
+  desiredState    DesiredState      @default(running)
+  observedState   ObservedState     @default(pending)
+  phase           String            @default("queued")
+  errorReason     String?
+  rconPassword    String
+  settings        Json              @default("{}")
+  backupsEnabled  Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent           Agent?
+  commands        Command[]
+  activityEvents  ActivityEvent[]
+  logChunks       LogChunk[]
+  enrollments     AgentEnrollment[]
+
+  @@index([userId])
+  @@index([desiredState, observedState])
+  @@map("servers")
+}
+
+model Agent {
+  id              String    @id
+  serverId        String    @unique
+  publicKey       String
+  sessionVersion  Int       @default(0)
+  lastHeartbeatAt DateTime?
+  lastCommandId   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  server          Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@map("agents")
+}
+
+model AgentEnrollment {
+  jti       String    @id
+  serverId  String
+  expiresAt DateTime
+  burnedAt  DateTime?
+  createdAt DateTime  @default(now())
+  server    Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@map("agent_enrollments")
+}
+
+model Command {
+  id          String    @id
+  serverId    String
+  type        String
+  payload     Json
+  status      String    @default("pending")
+  issuedAt    DateTime  @default(now())
+  deliveredAt DateTime?
+  ackedAt     DateTime?
+  error       String?
+  result      Json?
+  durationMs  Int?
+  server      Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId, status])
+  @@map("commands")
+}
+
+model ActivityEvent {
+  id         String   @id
+  serverId   String
+  seq        Int
+  phase      String
+  message    String
+  metadata   Json?
+  occurredAt DateTime @default(now())
+  source     String   @default("server") // "server" | "agent"
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, seq])
+  @@index([serverId, occurredAt])
+  @@map("activity_events")
+}
+
+model LogChunk {
+  id       String   @id
+  serverId String
+  seq      Int
+  stream   String
+  line     String
+  ts       DateTime @default(now())
+  server   Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, seq])
+  @@index([serverId, ts])
+  @@map("log_chunks")
+}

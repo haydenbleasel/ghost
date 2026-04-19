@@ -1,48 +1,34 @@
-import { gameDataDirectory } from '@/lib/consts';
+import type { ComposeConfig } from "../compose";
+import { escapeComposeValue } from "../compose";
+import type { RustSettings } from "./settings";
 
-const SERVER_PORT = 28015;
-const RCON_PORT = 28016;
-const MAX_PLAYERS = 50;
-const WORLD_SIZE = 3500;
-const SEED = 12345;
-const UPDATE_CHECKING = 1;
-const OXYDE_ENABLED = 1;
-
-export default (name: string, password: string, timezone: string) => `
-#!/bin/bash
-set -e
-
-# Create directory structure
-mkdir -p ${gameDataDirectory}/rust/{server,backups}
-
-# Navigate to the game data directory
-cd ${gameDataDirectory}
-
-# Create docker-compose.yml file
-cat > docker-compose.yml << EOF
-services:
+export const buildRustCompose = (config: ComposeConfig, settings: RustSettings): string => {
+  const timezone = config.timezone ?? "UTC";
+  const escape = escapeComposeValue;
+  const description = settings.description || `${config.name} - Powered by Ghost`;
+  return `services:
   rust:
     image: didstopia/rust-server:latest
-    ports:
-      - "${SERVER_PORT}:${SERVER_PORT}/udp"
-      - "${RCON_PORT}:${RCON_PORT}"
-    environment:
-      - RUST_SERVER_NAME=${name}
-      - RUST_SERVER_DESCRIPTION=${name} - managed by Ultrabeam
-      - RUST_SERVER_PORT=${SERVER_PORT}
-      - RUST_RCON_PORT=${RCON_PORT}
-      - RUST_RCON_PASSWORD=${password}
-      - RUST_SERVER_MAXPLAYERS=${MAX_PLAYERS}
-      - RUST_SERVER_WORLDSIZE=${WORLD_SIZE}
-      - RUST_SERVER_SEED=${SEED}
-      - RUST_UPDATE_CHECKING=${UPDATE_CHECKING}
-      - RUST_OXIDE_ENABLED=${OXYDE_ENABLED}
-      - TZ=${timezone}
-    volumes:
-      - ./rust/server:/steamcmd/rust
-      - ./rust/backups:/steamcmd/rust/backups
+    container_name: ghost-game
     restart: unless-stopped
-EOF
-
-echo "Rust server has been installed."
+    ports:
+      - "28015:28015/udp"
+      - "28016:28016/tcp"
+      - "28082:28082/tcp"
+    environment:
+      RUST_SERVER_STARTUP_ARGUMENTS: "-batchmode -load -nographics"
+      RUST_SERVER_IDENTITY: "ghost"
+      RUST_SERVER_NAME: "${escape(config.name)}"
+      RUST_SERVER_DESCRIPTION: "${escape(description)}"
+      RUST_SERVER_MAXPLAYERS: "${settings.maxPlayers}"
+      RUST_SERVER_WORLDSIZE: "${settings.worldSize}"
+      RUST_SERVER_SEED: "${settings.seed}"
+      RUST_SERVER_PORT: "28015"
+      RUST_RCON_PASSWORD: "${escape(config.rconPassword)}"
+      RUST_RCON_PORT: "28016"
+      RUST_RCON_WEB: "${settings.rconWeb ? 1 : 0}"
+      TZ: "${timezone}"
+    volumes:
+      - /var/lib/ghost/game/data:/steamcmd/rust
 `;
+};

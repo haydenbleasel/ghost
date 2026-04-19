@@ -1,29 +1,37 @@
-import image from './image.jpg';
+import type { ComposeConfig } from "../compose";
+import { resolveSettings } from "../settings";
+import image from "./image.jpg";
+import { buildMinecraftCompose } from "./install";
+import { minecraftSettings } from "./settings";
+
+const buildCompose = (config: ComposeConfig, raw: unknown): string =>
+  buildMinecraftCompose(config, resolveSettings(minecraftSettings, raw));
 
 export const minecraft = {
-  id: 'minecraft',
-  gamedigId: 'minecraft',
-  name: 'Minecraft',
+  buildCompose,
+  description: "Minecraft is a sandbox game where you can build your own world.",
   enabled: true,
+  gamedigId: "minecraft",
+  id: "minecraft",
   image,
-  description:
-    'Minecraft is a sandbox game where you can build your own world.',
+  name: "Minecraft",
   ports: [
     // This is the default port for Minecraft Java Edition, used for game traffic.
     {
-      protocol: 'tcp',
-      from: 25565,
-      to: 25565,
+      from: 25_565,
+      protocol: "tcp",
+      to: 25_565,
     },
     // For Bedrock clients via a proxy like Geyser.
     {
-      protocol: 'udp',
-      from: 19132,
-      to: 19133,
+      from: 19_132,
+      protocol: "udp",
+      to: 19_133,
     },
   ],
   requirements: {
     cpu: 2,
-    memory: 4,
+    memory: 8,
   },
+  settings: minecraftSettings,
 } as const;

@@ -1,42 +1,132 @@
-# Ultrabeam 🎮
+# Ghost
 
-An open source platform for launching simple, reliable dedicated game servers. Create and manage your own dedicated game servers with ease. Start playing your favorite games with friends in minutes.
+Open-source control plane for dedicated game servers. Next.js on Vercel, game VMs on Hetzner Cloud, coordinated via a tiny `ghost-agent` that runs on each VM.
 
-> [!WARNING]  
-> This project is currently in development and not ready for production use. Games with `enabled: true` are currently available to play, the rest have issues when trying to connect or trying to start the server.
+MVP supports Minecraft. Clean provisioning activity logs, live console streaming, start/stop/restart/delete — no SSH, no Kubernetes, no Pterodactyl.
 
-## 🚀 Features
+## Architecture
 
-- **Easy Server Deployment**: Launch game servers with just a few clicks
-- **Game Support**: Minecraft, Valheim and Palworld. More games coming soon!
-- **Server Management**: Simple configuration, real-time monitoring, automatic backups, protected storage.
+```
+Browser ──SSE──▶ Next.js (Vercel) ──long-poll──▶ ghost-agent (Hetzner VM)
+                     │                                 │
+                     ├── Prisma → Neon Postgres        └── Docker → game container
+                     ├── Upstash Redis (event seq)
+                     └── Workflow SDK (durable steps)
+```
 
-## 🛠️ Tech Stack
+- **Vercel Workflow SDK** (`workflow`) runs the durable provisioning + teardown workflows. Steps emit structured activity events that the UI streams via SSE.
+- **Hetzner VMs** are created from a prebaked snapshot (Docker + `ghost-agent` preinstalled). `cloud-init` only writes a per-server bootstrap token.
+- **Agent protocol** — Ed25519-signed requests, long-poll for commands, batched event/log POSTs. The agent never accepts inbound connections.
+- **Auth** — Better Auth (email + password to start) on the same Postgres.
 
-- **Frontend**: Next.js 15
-- **UI Components**: Radix UI
-- **Authentication**: Clerk
-- **Cloud Infrastructure**: AWS Lightsail
-- **Monitoring**: Sentry, BetterStack
-- **Analytics**: PostHog, Google Analytics
-- **Payments**: Stripe
+## Layout
 
-## 🏁 Getting Started
+```
+app/                  Next.js App Router — UI, API, Better Auth
+lib/                  server-side libs (db, redis, hetzner, agent helpers, workflows)
+protocol/             Zod schemas + signing canonicalization shared with the agent
+agent/                Bun-built TypeScript agent (compiled to a Linux binary)
+prisma/               schema + migrations
+scripts/              gold-image build script, systemd unit, cloud-init example
+games/                per-game compose generators (Minecraft only enabled in MVP)
+```
 
-1. Clone the repository
-2. Install dependencies with `pnpm install`
-3. Set up environment variables - see `.env.example`
-4. Run the development server with `pnpm dev`
+## Environment variables
 
-## 🤝 Contributing
+```bash
+# Postgres (Neon)
+DATABASE_URL=
+DIRECT_URL=               # pooled vs direct for Prisma migrate
 
-We welcome contributions! There's no contribution guidelines yet, but we'll get there soon.
+# Vercel KV / Upstash Redis (monotonic event sequence + nonce dedupe)
+KV_REST_API_URL=
+KV_REST_API_TOKEN=
 
-## 📄 License
+# Hetzner Cloud
+HETZNER_TOKEN=            # read/write token from Hetzner console
+HETZNER_IMAGE_ID=         # snapshot id produced by scripts/build-image.sh
+HETZNER_LOCATION=nbg1
+HETZNER_SERVER_TYPE=cx23
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+# Secrets (32+ char random strings)
+BOOTSTRAP_JWT_SECRET=
+BETTER_AUTH_SECRET=
 
----
+# URLs
+BETTER_AUTH_URL=https://your-app.vercel.app
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 
-Built for love of gaming.
+# Optional
+NEXT_PUBLIC_SENTRY_DSN=
+SENTRY_ORG=
+SENTRY_PROJECT=
+```
 
+## One-time setup
+
+1. **Neon** — create a Postgres database, set `DATABASE_URL`.
+2. **Vercel KV / Upstash** — create a Redis database, set `KV_REST_API_URL` + `KV_REST_API_TOKEN`.
+3. **Prisma** — `pnpm migrate` (runs `prisma format && prisma generate && prisma db push`).
+4. **Build the gold image** — see [Building the gold image](#building-the-gold-image) below.
+5. **Deploy** the Next.js app to Vercel with the env vars above.
+
+## Building the gold image
+
+One-time ~10 min process on Hetzner. Produces a snapshot with Ubuntu + Docker + `ghost-agent` + the game's Docker image pre-pulled, so first provision is instant.
+
+### Prereqs
+
+```bash
+brew install hcloud jq
+hcloud ssh-key create --name laptop --public-key-from-file ~/.ssh/id_ed25519.pub
+```
+
+In `.env.local`:
+
+```bash
+HETZNER_TOKEN=            # required
+HETZNER_LOCATION=nbg1     # optional, default nbg1
+HETZNER_SERVER_TYPE=cx23  # optional, default cx23
+HETZNER_SSH_KEY=laptop    # optional, default laptop (hcloud ssh-key name)
+```
+
+### Build
+
+```bash
+pnpm snapshot
+```
+
+Compiles the agent, creates a throwaway builder VM, runs `scripts/build-image.sh` on it, snapshots it, deletes the VM, and writes the new `HETZNER_IMAGE_ID` back to `.env.local`. A `trap` deletes the builder even if the run fails. Takes ~5 min.
+
+The previous snapshot (if any) is **not** auto-deleted — the script prints the old ID and the `hcloud image delete` command.
+
+### Adding more games later
+
+Add `docker pull <image>` lines to `scripts/build-image.sh`, then rerun `pnpm snapshot`.
+
+## Lifecycle
+
+- **Create** — `POST /api/servers { name, game: 'minecraft' }` runs the `provisionServer` workflow: mint bootstrap JWT → Hetzner create → await boot → await agent enroll → push `UPDATE_CONFIG` compose → await `healthy` → mark `ready`.
+- **Start/Stop/Restart** — `POST /api/servers/:id/commands` enqueues a command. The agent picks it up within ~1s via long-poll, executes `docker compose up/stop/restart`, and acks.
+- **Delete** — `DELETE /api/servers/:id` flips `desiredState=deleted` and starts the `teardownServer` workflow: send DELETE to agent → delete Hetzner server → mark deleted.
+- **Activity stream** — `GET /api/servers/:id/activity/stream` (SSE). Cursor via `?cursor=<seq>`, auto-close at 270s so client can reconnect cleanly.
+- **Logs stream** — `GET /api/servers/:id/logs/stream` (SSE). Ring-buffered in Postgres (prune via cron).
+
+## Agent protocol
+
+- `POST /api/agent/enroll` — exchanges a one-shot bootstrap JWT (minted by the workflow, written to `/etc/ghost/bootstrap.json` by cloud-init) for a persistent Ed25519 public key registration.
+- All subsequent agent calls carry `X-Ghost-{Agent,Ts,Nonce,Sig}` headers. Sig is `ed25519(method || path || ts || nonce || body)`. Timestamp skew tolerance: 60s. Nonce TTL: 5 min.
+- `GET /api/agent/commands?wait=25` — long-poll, up to 25s DB polling interval ~750ms. Returns `{commands: []}` or 204.
+- `POST /api/agent/commands/:id/ack`, `POST /api/agent/events`, `POST /api/agent/heartbeat`, `POST /api/agent/rotate-key`.
+
+## Scripts
+
+- `pnpm dev` — Next dev server with turbopack
+- `pnpm build` — prisma generate + next build
+- `pnpm db:push` / `db:migrate` / `db:studio`
+- `pnpm agent:dev` — run agent with Bun for local testing
+- `pnpm agent:build` — cross-compile Linux binary to `dist/ghost-agent`
+
+## License
+
+MIT — see `license.md`.

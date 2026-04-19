@@ -49,3 +49,6 @@ yarn-error.log*
 
 # Prisma
 generated/
+.env*.local
+
+tsconfig.tsbuildinfo

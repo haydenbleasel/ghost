@@ -1,46 +1,30 @@
-import { gameDataDirectory } from '@/lib/consts';
+import type { ComposeConfig } from "../compose";
+import { escapeComposeValue } from "../compose";
+import type { ValheimSettings } from "./settings";
 
-export default (name: string, password: string, timezone: string) => `
-#!/bin/bash
-set -e
-
-# Create directory structure
-mkdir -p ${gameDataDirectory}/valheim/saves
-mkdir -p ${gameDataDirectory}/valheim/server
-mkdir -p ${gameDataDirectory}/valheim/backups
-
-# Navigate to the game data directory
-cd ${gameDataDirectory}
-
-# Create docker-compose.yml file
-cat > docker-compose.yml << 'EOF'
-services:
+export const buildValheimCompose = (config: ComposeConfig, settings: ValheimSettings): string => {
+  const timezone = config.timezone ?? "UTC";
+  const escape = escapeComposeValue;
+  const serverArgs = settings.crossplay ? "-crossplay" : "";
+  return `services:
   valheim:
-    image: mbround18/valheim:latest
+    image: lloesche/valheim-server:latest
+    container_name: ghost-game
+    cap_add:
+      - sys_nice
     ports:
-      - 2456:2456/udp
-      - 2457:2457/udp
-      - 2458:2458/udp
+      - "2456-2458:2456-2458/udp"
     environment:
-      - PORT=2456
-      - NAME="${name}"
-      - WORLD="Dedicated"
-      - PASSWORD="${password}"
-      - TZ=${timezone}
-      - PUBLIC=1
-      - AUTO_UPDATE=1
-      - AUTO_UPDATE_SCHEDULE="0 1 * * *"
-      - AUTO_BACKUP=1
-      - AUTO_BACKUP_SCHEDULE="*/15 * * * *"
-      - AUTO_BACKUP_REMOVE_OLD=1
-      - AUTO_BACKUP_DAYS_TO_LIVE=3
-      - AUTO_BACKUP_ON_UPDATE=1
-      - AUTO_BACKUP_ON_SHUTDOWN=1
+      SERVER_NAME: "${escape(config.name)}"
+      WORLD_NAME: "${escape(settings.worldName)}"
+      SERVER_PASS: "${escape(config.rconPassword)}"
+      SERVER_PUBLIC: "${settings.public}"
+      SERVER_ARGS: "${serverArgs}"
+      BACKUPS_DIRECTORY: "/config/backups"
+      TZ: "${timezone}"
     volumes:
-      - ./valheim/saves:/home/steam/.config/unity3d/IronGate/Valheim
-      - ./valheim/server:/home/steam/valheim
-      - ./valheim/backups:/home/steam/backups
-EOF
-
-echo "Valheim server has been installed."
+      - /var/lib/ghost/game/data/config:/config
+      - /var/lib/ghost/game/backups:/config/backups
+    restart: unless-stopped
 `;
+};

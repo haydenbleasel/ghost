@@ -1,24 +1,31 @@
-import image from './image.jpg';
+import type { ComposeConfig } from "../compose";
+import { resolveSettings } from "../settings";
+import image from "./image.jpg";
+import { buildTerrariaCompose } from "./install";
+import { terrariaSettings } from "./settings";
+
+const buildCompose = (config: ComposeConfig, raw: unknown): string =>
+  buildTerrariaCompose(config, resolveSettings(terrariaSettings, raw));
 
 export const terraria = {
-  id: 'terraria',
-  gamedigId: 'terrariatshock',
-  name: 'Terraria',
-  enabled: false,
+  buildCompose,
+  description: "Dig, fight, explore, build! Nothing is impossible in this 2D adventure game.",
+  enabled: true,
+  gamedigId: "terrariatshock",
+  id: "terraria",
   image,
-  description:
-    'Dig, fight, explore, build! Nothing is impossible in this 2D adventure game.',
+  name: "Terraria",
   ports: [
     // This is the default port for Terraria, used for game traffic.
     {
-      protocol: 'tcp',
       from: 7777,
+      protocol: "tcp",
       to: 7777,
     },
     // This port was mentioned in the dockerfile.
     {
-      protocol: 'tcp',
       from: 7878,
+      protocol: "tcp",
       to: 7878,
     },
   ],
@@ -26,4 +33,5 @@ export const terraria = {
     cpu: 1,
     memory: 2,
   },
+  settings: terrariaSettings,
 } as const;

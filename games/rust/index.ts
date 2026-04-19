@@ -1,35 +1,43 @@
-import image from './image.jpg';
+import type { ComposeConfig } from "../compose";
+import { resolveSettings } from "../settings";
+import image from "./image.jpg";
+import { buildRustCompose } from "./install";
+import { rustSettings } from "./settings";
+
+const buildCompose = (config: ComposeConfig, raw: unknown): string =>
+  buildRustCompose(config, resolveSettings(rustSettings, raw));
 
 export const rust = {
-  id: 'rust',
-  gamedigId: 'rust',
-  name: 'Rust',
-  enabled: false,
+  buildCompose,
+  description: "The only aim in Rust is to survive when everything on the island wants you to die.",
+  enabled: true,
+  gamedigId: "rust",
+  id: "rust",
   image,
-  description:
-    'The only aim in Rust is to survive when everything on the island wants you to die.',
+  name: "Rust",
   ports: [
     // This is the default port for Rust, used for game traffic.
     {
-      protocol: 'udp',
-      from: 28015,
-      to: 28015,
+      from: 28_015,
+      protocol: "udp",
+      to: 28_015,
     },
     // This is the port for RCON
     {
-      protocol: 'tcp',
-      from: 28016,
-      to: 28016,
+      from: 28_016,
+      protocol: "tcp",
+      to: 28_016,
     },
     // This port was mentioned in the dockerfile.
     {
-      protocol: 'tcp',
-      from: 28082,
-      to: 28082,
+      from: 28_082,
+      protocol: "tcp",
+      to: 28_082,
     },
   ],
   requirements: {
     cpu: 4,
     memory: 8,
   },
+  settings: rustSettings,
 } as const;
