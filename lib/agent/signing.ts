@@ -35,16 +35,19 @@ export const verifyAgentRequest = async (
   const signature = request.headers.get(AGENT_HEADERS.SIGNATURE);
 
   if (!agentId || !timestamp || !nonce || !signature) {
+    console.error("[agent-auth] missing headers", { agentId, hasNonce: !!nonce, hasSignature: !!signature, hasTimestamp: !!timestamp });
     throw new AgentAuthError("Missing signature headers");
   }
 
   const tsNum = Number(timestamp);
   if (!Number.isFinite(tsNum)) {
+    console.error("[agent-auth] invalid timestamp", { agentId, timestamp });
     throw new AgentAuthError("Invalid timestamp");
   }
 
   const skew = Math.abs(Date.now() - tsNum);
   if (skew > TIMESTAMP_SKEW_MS) {
+    console.error("[agent-auth] skew exceeded", { agentId, skewMs: skew });
     throw new AgentAuthError(`Timestamp skew ${skew}ms exceeds allowed`);
   }
 
@@ -62,6 +65,7 @@ export const verifyAgentRequest = async (
     where: { id: agentId },
   });
   if (!agent) {
+    console.error("[agent-auth] unknown agent", { agentId });
     throw new AgentAuthError("Unknown agent", 404);
   }
 
@@ -82,6 +86,14 @@ export const verifyAgentRequest = async (
 
   const valid = await verifyAsync(sigBytes, msgBytes, pubBytes);
   if (!valid) {
+    console.error("[agent-auth] bad signature", {
+      agentId,
+      bodyLen: body.length,
+      method: request.method,
+      path: url.pathname + url.search,
+      publicKey: agent.publicKey,
+      timestamp,
+    });
     throw new AgentAuthError("Bad signature");
   }
 
