@@ -79,10 +79,8 @@ export const POST = async (request: Request) => {
   try {
     // oxlint-disable-next-line unicorn/no-useless-undefined -- resumeHook requires an explicit payload
     await resumeHook(hookTokens.enrolled(agent.serverId), undefined);
-  } catch {
-    // Provision workflow may have already moved past enrollment (or not yet
-    // registered the hook on a replay). Either way, enrollment itself
-    // succeeded — don't fail the HTTP response.
+  } catch (error) {
+    console.error("[enroll] resumeHook failed", { serverId: agent.serverId, error });
   }
 
   return NextResponse.json(response);
