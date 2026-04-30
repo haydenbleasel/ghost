@@ -66,7 +66,7 @@ SENTRY_PROJECT=
 
 1. **Neon** — create a Postgres database, set `DATABASE_URL`.
 2. **Vercel KV / Upstash** — create a Redis database, set `KV_REST_API_URL` + `KV_REST_API_TOKEN`.
-3. **Prisma** — `pnpm migrate` (runs `prisma format && prisma generate && prisma db push`).
+3. **Prisma** — `bun migrate` (runs `prisma format && prisma generate && prisma db push`).
 4. **Build the gold image** — see [Building the gold image](#building-the-gold-image) below.
 5. **Deploy** the Next.js app to Vercel with the env vars above.
 
@@ -91,7 +91,7 @@ HETZNER_SSH_KEY=laptop    # optional, default laptop (hcloud ssh-key name)
 ### Build
 
 ```bash
-pnpm snapshot
+bun snapshot
 ```
 
 Compiles the agent, creates a throwaway builder VM, runs `scripts/build-image.sh` on it, snapshots it, deletes the VM, and writes the new `HETZNER_IMAGE_ID` back to `.env.local`. A `trap` deletes the builder even if the run fails. Takes ~5 min.
@@ -100,7 +100,7 @@ The previous snapshot (if any) is **not** auto-deleted — the script prints the
 
 ### Adding more games later
 
-Add `docker pull <image>` lines to `scripts/build-image.sh`, then rerun `pnpm snapshot`.
+Add `docker pull <image>` lines to `scripts/build-image.sh`, then rerun `bun snapshot`.
 
 ## Lifecycle
 
@@ -119,11 +119,11 @@ Add `docker pull <image>` lines to `scripts/build-image.sh`, then rerun `pnpm sn
 
 ## Scripts
 
-- `pnpm dev` — Next dev server with turbopack
-- `pnpm build` — prisma generate + next build
-- `pnpm db:push` / `db:migrate` / `db:studio`
-- `pnpm agent:dev` — run agent with Bun for local testing
-- `pnpm agent:build` — cross-compile Linux binary to `dist/ghost-agent`
+- `bun dev` — Next dev server with turbopack
+- `bun run build` — prisma generate + next build
+- `bun db:push` / `db:migrate` / `db:studio`
+- `bun agent:dev` — run agent with Bun for local testing
+- `bun agent:build` — cross-compile Linux binary to `dist/ghost-agent`
 
 ## License
 

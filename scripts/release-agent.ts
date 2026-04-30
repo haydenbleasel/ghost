@@ -31,7 +31,7 @@ const parseArgs = () => {
 
 const buildBinary = (): void => {
   console.log(">> building agent binary");
-  const result = spawnSync("pnpm", ["agent:build"], {
+  const result = spawnSync("bun", ["run", "agent:build"], {
     cwd: REPO_ROOT,
     stdio: "inherit",
   });

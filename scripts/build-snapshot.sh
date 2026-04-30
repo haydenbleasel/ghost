@@ -40,7 +40,7 @@ SSH_OPTS=(
   -o ConnectTimeout=10
 )
 
-for cmd in hcloud bun scp ssh pnpm; do
+for cmd in hcloud bun scp ssh; do
   command -v "$cmd" >/dev/null || { echo "error: $cmd not installed" >&2; exit 1; }
 done
 
@@ -70,7 +70,7 @@ if hcloud server describe "$BUILDER_NAME" >/dev/null 2>&1; then
 fi
 
 echo ">> building agent binary"
-pnpm agent:build
+bun run agent:build
 
 echo ">> creating builder VM ($HETZNER_SERVER_TYPE @ $HETZNER_LOCATION)"
 hcloud server create \
