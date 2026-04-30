@@ -1,5 +1,6 @@
 import { createMiddleware, defaults, withVercelToolbar } from "@nosecone/next";
 import type { NoseconeOptions } from "@nosecone/next";
+import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -32,7 +33,7 @@ const proxy = (request: NextRequest) => {
     return securityHeaders();
   }
 
-  const sessionCookie = request.cookies.get("better-auth.session_token");
+  const sessionCookie = getSessionCookie(request);
 
   if (!sessionCookie) {
     const url = request.nextUrl.clone();
