@@ -5,9 +5,18 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+const normalizeSslMode = (url: string | undefined) => {
+  if (!url) return url;
+  const parsed = new URL(url);
+  if (parsed.searchParams.get("sslmode") === "require") {
+    parsed.searchParams.set("sslmode", "verify-full");
+  }
+  return parsed.toString();
+};
+
 const createClient = () => {
   const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: normalizeSslMode(process.env.DATABASE_URL),
   });
   return new PrismaClient({
     adapter,
