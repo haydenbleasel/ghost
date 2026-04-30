@@ -47,7 +47,7 @@ const DashboardPage = async () => {
           </EmptyMedia>
           <EmptyTitle>No servers yet</EmptyTitle>
           <EmptyDescription>
-            Spin up your first Minecraft server in under a minute.
+            Spin up your first game server in under a minute.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
