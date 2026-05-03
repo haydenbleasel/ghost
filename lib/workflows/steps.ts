@@ -358,11 +358,17 @@ export const stepMarkFailed = async (input: {
   });
 };
 
+const AGENT_LIVENESS_WINDOW_MS = 60_000;
+
 export const stepSendDeleteCommand = async (serverId: string) => {
   "use step";
   const { stepId } = getStepMetadata();
   const agent = await prisma.agent.findUnique({ where: { serverId } });
   if (!agent) {
+    return { hadAgent: false };
+  }
+  const lastHeartbeat = agent.lastHeartbeatAt?.getTime() ?? 0;
+  if (Date.now() - lastHeartbeat > AGENT_LIVENESS_WINDOW_MS) {
     return { hadAgent: false };
   }
   await enqueueCommand({
