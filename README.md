@@ -43,8 +43,8 @@ KV_REST_API_URL=
 KV_REST_API_TOKEN=
 
 # Hetzner Cloud — per-user, set in /dashboard/account.
-# (The build-snapshot.sh script below still reads HETZNER_TOKEN/IMAGE_ID/
-# LOCATION/SERVER_TYPE/SSH_KEY from .env.local for the admin gold-image build.)
+# (The gold-image build script reads HETZNER_TOKEN and HETZNER_SSH_KEY
+# from .env.local — see "Building the gold image" below.)
 
 # Secrets (32+ char random strings)
 BOOTSTRAP_JWT_SECRET=
@@ -70,7 +70,7 @@ SENTRY_PROJECT=
 
 ## Building the gold image
 
-One-time ~10 min process on Hetzner. Produces a snapshot with Ubuntu + Docker + `ghost-agent` + the game's Docker image pre-pulled, so first provision is instant.
+One-time process on Hetzner. Produces a snapshot with Ubuntu + Docker + `ghost-agent` + the game's Docker image pre-pulled, so first provision is instant.
 
 ### Prereqs
 
@@ -105,14 +105,14 @@ Add `docker pull <image>` lines to `scripts/build-image.sh`, then rerun `bun sna
 - **Create** — `POST /api/servers { name, game: 'minecraft' }` runs the `provisionServer` workflow: mint bootstrap JWT → Hetzner create → await boot → await agent enroll → push `UPDATE_CONFIG` compose → await `healthy` → mark `ready`.
 - **Start/Stop/Restart** — `POST /api/servers/:id/commands` enqueues a command. The agent picks it up within ~1s via long-poll, executes `docker compose up/stop/restart`, and acks.
 - **Delete** — `DELETE /api/servers/:id` flips `desiredState=deleted` and starts the `teardownServer` workflow: send DELETE to agent → delete Hetzner server → mark deleted.
-- **Activity stream** — `GET /api/servers/:id/activity/stream` (SSE). Cursor via `?cursor=<seq>`, auto-close at 270s so client can reconnect cleanly.
+- **Activity stream** — `GET /api/servers/:id/activity/stream` (SSE). Cursor via `?cursor=<seq>`; auto-closes at 270s so the client reconnects cleanly.
 - **Logs stream** — `GET /api/servers/:id/logs/stream` (SSE). Ring-buffered in Postgres (prune via cron).
 
 ## Agent protocol
 
 - `POST /api/agent/enroll` — exchanges a one-shot bootstrap JWT (minted by the workflow, written to `/etc/ghost/bootstrap.json` by cloud-init) for a persistent Ed25519 public key registration.
 - All subsequent agent calls carry `X-Ghost-{Agent,Ts,Nonce,Sig}` headers. Sig is `ed25519(method || path || ts || nonce || body)`. Timestamp skew tolerance: 60s. Nonce TTL: 5 min.
-- `GET /api/agent/commands?wait=25` — long-poll, up to 25s DB polling interval ~750ms. Returns `{commands: []}` or 204.
+- `GET /api/agent/commands?wait=25` — long-poll up to 25s (DB polling interval ~750ms). Returns `{commands: []}` or 204.
 - `POST /api/agent/commands/:id/ack`, `POST /api/agent/events`, `POST /api/agent/heartbeat`, `POST /api/agent/rotate-key`.
 
 ## Scripts
