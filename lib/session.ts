@@ -1,5 +1,6 @@
 import "server-only";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { auth } from "./auth";
 
@@ -9,7 +10,7 @@ export const getSession = async () =>
 export const requireUser = async () => {
   const session = await getSession();
   if (!session?.user) {
-    throw new Error("Unauthorized");
+    redirect("/sign-in");
   }
   return session.user;
 };
