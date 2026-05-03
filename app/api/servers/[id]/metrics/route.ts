@@ -48,14 +48,14 @@ export const GET = async (
   let client: Awaited<ReturnType<typeof getUserHetznerContext>>["client"];
   try {
     ({ client } = await getUserHetznerContext(user.id));
-  } catch (err) {
-    if (err instanceof MissingHetznerCredentialsError) {
+  } catch (error) {
+    if (error instanceof MissingHetznerCredentialsError) {
       return NextResponse.json(
         { error: "Configure your Hetzner credentials in account settings." },
         { status: 412 }
       );
     }
-    throw err;
+    throw error;
   }
 
   const { data, error, response } = await client.GET("/servers/{id}/metrics", {

@@ -10,11 +10,8 @@ import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { emitActivity } from "@/lib/events/emit";
-import {
-  type HetznerClient,
-  HetznerApiError,
-  throwIfHetznerError,
-} from "@/lib/hetzner";
+import { HetznerApiError, throwIfHetznerError } from "@/lib/hetzner";
+import type { HetznerClient } from "@/lib/hetzner";
 import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import type { Phase } from "@/protocol";
 
@@ -129,7 +126,7 @@ export const stepCreateHetznerServer = async (serverId: string) => {
   try {
     const ctx = await getUserHetznerContext(server.userId);
     hetzner = ctx.client;
-    imageId = ctx.imageId;
+    ({ imageId } = ctx);
   } catch {
     throw new FatalError("Owner has not configured Hetzner credentials");
   }

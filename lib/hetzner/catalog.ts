@@ -1,6 +1,6 @@
 import "server-only";
-
-import { type HetznerClient, throwIfHetznerError } from "./index";
+import { throwIfHetznerError } from "./index";
+import type { HetznerClient } from "./index";
 
 export interface CatalogLocation {
   name: string;

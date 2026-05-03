@@ -6,14 +6,17 @@ import { generateKeypair } from "./signing";
 export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
   const keypair = await generateKeypair();
 
-  const response = await fetch(new URL("/api/agent/enroll", bootstrap.apiBaseUrl), {
-    body: JSON.stringify({
-      bootstrapToken: bootstrap.bootstrapToken,
-      publicKey: keypair.publicKey,
-    }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  });
+  const response = await fetch(
+    new URL("/api/agent/enroll", bootstrap.apiBaseUrl),
+    {
+      body: JSON.stringify({
+        bootstrapToken: bootstrap.bootstrapToken,
+        publicKey: keypair.publicKey,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    }
+  );
 
   if (!response.ok) {
     const text = await response.text();

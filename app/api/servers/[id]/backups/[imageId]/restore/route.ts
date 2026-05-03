@@ -52,11 +52,11 @@ export const POST = async (
   let client: Awaited<ReturnType<typeof getUserHetznerContext>>["client"];
   try {
     ({ client } = await getUserHetznerContext(user.id));
-  } catch (err) {
-    if (err instanceof MissingHetznerCredentialsError) {
+  } catch (error) {
+    if (error instanceof MissingHetznerCredentialsError) {
       return credsErrorResponse();
     }
-    throw err;
+    throw error;
   }
 
   const {

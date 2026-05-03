@@ -2,11 +2,8 @@ import "server-only";
 import { decryptSecret } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
 
-import {
-  createHetznerClient,
-  type HetznerClient,
-  MissingHetznerCredentialsError,
-} from "./index";
+import { createHetznerClient, MissingHetznerCredentialsError } from "./index";
+import type { HetznerClient } from "./index";
 
 export interface HetznerCredentials {
   token: string;

@@ -21,12 +21,12 @@ const AccountPage = async () => {
       <PageHeader title="Account" />
       <PageBody>
         <div className="grid gap-8">
-          {!hetznerConfigured ? (
+          {hetznerConfigured ? null : (
             <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
               Add your Hetzner Cloud token and golden snapshot ID below to start
               provisioning servers.
             </div>
-          ) : null}
+          )}
           <AccountPanel
             user={{
               email: user.email,

@@ -34,7 +34,7 @@ export const encryptSecret = (plaintext: string): string => {
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, getKey(), iv);
   const ciphertext = Buffer.concat([
-    cipher.update(plaintext, "utf8"),
+    cipher.update(plaintext, "utf-8"),
     cipher.final(),
   ]);
   const tag = cipher.getAuthTag();
@@ -54,5 +54,5 @@ export const decryptSecret = (payload: string): string => {
   return Buffer.concat([
     decipher.update(ciphertext),
     decipher.final(),
-  ]).toString("utf8");
+  ]).toString("utf-8");
 };

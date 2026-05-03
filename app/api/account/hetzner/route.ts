@@ -9,11 +9,7 @@ import { requireUser } from "@/lib/session";
 export const runtime = "nodejs";
 
 const postSchema = z.object({
-  imageId: z
-    .string()
-    .trim()
-    .min(1)
-    .regex(/^\d+$/, "Image ID must be numeric"),
+  imageId: z.string().trim().min(1).regex(/^\d+$/, "Image ID must be numeric"),
   token: z.string().trim().min(20),
 });
 

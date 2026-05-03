@@ -3,6 +3,8 @@ import createClient from "openapi-fetch";
 
 import type { paths } from "./schema";
 
+export { MissingHetznerCredentialsError } from "./errors";
+
 export type HetznerClient = ReturnType<typeof createClient<paths>>;
 
 export const createHetznerClient = (token: string): HetznerClient =>
@@ -26,13 +28,6 @@ export class HetznerApiError extends Error {
 
   get isClientError(): boolean {
     return this.status >= 400 && this.status < 500;
-  }
-}
-
-export class MissingHetznerCredentialsError extends Error {
-  constructor() {
-    super("Hetzner credentials not configured");
-    this.name = "MissingHetznerCredentialsError";
   }
 }
 

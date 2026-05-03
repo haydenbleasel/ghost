@@ -28,7 +28,8 @@ const credsErrorResponse = () =>
 
 const resolveClient = async (userId: string) => {
   try {
-    return (await getUserHetznerContext(userId)).client;
+    const context = await getUserHetznerContext(userId);
+    return context.client;
   } catch (error) {
     if (error instanceof MissingHetznerCredentialsError) {
       return null;
