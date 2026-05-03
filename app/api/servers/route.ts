@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import type { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { ulid } from "ulid";
 import { start } from "workflow/api";
@@ -124,6 +125,8 @@ export const POST = async (request: Request) => {
   });
 
   await start(provisionServer, [{ serverId: server.id }]);
+
+  revalidatePath("/dashboard", "layout");
 
   return NextResponse.json({ server });
 };

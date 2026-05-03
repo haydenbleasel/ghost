@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { start } from "workflow/api";
 
@@ -47,6 +48,8 @@ export const DELETE = async (
   });
 
   await start(teardownServer, [{ serverId: id }]);
+
+  revalidatePath("/dashboard", "layout");
 
   return NextResponse.json({ ok: true });
 };
