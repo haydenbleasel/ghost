@@ -3,7 +3,6 @@ import { FingerprintIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { Panel, PanelCard } from "@/components/panel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -104,70 +103,66 @@ export const PasskeysPanel = () => {
 
   const renderList = () => {
     if (loadError) {
-      return (
-        <div className="px-3 py-4 text-destructive text-sm">{loadError}</div>
-      );
+      return <div className="text-destructive text-sm">{loadError}</div>;
     }
     if (passkeys === null) {
-      return (
-        <div className="px-3 py-4 text-muted-foreground text-sm">Loading…</div>
-      );
+      return <div className="text-muted-foreground text-sm">Loading…</div>;
     }
     if (passkeys.length === 0) {
       return (
-        <div className="px-3 py-4 text-muted-foreground text-sm">
+        <div className="text-muted-foreground text-sm">
           No passkeys yet. Add one to sign in without a password.
         </div>
       );
     }
-    return passkeys.map((passkey) => (
-      <div
-        key={passkey.id}
-        className="flex items-center justify-between gap-4 rounded-lg px-3 py-2"
-      >
-        <div className="flex min-w-0 items-center gap-3">
-          <FingerprintIcon className="size-4 shrink-0 text-muted-foreground" />
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="truncate font-medium text-sm">
-              {passkey.name || "Passkey"}
-            </span>
-            <span className="text-muted-foreground text-xs">
-              Added {formatDate(passkey.createdAt)}
-            </span>
+    return (
+      <div className="flex flex-col gap-1">
+        {passkeys.map((passkey) => (
+          <div
+            className="flex items-center justify-between gap-4"
+            key={passkey.id}
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <FingerprintIcon className="size-4 shrink-0 text-muted-foreground" />
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="truncate font-medium text-sm">
+                  {passkey.name || "Passkey"}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  Added {formatDate(passkey.createdAt)}
+                </span>
+              </div>
+            </div>
+            <Button
+              aria-label="Remove passkey"
+              onClick={() => setDeleteTarget(passkey)}
+              size="icon"
+              variant="ghost"
+            >
+              <Trash2Icon />
+            </Button>
           </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Remove passkey"
-          onClick={() => setDeleteTarget(passkey)}
-        >
-          <Trash2Icon />
-        </Button>
+        ))}
       </div>
-    ));
+    );
   };
 
   return (
     <>
-      <Panel
-        title="Passkeys"
-        action={
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setAddOpen(true)}
-          >
-            <PlusIcon />
-            Add passkey
-          </Button>
-        }
-      >
-        <PanelCard className="flex flex-col gap-1">{renderList()}</PanelCard>
-      </Panel>
+      <div className="flex flex-col items-start gap-4">
+        {renderList()}
+        <Button
+          onClick={() => setAddOpen(true)}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <PlusIcon />
+          Add passkey
+        </Button>
+      </div>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog onOpenChange={setAddOpen} open={addOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add a passkey</DialogTitle>
@@ -179,24 +174,24 @@ export const PasskeysPanel = () => {
           <div className="flex flex-col gap-2">
             <Label htmlFor="passkey-name">Name (optional)</Label>
             <Input
-              id="passkey-name"
-              placeholder="e.g. MacBook Pro"
-              maxLength={100}
-              value={addName}
-              onChange={(e) => setAddName(e.target.value)}
               disabled={addPending}
+              id="passkey-name"
+              maxLength={100}
+              onChange={(e) => setAddName(e.target.value)}
+              placeholder="e.g. MacBook Pro"
+              value={addName}
             />
           </div>
           <DialogFooter>
             <Button
+              disabled={addPending}
+              onClick={() => setAddOpen(false)}
               type="button"
               variant="ghost"
-              onClick={() => setAddOpen(false)}
-              disabled={addPending}
             >
               Cancel
             </Button>
-            <Button type="button" onClick={submitAdd} disabled={addPending}>
+            <Button disabled={addPending} onClick={submitAdd} type="button">
               {addPending ? "Waiting…" : "Continue"}
             </Button>
           </DialogFooter>
@@ -204,8 +199,8 @@ export const PasskeysPanel = () => {
       </Dialog>
 
       <AlertDialog
-        open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
+        open={deleteTarget !== null}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -219,7 +214,7 @@ export const PasskeysPanel = () => {
             <AlertDialogCancel disabled={deletePending}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={runDelete} disabled={deletePending}>
+            <AlertDialogAction disabled={deletePending} onClick={runDelete}>
               {deletePending ? "Removing…" : "Remove"}
             </AlertDialogAction>
           </AlertDialogFooter>

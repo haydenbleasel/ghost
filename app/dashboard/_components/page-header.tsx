@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 import {
@@ -7,34 +6,27 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-
-export interface PageHeaderTab {
-  label: string;
-  value: string;
-  href: string;
-}
 
 interface PageHeaderProps {
   title: string;
   meta?: ReactNode;
   actions?: ReactNode;
-  tabs?: readonly PageHeaderTab[];
-  activeTab?: string;
+  flush?: boolean;
+  children?: ReactNode;
 }
 
 export const PageHeader = ({
   title,
   meta,
   actions,
-  tabs,
-  activeTab,
+  flush,
+  children,
 }: PageHeaderProps) => (
   <header
     className={cn(
       "flex shrink-0 flex-col gap-4 border-b px-4 pt-4 pb-4 sm:gap-6 md:px-8 md:pt-8 md:pb-8",
-      tabs && "pb-0 md:pb-0"
+      flush && "pb-0 md:pb-0"
     )}
   >
     <div className="flex items-center gap-2">
@@ -52,17 +44,7 @@ export const PageHeader = ({
         <div className="ml-auto flex items-center gap-2">{actions}</div>
       ) : null}
     </div>
-    {tabs ? (
-      <Tabs value={activeTab}>
-        <TabsList variant="line">
-          {tabs.map((tab) => (
-            <TabsTrigger asChild key={tab.value} value={tab.value}>
-              <Link href={tab.href}>{tab.label}</Link>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-    ) : null}
+    {children}
   </header>
 );
 
@@ -74,6 +56,6 @@ export const PageBody = ({
   className?: string;
 }) => (
   <div className={cn("flex-1 px-4 py-6 md:px-8 md:py-8", className)}>
-    <div className="mx-auto w-full max-w-5xl">{children}</div>
+    <div className="w-full max-w-3xl">{children}</div>
   </div>
 );

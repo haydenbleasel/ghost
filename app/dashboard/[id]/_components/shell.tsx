@@ -7,6 +7,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSelectedLayoutSegment } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
@@ -31,12 +32,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { games } from "@/games";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
 
 import { PageBody, PageHeader } from "../../_components/page-header";
-import type { PageHeaderTab } from "../../_components/page-header";
 import { ProvisioningStatus } from "./provisioning-status";
 import { ServerProvider } from "./server-context";
 import type { ServerView } from "./server-context";
@@ -174,15 +175,6 @@ export const ServerShell = ({
   const deleting = server.desiredState === "deleted";
   const statusLabel = deleting ? "deleting" : server.observedState;
 
-  const tabs: PageHeaderTab[] = TABS.map((tab) => ({
-    href:
-      tab.value === "connect"
-        ? `/dashboard/${server.id}`
-        : `/dashboard/${server.id}/${tab.value}`,
-    label: tab.label,
-    value: tab.value,
-  }));
-
   const meta = (
     <Badge
       className={cn(
@@ -293,13 +285,25 @@ export const ServerShell = ({
 
   return (
     <ServerProvider value={{ currency, eligibleTypes, server, updateServer }}>
-      <PageHeader
-        actions={actions}
-        activeTab={activeTab}
-        meta={meta}
-        tabs={tabs}
-        title={server.name}
-      />
+      <PageHeader actions={actions} flush meta={meta} title={server.name}>
+        <Tabs value={activeTab}>
+          <TabsList variant="line">
+            {TABS.map((tab) => (
+              <TabsTrigger asChild key={tab.value} value={tab.value}>
+                <Link
+                  href={
+                    tab.value === "connect"
+                      ? `/dashboard/${server.id}`
+                      : `/dashboard/${server.id}/${tab.value}`
+                  }
+                >
+                  {tab.label}
+                </Link>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </PageHeader>
       <PageBody>{children}</PageBody>
       {deleteDialog}
     </ServerProvider>

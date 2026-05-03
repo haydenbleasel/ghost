@@ -18,7 +18,7 @@ const NewServerPage = async () => {
     catalog = await getHetznerCatalog(client, imageId);
   } catch (error) {
     if (error instanceof MissingHetznerCredentialsError) {
-      redirect("/dashboard/account");
+      redirect("/dashboard/account/backend");
     }
     throw error;
   }
@@ -38,7 +38,7 @@ const NewServerPage = async () => {
     <>
       <PageHeader title="New server" />
       <PageBody>
-        <div className="mx-auto max-w-2xl space-y-6">
+        <div className="space-y-6">
           <NewServerForm
             games={gameOptions}
             serverTypes={catalog.serverTypes}

@@ -35,7 +35,7 @@ const ServerLayout = async ({
     catalog = await getHetznerCatalog(client, imageId);
   } catch (error) {
     if (error instanceof MissingHetznerCredentialsError) {
-      redirect("/dashboard/account");
+      redirect("/dashboard/account/backend");
     }
     throw error;
   }
