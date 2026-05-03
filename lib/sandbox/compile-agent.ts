@@ -4,10 +4,13 @@ import crypto from "node:crypto";
 import { Sandbox } from "@vercel/sandbox";
 
 const BUN_INSTALL = "curl -fsSL https://bun.sh/install | bash";
+// Root install is required because agent/src/*.ts imports from ../../protocol,
+// which lives at the repo root and pulls in zod from the root node_modules.
 const BUILD_SCRIPT = [
   'export PATH="$HOME/.bun/bin:$PATH"',
+  "bun install --production --ignore-scripts",
   "cd agent",
-  "bun install --production",
+  "bun install --production --ignore-scripts",
   "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/ghost-agent",
 ].join(" && ");
 
@@ -86,8 +89,9 @@ export const compileAgentBinary = async (): Promise<{
       cmd: "bash",
     });
     if (build.exitCode !== 0) {
+      const combined = await build.output("both");
       throw new Error(
-        `agent build failed (exit ${build.exitCode}): ${await build.stderr()}`
+        `agent build failed (exit ${build.exitCode}): ${combined.slice(-2000)}`
       );
     }
 
