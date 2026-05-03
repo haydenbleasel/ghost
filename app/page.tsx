@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { HomeHeader } from "@/app/_components/home-header";
 import { Button } from "@/components/ui/button";
@@ -90,9 +89,7 @@ const stats = [
 
 const Home = async () => {
   const session = await getSession();
-  if (session?.user) {
-    redirect("/dashboard");
-  }
+  const isAuthenticated = Boolean(session?.user);
 
   const supportedGames = games.filter((g) => g.enabled);
 
@@ -109,18 +106,29 @@ const Home = async () => {
             <span>Ghost</span>
           </Link>
           <nav className="flex items-center gap-6">
-            <Link
-              href="/sign-in"
-              className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-            >
-              Sign in
-            </Link>
-            <Button asChild size="sm">
-              <Link href="/sign-up">
-                Get started
-                <ArrowRightIcon />
-              </Link>
-            </Button>
+            {isAuthenticated ? (
+              <Button asChild size="sm">
+                <Link href="/dashboard">
+                  Dashboard
+                  <ArrowRightIcon />
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Link
+                  href="/sign-in"
+                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                >
+                  Sign in
+                </Link>
+                <Button asChild size="sm">
+                  <Link href="/sign-up">
+                    Get started
+                    <ArrowRightIcon />
+                  </Link>
+                </Button>
+              </>
+            )}
           </nav>
         </div>
       </HomeHeader>
@@ -141,22 +149,41 @@ const Home = async () => {
                 firewall rules handled for you.
               </p>
               <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                <Button asChild size="lg">
-                  <Link href="/sign-up">
-                    Get started
-                    <ArrowRightIcon />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="ghost">
-                  <Link
-                    href="https://github.com/haydenbleasel/ghost"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Read the source
-                    <ArrowUpRightIcon />
-                  </Link>
-                </Button>
+                {isAuthenticated ? (
+                  <>
+                    <Button asChild size="lg">
+                      <Link href="/dashboard">
+                        Dashboard
+                        <ArrowRightIcon />
+                      </Link>
+                    </Button>
+                    <Button asChild size="lg" variant="ghost">
+                      <Link href="/dashboard/new">
+                        Create a game
+                        <ArrowRightIcon />
+                      </Link>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button asChild size="lg">
+                      <Link href="/sign-up">
+                        Get started
+                        <ArrowRightIcon />
+                      </Link>
+                    </Button>
+                    <Button asChild size="lg" variant="ghost">
+                      <Link
+                        href="https://github.com/haydenbleasel/ghost"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Read the source
+                        <ArrowUpRightIcon />
+                      </Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
             <dl className="grid grid-cols-2 gap-x-8 gap-y-10 border-t border-foreground/10 pt-10 lg:border-t-0 lg:pt-0">
@@ -267,15 +294,31 @@ const Home = async () => {
               Ready to play?
             </h2>
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-              <Button asChild size="lg">
-                <Link href="/sign-up">
-                  Get started
-                  <ArrowRightIcon />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="ghost">
-                <Link href="/sign-in">Sign in</Link>
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  <Button asChild size="lg">
+                    <Link href="/dashboard">
+                      Dashboard
+                      <ArrowRightIcon />
+                    </Link>
+                  </Button>
+                  <Button asChild size="lg" variant="ghost">
+                    <Link href="/dashboard/new">Create a game</Link>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button asChild size="lg">
+                    <Link href="/sign-up">
+                      Get started
+                      <ArrowRightIcon />
+                    </Link>
+                  </Button>
+                  <Button asChild size="lg" variant="ghost">
+                    <Link href="/sign-in">Sign in</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </section>
