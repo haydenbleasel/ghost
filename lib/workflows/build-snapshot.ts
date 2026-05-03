@@ -30,10 +30,12 @@ export const buildSnapshot = async (input: {
   const { buildId, userId } = input;
 
   try {
-    const { agentBlobUrl } = await stepCompileAgent({ buildId });
+    const { agentBlobUrl, agentDownloadUrl } = await stepCompileAgent({
+      buildId,
+    });
 
     const { hetznerBuilderId } = await stepCreateBuilderVm({
-      agentBlobUrl,
+      agentDownloadUrl,
       buildId,
       userId,
     });

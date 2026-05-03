@@ -2,10 +2,12 @@ import "server-only";
 import crypto from "node:crypto";
 
 import type { SnapshotBuildStatus } from "@prisma/client";
-import { BlobNotFoundError, head, put, del as blobDel } from "@vercel/blob";
+import { BlobNotFoundError, del as blobDel, head, put } from "@vercel/blob";
 import { FatalError } from "workflow";
 
+import { mintSnapshotDownloadToken } from "@/lib/agent/snapshot-token";
 import { prisma } from "@/lib/db";
+import { env } from "@/lib/env";
 import {
   HetznerApiError,
   MissingHetznerCredentialsError,
@@ -20,6 +22,8 @@ const BUILDER_LOCATION = "nbg1";
 const BUILDER_SERVER_TYPE = "cx23";
 const BUILDER_BASE_IMAGE = "ubuntu-24.04";
 const SNAPSHOT_DESCRIPTION = "ghost-gold";
+// Covers cloud-init runtime (apt upgrade + 6 docker pulls) plus headroom
+const AGENT_DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60;
 
 export const stepUpdateBuildStatus = async (input: {
   buildId: string;
@@ -34,7 +38,11 @@ export const stepUpdateBuildStatus = async (input: {
 
 export const stepCompileAgent = async (input: {
   buildId: string;
-}): Promise<{ agentBlobUrl: string; agentSha: string }> => {
+}): Promise<{
+  agentBlobUrl: string;
+  agentDownloadUrl: string;
+  agentSha: string;
+}> => {
   "use step";
 
   const build = await prisma.snapshotBuild.findUnique({
@@ -61,7 +69,7 @@ export const stepCompileAgent = async (input: {
       throw error;
     }
     const uploaded = await put(pathname, bytes, {
-      access: "public",
+      access: "private",
       addRandomSuffix: false,
       cacheControlMaxAge: 60 * 60,
       contentType: "application/octet-stream",
@@ -74,13 +82,19 @@ export const stepCompileAgent = async (input: {
     where: { id: input.buildId },
   });
 
-  return { agentBlobUrl, agentSha: sha };
+  const downloadToken = await mintSnapshotDownloadToken({
+    buildId: input.buildId,
+    ttlSeconds: AGENT_DOWNLOAD_TOKEN_TTL_SECONDS,
+  });
+  const agentDownloadUrl = `${env.NEXT_PUBLIC_APP_URL}/api/snapshot/agent-binary?t=${downloadToken}`;
+
+  return { agentBlobUrl, agentDownloadUrl, agentSha: sha };
 };
 
 export const stepCreateBuilderVm = async (input: {
   buildId: string;
   userId: string;
-  agentBlobUrl: string;
+  agentDownloadUrl: string;
 }): Promise<{ hetznerBuilderId: number }> => {
   "use step";
 
@@ -94,7 +108,7 @@ export const stepCreateBuilderVm = async (input: {
     throw error;
   }
 
-  const userData = buildSnapshotCloudInit(input.agentBlobUrl);
+  const userData = buildSnapshotCloudInit(input.agentDownloadUrl);
   const name = `ghost-builder-${input.buildId.toLowerCase().slice(-12)}-${crypto
     .randomBytes(2)
     .toString("hex")}`;
