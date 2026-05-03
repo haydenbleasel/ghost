@@ -64,41 +64,26 @@ SENTRY_PROJECT=
 
 1. **Neon** — create a Postgres database, set `DATABASE_URL`.
 2. **Vercel KV / Upstash** — create a Redis database, set `KV_REST_API_URL` + `KV_REST_API_TOKEN`.
-3. **Prisma** — `bun migrate` (runs `prisma format && prisma generate && prisma db push`).
-4. **Build the gold image** — see [Building the gold image](#building-the-gold-image) below.
+3. **Vercel Blob** — create a Blob store, set `BLOB_READ_WRITE_TOKEN`.
+4. **Prisma** — `bun migrate` (runs `prisma format && prisma generate && prisma db push`).
 5. **Deploy** the Next.js app to Vercel with the env vars above.
+
+Each user then signs in, saves their own Hetzner token on `/dashboard/account/backend`, and clicks **Build snapshot** — the `buildSnapshot` workflow compiles the agent in a Vercel Sandbox, uploads it to Blob, spins up a throwaway Hetzner VM whose cloud-init pulls the binary and pre-pulls every game's Docker image, snapshots it, and writes the new image ID onto the user's row.
 
 ## Building the gold image
 
-One-time process on Hetzner. Produces a snapshot with Ubuntu + Docker + `ghost-agent` + the game's Docker image pre-pulled, so first provision is instant.
+Triggered from the UI, not the CLI. The flow:
 
-### Prereqs
+1. **Click "Build snapshot"** on `/dashboard/account/backend` (requires a saved Hetzner token).
+2. `stepCompileAgent` boots a Vercel Sandbox at the current `VERCEL_GIT_COMMIT_SHA`, runs `bun install` + `bun run agent:build`, uploads `dist/ghost-agent` to Vercel Blob (private), and mints a short-lived JWT for `GET /api/snapshot/agent-binary`.
+3. `stepCreateBuilderVm` POSTs to Hetzner with cloud-init userData that curls the binary, installs Docker + UFW baseline, pre-pulls every game image, and `shutdown -h now`s.
+4. The workflow polls until the VM reaches `off`, calls `create_image`, polls until the image is `available`, writes the new ID onto `User.hetznerImageId`, deletes the builder, and deletes the previous snapshot.
 
-```bash
-brew install hcloud jq
-hcloud ssh-key create --name laptop --public-key-from-file ~/.ssh/id_ed25519.pub
-```
-
-In `.env.local`:
-
-```bash
-HETZNER_TOKEN=            # required
-HETZNER_SSH_KEY=laptop    # optional, default laptop (hcloud ssh-key name)
-```
-
-### Build
-
-```bash
-bun snapshot
-```
-
-Compiles the agent, creates a throwaway builder VM, runs `scripts/build-image.sh` on it, snapshots it, deletes the VM, and writes the new `HETZNER_IMAGE_ID` back to `.env.local`. A `trap` deletes the builder even if the run fails. Takes ~5 min.
-
-The previous snapshot (if any) is **not** auto-deleted — the script prints the old ID and the `hcloud image delete` command.
+The whole run takes ~10–15 min. Watch it live with `bun workflow:ui`, or in the panel itself (status indicator + 2 s polling). Concurrent builds for the same user are blocked by `User.activeSnapshotBuildId @unique`.
 
 ### Adding more games later
 
-Add `docker pull <image>` lines to `scripts/build-image.sh`, then rerun `bun snapshot`.
+Add `docker pull <image>` lines to `lib/workflows/build-snapshot-cloud-init.ts`, redeploy, and click **Build snapshot** again.
 
 ## Lifecycle
 

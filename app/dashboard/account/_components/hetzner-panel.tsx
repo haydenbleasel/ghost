@@ -94,7 +94,6 @@ export const HetznerPanel = ({
 }: Props) => {
   const router = useRouter();
   const [token, setToken] = useState("");
-  const [imageIdValue, setImageIdValue] = useState(imageId ?? "");
   const [pending, setPending] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [build, setBuild] = useState<SnapshotBuildSummary | null>(latestBuild);
@@ -149,9 +148,7 @@ export const HetznerPanel = ({
     };
   }, [buildActive, router]);
 
-  const canSubmit =
-    token.trim().length >= 20 &&
-    (imageIdValue.trim() === "" || /^\d+$/.test(imageIdValue.trim()));
+  const canSubmit = token.trim().length >= 20;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -161,10 +158,7 @@ export const HetznerPanel = ({
     setPending(true);
     try {
       const res = await fetch("/api/account/hetzner", {
-        body: JSON.stringify({
-          ...(imageIdValue.trim() ? { imageId: imageIdValue.trim() } : {}),
-          token: token.trim(),
-        }),
+        body: JSON.stringify({ token: token.trim() }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
@@ -172,14 +166,14 @@ export const HetznerPanel = ({
         error?: string;
       };
       if (!res.ok) {
-        throw new Error(json.error ?? "Could not save credentials");
+        throw new Error(json.error ?? "Could not save token");
       }
       setToken("");
-      toast.success("Hetzner credentials saved");
+      toast.success("Hetzner token saved");
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Could not save credentials"
+        error instanceof Error ? error.message : "Could not save token"
       );
     } finally {
       setPending(false);
@@ -195,14 +189,13 @@ export const HetznerPanel = ({
       const res = await fetch("/api/account/hetzner", { method: "DELETE" });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error ?? "Could not clear credentials");
+        throw new Error(err.error ?? "Could not clear token");
       }
-      setImageIdValue("");
-      toast.success("Hetzner credentials cleared");
+      toast.success("Hetzner token cleared");
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Could not clear credentials"
+        error instanceof Error ? error.message : "Could not clear token"
       );
     } finally {
       setClearing(false);
@@ -272,24 +265,6 @@ export const HetznerPanel = ({
             type="password"
             value={token}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="hetzner-image-id">
-            Golden snapshot ID{" "}
-            <span className="text-muted-foreground text-xs">(optional)</span>
-          </Label>
-          <Input
-            id="hetzner-image-id"
-            inputMode="numeric"
-            name="imageId"
-            onChange={(event) => setImageIdValue(event.target.value)}
-            placeholder="123456789"
-            value={imageIdValue}
-          />
-          <p className="text-muted-foreground text-xs">
-            Leave blank and use the Build snapshot button below; paste an
-            existing ID only if you built it externally.
-          </p>
         </div>
         <div className="flex justify-start gap-2">
           <Button disabled={!canSubmit || pending} size="sm" type="submit">

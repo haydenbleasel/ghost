@@ -14,7 +14,11 @@ export const GraphsRangePanel = ({ range, onChange, error }: Props) => (
   <Panel title="Time range">
     <PanelCard className="flex items-center justify-between p-3">
       <span className="text-muted-foreground text-sm">Last {range}</span>
-      <Tabs onValueChange={(v) => onChange(v as RangeKey)} value={range}>
+      <Tabs
+        className="[&_[data-slot=tabs-trigger]]:flex-none"
+        onValueChange={(v) => onChange(v as RangeKey)}
+        value={range}
+      >
         <TabsList>
           <TabsTrigger value="1h">1h</TabsTrigger>
           <TabsTrigger value="6h">6h</TabsTrigger>

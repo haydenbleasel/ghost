@@ -286,7 +286,7 @@ export const ServerShell = ({
   return (
     <ServerProvider value={{ currency, eligibleTypes, server, updateServer }}>
       <PageHeader actions={actions} flush meta={meta} title={server.name}>
-        <Tabs value={activeTab}>
+        <Tabs className="[&_[data-slot=tabs-trigger]]:flex-none" value={activeTab}>
           <TabsList variant="line">
             {TABS.map((tab) => (
               <TabsTrigger asChild key={tab.value} value={tab.value}>
