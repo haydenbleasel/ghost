@@ -57,8 +57,21 @@ const DashboardPage = async () => {
         <PageBody wide>
           <Empty>
             <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ServerIcon />
+              <EmptyMedia className="flex -space-x-2">
+                {games.map((game, i) => (
+                  <Image
+                    key={game.id}
+                    src={game.image}
+                    alt={game.name}
+                    width={40}
+                    height={40}
+                    placeholder="blur"
+                    className={cn(
+                      "size-10 rounded-md object-cover ring-2 ring-white transition-transform hover:-translate-y-1",
+                      i % 2 === 0 ? "-rotate-3" : "rotate-3"
+                    )}
+                  />
+                ))}
               </EmptyMedia>
               <EmptyTitle>No servers yet</EmptyTitle>
               <EmptyDescription>
