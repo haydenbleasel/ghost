@@ -41,7 +41,10 @@ const ackCommand = async (
     body: { durationMs, error, result, status },
     method: "POST",
     privateKey: state.privateKey,
-    url: `${state.apiBaseUrl}/api/agent/commands/${commandId}/ack`,
+    url: new URL(
+      `/api/agent/commands/${commandId}/ack`,
+      state.apiBaseUrl
+    ).toString(),
   });
   if (!res.ok) {
     console.warn(`ack failed ${res.status}`);
@@ -205,7 +208,10 @@ export const pollCommands = async (
         method: "GET",
         privateKey: state.privateKey,
         signal,
-        url: `${state.apiBaseUrl}/api/agent/commands?wait=25`,
+        url: new URL(
+          "/api/agent/commands?wait=25",
+          state.apiBaseUrl
+        ).toString(),
       });
 
       if (res.status === 204) {

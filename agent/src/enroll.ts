@@ -6,7 +6,7 @@ import { generateKeypair } from "./signing";
 export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
   const keypair = await generateKeypair();
 
-  const response = await fetch(`${bootstrap.apiBaseUrl}/api/agent/enroll`, {
+  const response = await fetch(new URL("/api/agent/enroll", bootstrap.apiBaseUrl), {
     body: JSON.stringify({
       bootstrapToken: bootstrap.bootstrapToken,
       publicKey: keypair.publicKey,

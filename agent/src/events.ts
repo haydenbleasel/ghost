@@ -107,7 +107,7 @@ export class EventBuffer {
         extraHeaders: { [AGENT_HEADERS.BATCH]: batchId },
         method: "POST",
         privateKey: this.state.privateKey,
-        url: `${this.state.apiBaseUrl}/api/agent/events`,
+        url: new URL("/api/agent/events", this.state.apiBaseUrl).toString(),
       });
       if (res.ok) {
         await saveState(this.state);

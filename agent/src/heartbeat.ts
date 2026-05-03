@@ -37,7 +37,7 @@ export const runHeartbeat = async (
         body,
         method: "POST",
         privateKey: state.privateKey,
-        url: `${state.apiBaseUrl}/api/agent/heartbeat`,
+        url: new URL("/api/agent/heartbeat", state.apiBaseUrl).toString(),
       });
     } catch (error) {
       console.warn("heartbeat error", error);
