@@ -21,10 +21,18 @@ const SignInPage = () => {
       return;
     }
     autofillStarted.current = true;
-    const run = async () => {
+
+    let cancelled = false;
+    const handle = requestAnimationFrame(async () => {
+      if (
+        cancelled ||
+        !document.querySelector('input[autocomplete$="webauthn"]')
+      ) {
+        return;
+      }
       try {
         const result = await authClient.signIn.passkey({ autoFill: true });
-        if (result?.error || !result?.data) {
+        if (cancelled || result?.error || !result?.data) {
           return;
         }
         router.push("/dashboard");
@@ -32,8 +40,12 @@ const SignInPage = () => {
       } catch {
         // autofill is best-effort; ignore failures
       }
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(handle);
     };
-    run();
   }, [router]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
