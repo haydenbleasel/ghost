@@ -9,19 +9,21 @@ datasource db {
 // ─── Better Auth ────────────────────────────────────────────────
 
 model User {
-  id             String    @id
-  name           String
-  email          String    @unique
-  emailVerified  Boolean   @default(false)
-  image          String?
-  hetznerToken   String?
-  hetznerImageId String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  sessions       Session[]
-  accounts       Account[]
-  passkeys       Passkey[]
-  servers        Server[]
+  id                    String          @id
+  name                  String
+  email                 String          @unique
+  emailVerified         Boolean         @default(false)
+  image                 String?
+  hetznerToken          String?
+  hetznerImageId        String?
+  activeSnapshotBuildId String?         @unique
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  sessions              Session[]
+  accounts              Account[]
+  passkeys              Passkey[]
+  servers               Server[]
+  snapshotBuilds        SnapshotBuild[]
 
   @@map("users")
 }
@@ -211,4 +213,33 @@ model LogChunk {
   @@unique([serverId, seq])
   @@index([serverId, ts])
   @@map("log_chunks")
+}
+
+enum SnapshotBuildStatus {
+  pending
+  compiling_agent
+  creating_vm
+  installing
+  snapshotting
+  ready
+  failed
+}
+
+model SnapshotBuild {
+  id                 String              @id
+  userId             String
+  status             SnapshotBuildStatus @default(pending)
+  agentBlobUrl       String?
+  agentSha           String?
+  hetznerBuilderId   String?
+  snapshotId         String?
+  previousSnapshotId String?
+  errorReason        String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  finishedAt         DateTime?
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("snapshot_builds")
 }

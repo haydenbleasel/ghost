@@ -9,7 +9,12 @@ import { requireUser } from "@/lib/session";
 export const runtime = "nodejs";
 
 const postSchema = z.object({
-  imageId: z.string().trim().min(1).regex(/^\d+$/, "Image ID must be numeric"),
+  imageId: z
+    .string()
+    .trim()
+    .min(1)
+    .regex(/^\d+$/, "Image ID must be numeric")
+    .optional(),
   token: z.string().trim().min(20),
 });
 
@@ -55,31 +60,36 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const imageCheck = await client.GET("/images/{id}", {
-    params: { path: { id: Number(parsed.data.imageId) } },
-  });
-  if (imageCheck.response.status === 404) {
-    return NextResponse.json(
-      { error: "No image with that ID is visible to this token." },
-      { status: 400 }
-    );
-  }
-  if (!imageCheck.response.ok) {
-    return NextResponse.json(
-      { error: "Could not verify the image ID with Hetzner." },
-      { status: 502 }
-    );
+  if (parsed.data.imageId) {
+    const imageCheck = await client.GET("/images/{id}", {
+      params: { path: { id: Number(parsed.data.imageId) } },
+    });
+    if (imageCheck.response.status === 404) {
+      return NextResponse.json(
+        { error: "No image with that ID is visible to this token." },
+        { status: 400 }
+      );
+    }
+    if (!imageCheck.response.ok) {
+      return NextResponse.json(
+        { error: "Could not verify the image ID with Hetzner." },
+        { status: 502 }
+      );
+    }
   }
 
   await prisma.user.update({
     data: {
-      hetznerImageId: parsed.data.imageId,
+      ...(parsed.data.imageId ? { hetznerImageId: parsed.data.imageId } : {}),
       hetznerToken: encryptSecret(parsed.data.token),
     },
     where: { id: user.id },
   });
 
-  return NextResponse.json({ configured: true, imageId: parsed.data.imageId });
+  return NextResponse.json({
+    configured: Boolean(parsed.data.imageId),
+    imageId: parsed.data.imageId ?? null,
+  });
 };
 
 export const DELETE = async () => {
