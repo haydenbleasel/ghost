@@ -5,18 +5,13 @@ import { AccountPanel } from "./_components/account-panel";
 import { HetznerPanel } from "./_components/hetzner-panel";
 import { PasskeysPanel } from "./_components/passkeys-panel";
 
-const AccountPage = async ({
-  searchParams,
-}: {
-  searchParams: Promise<{ reason?: string }>;
-}) => {
+const AccountPage = async () => {
   const user = await requireUser();
   const creds = await prisma.user.findUnique({
     select: { hetznerImageId: true, hetznerToken: true },
     where: { id: user.id },
   });
-  const { reason } = await searchParams;
-  const showHetznerPrompt = reason === "hetzner-required";
+  const hetznerConfigured = Boolean(creds?.hetznerToken && creds?.hetznerImageId);
 
   return (
     <div className="grid gap-8">
@@ -28,7 +23,7 @@ const AccountPage = async ({
           Manage your profile and password.
         </p>
       </header>
-      {showHetznerPrompt ? (
+      {!hetznerConfigured ? (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
           Add your Hetzner Cloud token and golden snapshot ID below to start
           provisioning servers.
@@ -43,7 +38,7 @@ const AccountPage = async ({
         }}
       />
       <HetznerPanel
-        configured={Boolean(creds?.hetznerToken && creds?.hetznerImageId)}
+        configured={hetznerConfigured}
         imageId={creds?.hetznerImageId ?? null}
       />
       <PasskeysPanel />

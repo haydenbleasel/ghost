@@ -17,7 +17,7 @@ const NewServerPage = async () => {
     catalog = await getHetznerCatalog(client, imageId);
   } catch (error) {
     if (error instanceof MissingHetznerCredentialsError) {
-      redirect("/dashboard/account?reason=hetzner-required");
+      redirect("/dashboard/account");
     }
     throw error;
   }
