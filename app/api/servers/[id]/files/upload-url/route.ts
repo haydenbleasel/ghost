@@ -1,12 +1,16 @@
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
 import { handleUpload } from "@vercel/blob/client";
 import type { HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 
+import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/session";
+
 export const runtime = "nodejs";
 
-export const POST = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const POST = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 
@@ -41,7 +45,7 @@ export const POST = async (request: Request, context: { params: Promise<{ id: st
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Upload token failed" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 };

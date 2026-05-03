@@ -2,10 +2,14 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { PalworldSettings } from "./settings";
 
-export const buildPalworldCompose = (config: ComposeConfig, settings: PalworldSettings): string => {
+export const buildPalworldCompose = (
+  config: ComposeConfig,
+  settings: PalworldSettings
+): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
-  const description = settings.description || `${config.name} - Powered by Ghost`;
+  const description =
+    settings.description || `${config.name} - Powered by Ghost`;
   return `services:
   palworld:
     image: thijsvanloef/palworld-server-docker:latest

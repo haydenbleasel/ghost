@@ -1,6 +1,7 @@
 import { games } from "@/games";
 import { getHetznerCatalog } from "@/lib/hetzner/catalog";
 import { requireUser } from "@/lib/session";
+
 import { NewServerForm } from "./_components/form";
 import type { GameOption } from "./_components/form";
 

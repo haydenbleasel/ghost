@@ -1,10 +1,12 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+
+import { put } from "@vercel/blob";
+
 import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
-import { put } from "@vercel/blob";
 
 const REPO_ROOT = process.cwd();
 const BINARY_PATH = join(REPO_ROOT, "dist", "ghost-agent");
@@ -41,7 +43,7 @@ const buildBinary = (): void => {
 };
 
 const uploadBinary = async (
-  version: string,
+  version: string
 ): Promise<{ url: string; sha256: string; bytes: number }> => {
   const bytes = await readFile(BINARY_PATH);
   const sha256 = createHash("sha256").update(bytes).digest("hex");
@@ -87,7 +89,8 @@ const enqueueRollout = async (input: {
 
 const main = async () => {
   const { serverId, skipBuild, version: versionArg } = parseArgs();
-  const version = versionArg ?? new Date().toISOString().replaceAll(/[:.]/g, "-");
+  const version =
+    versionArg ?? new Date().toISOString().replaceAll(/[:.]/g, "-");
 
   if (!skipBuild) {
     buildBinary();

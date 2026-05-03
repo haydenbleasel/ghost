@@ -23,7 +23,7 @@ export type RangeKey = keyof typeof RANGES;
 
 const pointsFor = (
   series: Series | undefined,
-  scale: (n: number) => number = (n) => n,
+  scale: (n: number) => number = (n) => n
 ): { t: number; v: number }[] => {
   if (!series) {
     return [];
@@ -35,10 +35,13 @@ const pointsFor = (
 };
 
 const zip = <K extends string>(
-  named: Record<K, { t: number; v: number }[]>,
+  named: Record<K, { t: number; v: number }[]>
 ): (Record<K, number> & { t: number })[] => {
   const byTime = new Map<number, Record<string, number>>();
-  for (const [key, points] of Object.entries(named) as [K, { t: number; v: number }[]][]) {
+  for (const [key, points] of Object.entries(named) as [
+    K,
+    { t: number; v: number }[],
+  ][]) {
     for (const { t, v } of points) {
       const row = byTime.get(t) ?? {};
       row[key] = v;
@@ -89,7 +92,11 @@ export interface NetworkPoint {
   out: number;
 }
 
-export const useServerMetrics = (serverId: string, observedState: string, range: RangeKey) => {
+export const useServerMetrics = (
+  serverId: string,
+  observedState: string,
+  range: RangeKey
+) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cpu, setCpu] = useState<CpuPoint[]>([]);
@@ -112,36 +119,47 @@ export const useServerMetrics = (serverId: string, observedState: string, range:
       setError(null);
       try {
         const [cpuRes, diskRes, netRes] = await Promise.all([
-          fetch(`/api/servers/${serverId}/metrics?${qs("cpu")}`, { signal: controller.signal }),
-          fetch(`/api/servers/${serverId}/metrics?${qs("disk")}`, { signal: controller.signal }),
-          fetch(`/api/servers/${serverId}/metrics?${qs("network")}`, { signal: controller.signal }),
+          fetch(`/api/servers/${serverId}/metrics?${qs("cpu")}`, {
+            signal: controller.signal,
+          }),
+          fetch(`/api/servers/${serverId}/metrics?${qs("disk")}`, {
+            signal: controller.signal,
+          }),
+          fetch(`/api/servers/${serverId}/metrics?${qs("network")}`, {
+            signal: controller.signal,
+          }),
         ]);
         if (!(cpuRes.ok && diskRes.ok && netRes.ok)) {
           setError("Failed to load metrics");
           return;
         }
-        const [cpuJson, diskJson, netJson]: MetricsPayload[] = await Promise.all([
-          cpuRes.json(),
-          diskRes.json(),
-          netRes.json(),
-        ]);
+        const [cpuJson, diskJson, netJson]: MetricsPayload[] =
+          await Promise.all([cpuRes.json(), diskRes.json(), netRes.json()]);
 
         setCpu(
           zip({
             cpu: pointsFor(cpuJson.metrics?.time_series.cpu),
-          }),
+          })
         );
         setDisk(
           zip({
-            read: pointsFor(diskJson.metrics?.time_series["disk.0.bandwidth.read"]),
-            write: pointsFor(diskJson.metrics?.time_series["disk.0.bandwidth.write"]),
-          }),
+            read: pointsFor(
+              diskJson.metrics?.time_series["disk.0.bandwidth.read"]
+            ),
+            write: pointsFor(
+              diskJson.metrics?.time_series["disk.0.bandwidth.write"]
+            ),
+          })
         );
         setNetwork(
           zip({
-            in: pointsFor(netJson.metrics?.time_series["network.0.bandwidth.in"]),
-            out: pointsFor(netJson.metrics?.time_series["network.0.bandwidth.out"]),
-          }),
+            in: pointsFor(
+              netJson.metrics?.time_series["network.0.bandwidth.in"]
+            ),
+            out: pointsFor(
+              netJson.metrics?.time_series["network.0.bandwidth.out"]
+            ),
+          })
         );
       } catch (fetchError) {
         if ((fetchError as Error).name !== "AbortError") {

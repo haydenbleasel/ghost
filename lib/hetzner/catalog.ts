@@ -1,5 +1,6 @@
 import "server-only";
 import { env } from "@/lib/env";
+
 import { hetzner, throwIfHetznerError } from "./index";
 
 export interface CatalogLocation {
@@ -31,18 +32,19 @@ export interface Catalog {
 }
 
 export const getHetznerCatalog = async (): Promise<Catalog> => {
-  const [serverTypesRes, datacentersRes, imageRes, pricingRes] = await Promise.all([
-    hetzner.GET("/server_types", {
-      next: { revalidate: 60 },
-      params: { query: { per_page: 50 } },
-    }),
-    hetzner.GET("/datacenters", { next: { revalidate: 60 } }),
-    hetzner.GET("/images/{id}", {
-      next: { revalidate: 3600 },
-      params: { path: { id: Number(env.HETZNER_IMAGE_ID) } },
-    }),
-    hetzner.GET("/pricing", { next: { revalidate: 86_400 } }),
-  ]);
+  const [serverTypesRes, datacentersRes, imageRes, pricingRes] =
+    await Promise.all([
+      hetzner.GET("/server_types", {
+        next: { revalidate: 60 },
+        params: { query: { per_page: 50 } },
+      }),
+      hetzner.GET("/datacenters", { next: { revalidate: 60 } }),
+      hetzner.GET("/images/{id}", {
+        next: { revalidate: 3600 },
+        params: { path: { id: Number(env.HETZNER_IMAGE_ID) } },
+      }),
+      hetzner.GET("/pricing", { next: { revalidate: 86_400 } }),
+    ]);
 
   throwIfHetznerError(serverTypesRes.error, serverTypesRes.response);
   throwIfHetznerError(datacentersRes.error, datacentersRes.response);
@@ -94,7 +96,7 @@ export const getHetznerCatalog = async (): Promise<Catalog> => {
     .filter((t) => t.architecture === image.architecture)
     .map<CatalogServerType>((t) => {
       const priceByLocation = new Map(
-        t.prices.map((p) => [p.location, Number(p.price_monthly.gross)]),
+        t.prices.map((p) => [p.location, Number(p.price_monthly.gross)])
       );
 
       const locations: CatalogLocation[] = [];
@@ -138,8 +140,15 @@ export const getHetznerCatalog = async (): Promise<Catalog> => {
     })
     .filter((t) => t.locations.length > 0)
     .toSorted(
-      (a, b) => a.pricePerMonth - b.pricePerMonth || a.memory - b.memory || a.cores - b.cores,
+      (a, b) =>
+        a.pricePerMonth - b.pricePerMonth ||
+        a.memory - b.memory ||
+        a.cores - b.cores
     );
 
-  return { currency, imageArchitecture: image.architecture, serverTypes: types };
+  return {
+    currency,
+    imageArchitecture: image.architecture,
+    serverTypes: types,
+  };
 };

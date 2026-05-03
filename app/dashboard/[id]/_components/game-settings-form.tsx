@@ -1,4 +1,7 @@
 "use client";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
 import { Panel, PanelCard } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +15,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import type { SettingField, SettingsSchema } from "@/games";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
 
 export type FieldValue = string | number | boolean;
 export type SettingsValuesRecord = Record<string, FieldValue>;
@@ -29,7 +30,11 @@ const SettingInput = ({ id, field, value, onChange }: InputProps) => {
   switch (field.type) {
     case "boolean": {
       return (
-        <Switch id={id} checked={Boolean(value)} onCheckedChange={(checked) => onChange(checked)} />
+        <Switch
+          id={id}
+          checked={Boolean(value)}
+          onCheckedChange={(checked) => onChange(checked)}
+        />
       );
     }
     case "number": {
@@ -101,10 +106,17 @@ const SettingRow = ({ fieldKey, field, value, onChange }: RowProps) => {
         <Label htmlFor={inputId} className="text-sm font-medium">
           {field.label}
         </Label>
-        {field.help && <span className="text-muted-foreground text-xs">{field.help}</span>}
+        {field.help && (
+          <span className="text-muted-foreground text-xs">{field.help}</span>
+        )}
       </div>
       <div className="shrink-0">
-        <SettingInput id={inputId} field={field} value={value} onChange={onChange} />
+        <SettingInput
+          id={inputId}
+          field={field}
+          value={value}
+          onChange={onChange}
+        />
       </div>
     </div>
   );
@@ -139,7 +151,10 @@ interface Props {
   initialValues: Record<string, unknown>;
 }
 
-const valuesEqual = (a: Record<string, unknown>, b: Record<string, unknown>): boolean => {
+const valuesEqual = (
+  a: Record<string, unknown>,
+  b: Record<string, unknown>
+): boolean => {
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   for (const key of keys) {
     if (a[key] !== b[key]) {
@@ -149,12 +164,16 @@ const valuesEqual = (a: Record<string, unknown>, b: Record<string, unknown>): bo
   return true;
 };
 
-export const GameSettingsForm = ({ serverId, schema, initialValues }: Props) => {
+export const GameSettingsForm = ({
+  serverId,
+  schema,
+  initialValues,
+}: Props) => {
   const [values, setValues] = useState<SettingsValuesRecord>(
-    () => initialValues as SettingsValuesRecord,
+    () => initialValues as SettingsValuesRecord
   );
   const [baseline, setBaseline] = useState<SettingsValuesRecord>(
-    () => initialValues as SettingsValuesRecord,
+    () => initialValues as SettingsValuesRecord
   );
   const [saving, setSaving] = useState(false);
 
@@ -183,7 +202,9 @@ export const GameSettingsForm = ({ serverId, schema, initialValues }: Props) => 
       setValues(json.settings);
       toast.success("Settings saved");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save settings");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save settings"
+      );
     } finally {
       setSaving(false);
     }
@@ -195,11 +216,22 @@ export const GameSettingsForm = ({ serverId, schema, initialValues }: Props) => 
         <SettingsFields schema={schema} values={values} onChange={setField} />
         <div className="flex items-center justify-end gap-2 px-3 py-2">
           {dirty && (
-            <Button type="button" variant="ghost" size="sm" onClick={reset} disabled={saving}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={reset}
+              disabled={saving}
+            >
               Reset
             </Button>
           )}
-          <Button type="button" size="sm" onClick={save} disabled={!dirty || saving}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={save}
+            disabled={!dirty || saving}
+          >
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>

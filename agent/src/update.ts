@@ -2,10 +2,11 @@ import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { chmod, mkdir, rename, unlink } from "node:fs/promises";
 import { Readable } from "node:stream";
-import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 import { pipeline } from "node:stream/promises";
+import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 
-const BINARY_PATH = process.env.GHOST_AGENT_BINARY ?? "/usr/local/bin/ghost-agent";
+const BINARY_PATH =
+  process.env.GHOST_AGENT_BINARY ?? "/usr/local/bin/ghost-agent";
 const STAGING_DIR = process.env.GHOST_AGENT_STAGING ?? "/var/lib/ghost/update";
 const MAX_BINARY_BYTES = 200 * 1024 * 1024;
 

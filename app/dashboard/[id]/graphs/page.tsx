@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
+
 import { Panel, PanelCard } from "@/components/panel";
+
 import { CpuPanel } from "../_components/cpu-panel";
 import { DiskPanel } from "../_components/disk-panel";
 import { GraphsRangePanel } from "../_components/graphs-range-panel";
@@ -15,7 +17,7 @@ const GraphsTab = () => {
   const { cpu, disk, error, loading, network } = useServerMetrics(
     server.id,
     server.observedState,
-    range,
+    range
   );
 
   if (server.observedState !== "running") {

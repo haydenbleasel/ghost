@@ -15,7 +15,7 @@ const main = async () => {
   console.log(`Found ${stuck.length} stuck servers:`);
   for (const s of stuck) {
     console.log(
-      `  ${s.id}  name="${s.name}"  phase=${s.phase}  desired=${s.desiredState}  observed=${s.observedState}`,
+      `  ${s.id}  name="${s.name}"  phase=${s.phase}  desired=${s.desiredState}  observed=${s.observedState}`
     );
   }
 

@@ -1,6 +1,7 @@
 "use client";
 import { Panel, PanelCard } from "@/components/panel";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import type { RangeKey } from "./use-server-metrics";
 
 interface Props {
@@ -22,6 +23,8 @@ export const GraphsRangePanel = ({ range, onChange, error }: Props) => (
         </TabsList>
       </Tabs>
     </PanelCard>
-    {error && <PanelCard className="p-6 text-destructive text-sm">{error}</PanelCard>}
+    {error && (
+      <PanelCard className="p-6 text-destructive text-sm">{error}</PanelCard>
+    )}
   </Panel>
 );

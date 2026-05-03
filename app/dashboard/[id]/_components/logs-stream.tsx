@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+
 import { Panel, PanelCard } from "@/components/panel";
 
 interface LogItem {
@@ -23,13 +24,15 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
         return;
       }
       const es = new EventSource(
-        `/api/servers/${serverId}/logs/stream?cursor=${cursorRef.current}`,
+        `/api/servers/${serverId}/logs/stream?cursor=${cursorRef.current}`
       );
       es.addEventListener("log", (event) => {
         const data = JSON.parse((event as MessageEvent).data) as LogItem;
         cursorRef.current = Math.max(cursorRef.current, data.seq);
         setLines((prev) =>
-          prev.some((l) => l.seq === data.seq) ? prev : [...prev.slice(-500), data],
+          prev.some((l) => l.seq === data.seq)
+            ? prev
+            : [...prev.slice(-500), data]
         );
       });
       es.addEventListener("close", () => {
@@ -60,7 +63,9 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
           className="flex max-h-80 flex-col gap-1 overflow-auto px-3 py-2 font-mono text-xs"
         >
           {lines.length === 0 && (
-            <span className="text-sm text-muted-foreground">Waiting for logs…</span>
+            <span className="text-sm text-muted-foreground">
+              Waiting for logs…
+            </span>
           )}
           {lines.map((line) => (
             <span key={line.seq} className="whitespace-pre-wrap">

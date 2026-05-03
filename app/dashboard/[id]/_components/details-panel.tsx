@@ -49,8 +49,14 @@ export const DetailsPanel = ({ specs, location }: Props) => {
             <Row label="vCPU" value={`${specs.cores} cores`} />
             <Row label="Memory" value={`${specs.memory} GB`} />
             <Row label="Local disk" value={`${specs.disk} GB`} />
-            <Row label="CPU type" value={specs.cpuType === "shared" ? "Shared" : "Dedicated"} />
-            <Row label="Architecture" value={specs.architecture.toUpperCase()} />
+            <Row
+              label="CPU type"
+              value={specs.cpuType === "shared" ? "Shared" : "Dedicated"}
+            />
+            <Row
+              label="Architecture"
+              value={specs.architecture.toUpperCase()}
+            />
             {locationLabel && <Row label="Location" value={locationLabel} />}
           </>
         ) : (

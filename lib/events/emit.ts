@@ -1,9 +1,10 @@
 import "server-only";
+import { ulid } from "ulid";
+
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { REDIS_KEYS } from "@/protocol";
 import type { LogStream, Phase } from "@/protocol";
-import { ulid } from "ulid";
 
 export interface ActivityPayload {
   serverId: string;

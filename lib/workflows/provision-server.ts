@@ -1,5 +1,7 @@
-import type { Phase } from "@/protocol";
 import { createHook, FatalError, sleep } from "workflow";
+
+import type { Phase } from "@/protocol";
+
 import { hookTokens } from "./hook-tokens";
 import {
   stepAgentConnected,
@@ -20,7 +22,7 @@ type InstallOutcome = "healthy" | "cancelled" | "errored" | "timeout";
 
 const waitForInstall = (
   phaseHook: AsyncIterable<Phase>,
-  cancelled: PromiseLike<"cancelled">,
+  cancelled: PromiseLike<"cancelled">
 ): Promise<InstallOutcome> => {
   const timeout = (async (): Promise<InstallOutcome> => {
     await sleep(`${MAX_INSTALL_WAIT_SECONDS}s`);
@@ -45,7 +47,9 @@ export const provisionServer = async (input: { serverId: string }) => {
 
   const { serverId } = input;
 
-  using cancelHook = createHook<undefined>({ token: hookTokens.cancel(serverId) });
+  using cancelHook = createHook<undefined>({
+    token: hookTokens.cancel(serverId),
+  });
   using enrollHook = createHook<undefined>({
     token: hookTokens.enrolled(serverId),
   });
@@ -105,7 +109,11 @@ export const provisionServer = async (input: { serverId: string }) => {
       await sleep(`${MAX_ENROLL_WAIT_SECONDS}s`);
       return "timeout" as const;
     })();
-    const enrollOutcome = await Promise.race([enrollPromise, cancelled, enrollTimeout]);
+    const enrollOutcome = await Promise.race([
+      enrollPromise,
+      cancelled,
+      enrollTimeout,
+    ]);
     if (enrollOutcome === "cancelled") {
       return;
     }

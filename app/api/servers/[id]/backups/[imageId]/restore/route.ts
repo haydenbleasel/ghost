@@ -1,7 +1,8 @@
+import { NextResponse } from "next/server";
+
 import { prisma } from "@/lib/db";
 import { hetzner } from "@/lib/hetzner";
 import { requireUser } from "@/lib/session";
-import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ const hetznerErrorMessage = (error: unknown, response: Response): string => {
 
 export const POST = async (
   _request: Request,
-  context: { params: Promise<{ id: string; imageId: string }> },
+  context: { params: Promise<{ id: string; imageId: string }> }
 ) => {
   const user = await requireUser();
   const { id, imageId } = await context.params;
@@ -33,7 +34,10 @@ export const POST = async (
   }
 
   if (!server.hetznerServerId) {
-    return NextResponse.json({ error: "Server is not provisioned yet" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Server is not provisioned yet" },
+      { status: 409 }
+    );
   }
 
   const hetznerServerId = Number(server.hetznerServerId);
@@ -42,12 +46,14 @@ export const POST = async (
     data: imageData,
     error: getError,
     response: getResponse,
-  } = await hetzner.GET("/images/{id}", { params: { path: { id: parsedImageId } } });
+  } = await hetzner.GET("/images/{id}", {
+    params: { path: { id: parsedImageId } },
+  });
 
   if (!getResponse.ok) {
     return NextResponse.json(
       { error: hetznerErrorMessage(getError, getResponse) },
-      { status: getResponse.status },
+      { status: getResponse.status }
     );
   }
 
@@ -61,18 +67,24 @@ export const POST = async (
   }
 
   if (image.status !== "available") {
-    return NextResponse.json({ error: "This backup is not ready yet" }, { status: 409 });
+    return NextResponse.json(
+      { error: "This backup is not ready yet" },
+      { status: 409 }
+    );
   }
 
-  const { error, response } = await hetzner.POST("/servers/{id}/actions/rebuild", {
-    body: { image: String(parsedImageId) },
-    params: { path: { id: hetznerServerId } },
-  });
+  const { error, response } = await hetzner.POST(
+    "/servers/{id}/actions/rebuild",
+    {
+      body: { image: String(parsedImageId) },
+      params: { path: { id: hetznerServerId } },
+    }
+  );
 
   if (!response.ok) {
     return NextResponse.json(
       { error: hetznerErrorMessage(error, response) },
-      { status: response.status },
+      { status: response.status }
     );
   }
 

@@ -5,6 +5,7 @@ import { useRouter, useSelectedLayoutSegment } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { games } from "@/games";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
+
 import { ProvisioningStatus } from "./provisioning-status";
 import { ReadyHeader } from "./ready-header";
 import { ServerProvider } from "./server-context";
@@ -53,10 +55,16 @@ interface Props {
   children: ReactNode;
 }
 
-export const ServerShell = ({ server: initial, eligibleTypes, currency, children }: Props) => {
+export const ServerShell = ({
+  server: initial,
+  eligibleTypes,
+  currency,
+  children,
+}: Props) => {
   const router = useRouter();
   const segment = useSelectedLayoutSegment();
-  const activeTab = segment && TABS.some((tab) => tab.value === segment) ? segment : "connect";
+  const activeTab =
+    segment && TABS.some((tab) => tab.value === segment) ? segment : "connect";
   const [server, setServer] = useState(initial);
   const [pending, setPending] = useState<null | string>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -115,7 +123,8 @@ export const ServerShell = ({ server: initial, eligibleTypes, currency, children
     }
   };
 
-  const updateServer = (patch: Partial<ServerView>) => setServer((prev) => ({ ...prev, ...patch }));
+  const updateServer = (patch: Partial<ServerView>) =>
+    setServer((prev) => ({ ...prev, ...patch }));
 
   const isProvisioning = PROVISIONING_PHASES.has(server.phase);
   const game = games.find((g) => g.id === server.game);
@@ -130,7 +139,8 @@ export const ServerShell = ({ server: initial, eligibleTypes, currency, children
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this server?</AlertDialogTitle>
           <AlertDialogDescription>
-            Your server and all its worlds, saves and settings will be permanently deleted.
+            Your server and all its worlds, saves and settings will be
+            permanently deleted.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -157,7 +167,9 @@ export const ServerShell = ({ server: initial, eligibleTypes, currency, children
           </div>
         </div>
         <ProvisioningStatus
-          errored={server.phase === "errored" || server.observedState === "failed"}
+          errored={
+            server.phase === "errored" || server.observedState === "failed"
+          }
           errorReason={server.errorReason}
           phase={server.phase}
         />

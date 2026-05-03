@@ -49,7 +49,10 @@ export const createSseResponse = (opts: SseOpts): Response => {
         write(`: ${text}\n\n`);
       };
 
-      const keepalive = setInterval(() => writeComment("keepalive"), KEEPALIVE_MS);
+      const keepalive = setInterval(
+        () => writeComment("keepalive"),
+        KEEPALIVE_MS
+      );
 
       const deadline = Date.now() + MAX_DURATION_MS;
 
@@ -71,7 +74,9 @@ export const createSseResponse = (opts: SseOpts): Response => {
           }
 
           try {
-            await delay(Math.min(pollMs, remaining), undefined, { signal: abort.signal });
+            await delay(Math.min(pollMs, remaining), undefined, {
+              signal: abort.signal,
+            });
           } catch {
             // aborted
           }

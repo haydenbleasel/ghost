@@ -1,7 +1,8 @@
-import { prisma } from "@/lib/db";
-import { AgentAuthError, verifyAgentRequest } from "@/lib/agent/signing";
-import { rotateKeyRequestSchema } from "@/protocol";
 import { NextResponse } from "next/server";
+
+import { AgentAuthError, verifyAgentRequest } from "@/lib/agent/signing";
+import { prisma } from "@/lib/db";
+import { rotateKeyRequestSchema } from "@/protocol";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,10 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ sessionVersion: agent.sessionVersion });
   } catch (error) {
     if (error instanceof AgentAuthError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      );
     }
     throw error;
   }

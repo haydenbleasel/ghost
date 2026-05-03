@@ -1,9 +1,11 @@
 import "server-only";
-import { env } from "@/lib/env";
 import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+
+import { env } from "@/lib/env";
+
 import { prisma } from "./db";
 
 export const auth = betterAuth({

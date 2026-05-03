@@ -1,10 +1,11 @@
-import { prisma } from "@/lib/db";
+import { NextResponse } from "next/server";
+import { resumeHook } from "workflow/api";
+
 import { AgentAuthError, verifyAgentRequest } from "@/lib/agent/signing";
+import { prisma } from "@/lib/db";
 import { emitActivity, emitLog } from "@/lib/events/emit";
 import { hookTokens } from "@/lib/workflows/hook-tokens";
 import { AGENT_HEADERS, eventBatchSchema } from "@/protocol";
-import { NextResponse } from "next/server";
-import { resumeHook } from "workflow/api";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,10 @@ export const POST = async (request: Request) => {
     ({ verified, body } = await verifyAgentRequest(request));
   } catch (error) {
     if (error instanceof AgentAuthError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      );
     }
     throw error;
   }
@@ -26,7 +30,7 @@ export const POST = async (request: Request) => {
   if (!parsed.success) {
     return NextResponse.json(
       { details: parsed.error.flatten(), error: "Invalid body" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 

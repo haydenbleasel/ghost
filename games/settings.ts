@@ -31,7 +31,11 @@ export interface SelectField<O extends string = string> extends BaseField<O> {
   options: readonly SelectOption[];
 }
 
-export type SettingField = StringField | NumberField | BooleanField | SelectField;
+export type SettingField =
+  | StringField
+  | NumberField
+  | BooleanField
+  | SelectField;
 
 export type SettingsSchema = Record<string, SettingField>;
 
@@ -45,7 +49,8 @@ export type SettingsValues<S extends SettingsSchema> = {
         : string;
 };
 
-export const defineSettings = <S extends SettingsSchema>(schema: S): S => schema;
+export const defineSettings = <S extends SettingsSchema>(schema: S): S =>
+  schema;
 
 const validateField = (field: SettingField, value: unknown): boolean => {
   switch (field.type) {
@@ -74,7 +79,10 @@ const validateField = (field: SettingField, value: unknown): boolean => {
       return typeof value === "boolean";
     }
     case "select": {
-      return typeof value === "string" && field.options.some((o) => o.value === value);
+      return (
+        typeof value === "string" &&
+        field.options.some((o) => o.value === value)
+      );
     }
     default: {
       return false;
@@ -82,7 +90,9 @@ const validateField = (field: SettingField, value: unknown): boolean => {
   }
 };
 
-export const getDefaults = <S extends SettingsSchema>(schema: S): SettingsValues<S> => {
+export const getDefaults = <S extends SettingsSchema>(
+  schema: S
+): SettingsValues<S> => {
   const result: Record<string, unknown> = {};
   for (const [key, field] of Object.entries(schema)) {
     result[key] = field.default;
@@ -92,7 +102,7 @@ export const getDefaults = <S extends SettingsSchema>(schema: S): SettingsValues
 
 export const resolveSettings = <S extends SettingsSchema>(
   schema: S,
-  stored: unknown,
+  stored: unknown
 ): SettingsValues<S> => {
   const result = getDefaults(schema) as Record<string, unknown>;
   if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
@@ -113,7 +123,7 @@ export type ValidateResult<S extends SettingsSchema> =
 
 export const validateSettings = <S extends SettingsSchema>(
   schema: S,
-  input: unknown,
+  input: unknown
 ): ValidateResult<S> => {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return { error: "Settings must be an object", ok: false };

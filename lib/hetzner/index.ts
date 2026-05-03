@@ -1,6 +1,8 @@
 import "server-only";
-import { env } from "@/lib/env";
 import createClient from "openapi-fetch";
+
+import { env } from "@/lib/env";
+
 import type { paths } from "./schema";
 
 export const hetzner = createClient<paths>({
@@ -26,11 +28,16 @@ export class HetznerApiError extends Error {
   }
 }
 
-export const throwIfHetznerError = (error: unknown, response: Response): void => {
+export const throwIfHetznerError = (
+  error: unknown,
+  response: Response
+): void => {
   if (response.ok) {
     return;
   }
-  const body = error as { error?: { code?: string; message?: string } } | undefined;
+  const body = error as
+    | { error?: { code?: string; message?: string } }
+    | undefined;
   const code = body?.error?.code ?? String(response.status);
   const message = body?.error?.message ?? response.statusText;
   throw new HetznerApiError(response.status, code, message);

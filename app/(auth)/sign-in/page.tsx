@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,7 +70,13 @@ const SignInPage = () => {
       <h1 className="text-2xl font-semibold">Sign in</h1>
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" required autoComplete="username webauthn" />
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autoComplete="username webauthn"
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>

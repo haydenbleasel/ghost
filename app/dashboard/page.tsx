@@ -1,6 +1,7 @@
 import { ArrowRightIcon, PlusIcon, ServerIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -63,9 +64,12 @@ const DashboardPage = async () => {
     <div className="flex flex-col gap-8">
       <div className="flex items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="font-heading font-medium text-2xl tracking-tight">Servers</h1>
+          <h1 className="font-heading font-medium text-2xl tracking-tight">
+            Servers
+          </h1>
           <p className="text-muted-foreground text-sm">
-            {servers.length} {servers.length === 1 ? "server" : "servers"} across your account.
+            {servers.length} {servers.length === 1 ? "server" : "servers"}{" "}
+            across your account.
           </p>
         </div>
         <Button asChild>
@@ -112,14 +116,15 @@ const DashboardPage = async () => {
                     <ArrowRightIcon className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
                   <p className="truncate text-muted-foreground text-xs">
-                    {game?.name ?? server.game} · {server.location.toUpperCase()}
+                    {game?.name ?? server.game} ·{" "}
+                    {server.location.toUpperCase()}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-muted/60 px-2 py-1">
                   <span
                     className={cn(
                       "size-1.5 rounded-full",
-                      statusDotClass(server.observedState, deleting),
+                      statusDotClass(server.observedState, deleting)
                     )}
                     aria-hidden
                   />
@@ -128,9 +133,14 @@ const DashboardPage = async () => {
               </div>
 
               <div className="flex items-center justify-between border-foreground/10 border-t pt-3 text-xs">
-                <span className="font-mono text-muted-foreground">{server.ipv4 ?? "—"}</span>
+                <span className="font-mono text-muted-foreground">
+                  {server.ipv4 ?? "—"}
+                </span>
                 <span className="text-muted-foreground">
-                  <span className="text-foreground/70">{server.serverType}</span> · {phaseLabel}
+                  <span className="text-foreground/70">
+                    {server.serverType}
+                  </span>{" "}
+                  · {phaseLabel}
                 </span>
               </div>
             </Link>

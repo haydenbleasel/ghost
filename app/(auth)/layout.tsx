@@ -1,6 +1,7 @@
-import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+
+import { getSession } from "@/lib/session";
 
 const AuthLayout = async ({ children }: { children: ReactNode }) => {
   const session = await getSession();

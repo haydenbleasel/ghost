@@ -1,4 +1,5 @@
 import { setTimeout as delay } from "node:timers/promises";
+
 import type { Command } from "../../protocol";
 import { commandEnvelopeSchema } from "../../protocol";
 import type { State } from "./config";
@@ -33,7 +34,7 @@ const ackCommand = async (
   status: "succeeded" | "failed",
   durationMs: number,
   error?: string,
-  result?: Record<string, unknown>,
+  result?: Record<string, unknown>
 ): Promise<void> => {
   const res = await signedFetch({
     agentId: state.agentId,
@@ -50,7 +51,7 @@ const ackCommand = async (
 export const executeCommand = async (
   state: State,
   command: Command,
-  buffer: EventBuffer,
+  buffer: EventBuffer
 ): Promise<void> => {
   if (state.lastExecutedCommandId === command.id) {
     await ackCommand(state, command.id, "succeeded", 0);
@@ -73,7 +74,10 @@ export const executeCommand = async (
           phase: "starting",
         });
         startLogTail(GAME_CONTAINER, buffer);
-        buffer.enqueueActivity({ message: "Game is healthy", phase: "healthy" });
+        buffer.enqueueActivity({
+          message: "Game is healthy",
+          phase: "healthy",
+        });
         break;
       }
       case "START": {
@@ -135,7 +139,9 @@ export const executeCommand = async (
           }`,
           phase: "installing",
         });
-        const { stagedPath, bytes } = await downloadAndStageAgent(command.payload);
+        const { stagedPath, bytes } = await downloadAndStageAgent(
+          command.payload
+        );
         await swapBinaryInPlace(stagedPath);
         result = { bytes, version: command.payload.version };
         state.lastExecutedCommandId = command.id;
@@ -145,7 +151,14 @@ export const executeCommand = async (
           phase: "installing",
         });
         await buffer.flush();
-        await ackCommand(state, command.id, "succeeded", Date.now() - started, undefined, result);
+        await ackCommand(
+          state,
+          command.id,
+          "succeeded",
+          Date.now() - started,
+          undefined,
+          result
+        );
         setTimeout(() => process.exit(0), 500).unref();
         return;
       }
@@ -156,21 +169,34 @@ export const executeCommand = async (
 
     state.lastExecutedCommandId = command.id;
     await saveState(state);
-    await ackCommand(state, command.id, "succeeded", Date.now() - started, undefined, result);
+    await ackCommand(
+      state,
+      command.id,
+      "succeeded",
+      Date.now() - started,
+      undefined,
+      result
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     buffer.enqueueActivity({
       message: `Command ${command.type} failed: ${message}`,
       phase: "errored",
     });
-    await ackCommand(state, command.id, "failed", Date.now() - started, message);
+    await ackCommand(
+      state,
+      command.id,
+      "failed",
+      Date.now() - started,
+      message
+    );
   }
 };
 
 export const pollCommands = async (
   state: State,
   buffer: EventBuffer,
-  signal: AbortSignal,
+  signal: AbortSignal
 ): Promise<void> => {
   while (!signal.aborted) {
     try {

@@ -1,12 +1,16 @@
+import { NextResponse } from "next/server";
+
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { createSseResponse } from "@/lib/sse/stream";
-import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-export const GET = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const GET = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 

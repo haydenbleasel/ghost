@@ -9,7 +9,8 @@ const buildCompose = (config: ComposeConfig, raw: unknown): string =>
 
 export const palworld = {
   buildCompose,
-  description: 'Fight, farm, build and work alongside mysterious creatures called "Pals".',
+  description:
+    'Fight, farm, build and work alongside mysterious creatures called "Pals".',
   enabled: true,
   gamedigId: "palworld",
   id: "palworld",

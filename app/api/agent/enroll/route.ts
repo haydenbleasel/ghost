@@ -1,10 +1,12 @@
 import crypto from "node:crypto";
-import { prisma } from "@/lib/db";
-import { verifyBootstrapJwt } from "@/lib/agent/bootstrap";
-import { hookTokens } from "@/lib/workflows/hook-tokens";
-import { enrollRequestSchema, enrollResponseSchema } from "@/protocol";
+
 import { NextResponse } from "next/server";
 import { resumeHook } from "workflow/api";
+
+import { verifyBootstrapJwt } from "@/lib/agent/bootstrap";
+import { prisma } from "@/lib/db";
+import { hookTokens } from "@/lib/workflows/hook-tokens";
+import { enrollRequestSchema, enrollResponseSchema } from "@/protocol";
 
 export const runtime = "nodejs";
 
@@ -20,7 +22,7 @@ export const POST = async (request: Request) => {
   if (!parsed.success) {
     return NextResponse.json(
       { details: parsed.error.flatten(), error: "Invalid body" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -28,7 +30,10 @@ export const POST = async (request: Request) => {
   try {
     claims = await verifyBootstrapJwt(parsed.data.bootstrapToken);
   } catch {
-    return NextResponse.json({ error: "Invalid bootstrap token" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Invalid bootstrap token" },
+      { status: 401 }
+    );
   }
 
   const enrollment = await prisma.agentEnrollment.findUnique({
@@ -36,7 +41,10 @@ export const POST = async (request: Request) => {
   });
 
   if (!enrollment) {
-    return NextResponse.json({ error: "Enrollment not registered" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Enrollment not registered" },
+      { status: 401 }
+    );
   }
 
   if (enrollment.burnedAt) {
@@ -80,7 +88,10 @@ export const POST = async (request: Request) => {
     // oxlint-disable-next-line unicorn/no-useless-undefined -- resumeHook requires an explicit payload
     await resumeHook(hookTokens.enrolled(agent.serverId), undefined);
   } catch (error) {
-    console.error("[enroll] resumeHook failed", { serverId: agent.serverId, error });
+    console.error("[enroll] resumeHook failed", {
+      error,
+      serverId: agent.serverId,
+    });
   }
 
   return NextResponse.json(response);

@@ -2,7 +2,10 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { TerrariaSettings } from "./settings";
 
-export const buildTerrariaCompose = (config: ComposeConfig, settings: TerrariaSettings): string => {
+export const buildTerrariaCompose = (
+  config: ComposeConfig,
+  settings: TerrariaSettings
+): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
   const motd = settings.motd || `${config.name} - Powered by Ghost`;

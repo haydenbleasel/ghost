@@ -1,12 +1,13 @@
+import { NextResponse } from "next/server";
+
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
-import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
 export const GET = async (
   _request: Request,
-  context: { params: Promise<{ id: string; commandId: string }> },
+  context: { params: Promise<{ id: string; commandId: string }> }
 ) => {
   const user = await requireUser();
   const { id, commandId } = await context.params;

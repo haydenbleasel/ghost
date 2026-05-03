@@ -1,12 +1,13 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { signUp } from "@/lib/auth-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { signUp } from "@/lib/auth-client";
 
 const SignUpPage = () => {
   const router = useRouter();
@@ -39,7 +40,13 @@ const SignUpPage = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" required autoComplete="email" />
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>

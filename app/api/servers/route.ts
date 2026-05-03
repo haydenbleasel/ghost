@@ -1,14 +1,16 @@
 import crypto from "node:crypto";
-import { games, validateSettings } from "@/games";
-import { prisma } from "@/lib/db";
-import { getHetznerCatalog } from "@/lib/hetzner/catalog";
-import { requireUser } from "@/lib/session";
-import { provisionServer } from "@/lib/workflows/provision-server";
+
 import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { ulid } from "ulid";
 import { start } from "workflow/api";
 import { z } from "zod";
+
+import { games, validateSettings } from "@/games";
+import { prisma } from "@/lib/db";
+import { getHetznerCatalog } from "@/lib/hetzner/catalog";
+import { requireUser } from "@/lib/session";
+import { provisionServer } from "@/lib/workflows/provision-server";
 
 export const runtime = "nodejs";
 
@@ -40,7 +42,7 @@ export const POST = async (request: Request) => {
   if (!parsed.success) {
     return NextResponse.json(
       { details: parsed.error.flatten(), error: "Invalid body" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -50,27 +52,32 @@ export const POST = async (request: Request) => {
   }
 
   const catalog = await getHetznerCatalog();
-  const type = catalog.serverTypes.find((t) => t.name === parsed.data.serverType);
+  const type = catalog.serverTypes.find(
+    (t) => t.name === parsed.data.serverType
+  );
   if (!type) {
     return NextResponse.json({ error: "Unknown server type" }, { status: 400 });
   }
-  if (type.memory < game.requirements.memory || type.cores < game.requirements.cpu) {
+  if (
+    type.memory < game.requirements.memory ||
+    type.cores < game.requirements.cpu
+  ) {
     return NextResponse.json(
       { error: "Server type does not meet game requirements" },
-      { status: 400 },
+      { status: 400 }
     );
   }
   const location = type.locations.find((l) => l.name === parsed.data.location);
   if (!location) {
     return NextResponse.json(
       { error: "Region not supported for this server type" },
-      { status: 400 },
+      { status: 400 }
     );
   }
   if (!location.available) {
     return NextResponse.json(
       { error: "Region is temporarily unavailable. Please pick another." },
-      { status: 409 },
+      { status: 409 }
     );
   }
 

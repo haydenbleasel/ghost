@@ -1,6 +1,13 @@
 import crypto from "node:crypto";
+
 import { signAsync, getPublicKeyAsync } from "@noble/ed25519";
-import { AGENT_HEADERS, canonicalize, fromBase64Url, toBase64Url } from "../../protocol";
+
+import {
+  AGENT_HEADERS,
+  canonicalize,
+  fromBase64Url,
+  toBase64Url,
+} from "../../protocol";
 
 export const generateKeypair = async (): Promise<{
   privateKey: string;
@@ -38,7 +45,10 @@ export const signedFetch = async (input: {
     timestamp,
   });
 
-  const sig = await signAsync(new TextEncoder().encode(message), fromBase64Url(input.privateKey));
+  const sig = await signAsync(
+    new TextEncoder().encode(message),
+    fromBase64Url(input.privateKey)
+  );
 
   const headers: Record<string, string> = {
     [AGENT_HEADERS.AGENT]: input.agentId,

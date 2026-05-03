@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { COMMAND_STATUSES, LOG_STREAMS, PHASES } from "./constants";
 
 export const enrollRequestSchema = z.object({

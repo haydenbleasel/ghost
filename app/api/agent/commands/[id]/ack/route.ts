@@ -1,12 +1,16 @@
-import { ackCommand } from "@/lib/agent/commands";
-import { prisma } from "@/lib/db";
-import { AgentAuthError, verifyAgentRequest } from "@/lib/agent/signing";
-import { commandAckSchema } from "@/protocol";
 import { NextResponse } from "next/server";
+
+import { ackCommand } from "@/lib/agent/commands";
+import { AgentAuthError, verifyAgentRequest } from "@/lib/agent/signing";
+import { prisma } from "@/lib/db";
+import { commandAckSchema } from "@/protocol";
 
 export const runtime = "nodejs";
 
-export const POST = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const POST = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const { id } = await context.params;
 
   let body: string;
@@ -15,7 +19,10 @@ export const POST = async (request: Request, context: { params: Promise<{ id: st
     ({ verified, body } = await verifyAgentRequest(request));
   } catch (error) {
     if (error instanceof AgentAuthError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      );
     }
     throw error;
   }

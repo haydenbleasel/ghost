@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+
 import { AppContainer } from "./_components/app-container";
 import { AppSidebar } from "./_components/app-sidebar";
 
@@ -17,7 +19,11 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
     <SidebarProvider className="bg-sidebar">
       <AppSidebar
         servers={servers}
-        user={{ email: user.email, hasImage: Boolean(user.image), name: user.name ?? null }}
+        user={{
+          email: user.email,
+          hasImage: Boolean(user.image),
+          name: user.name ?? null,
+        }}
       />
       <SidebarTrigger className="fixed top-3 left-3 z-50 text-muted-foreground" />
       <AppContainer>

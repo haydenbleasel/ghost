@@ -1,5 +1,6 @@
-import { cn } from "@/lib/utils";
 import { Geist, Geist_Mono } from "next/font/google";
+
+import { cn } from "@/lib/utils";
 
 const sans = Geist({
   display: "swap",
@@ -17,4 +18,8 @@ const mono = Geist_Mono({
   weight: "400",
 });
 
-export const fonts = cn(sans.variable, mono.variable, "touch-manipulation font-sans antialiased");
+export const fonts = cn(
+  sans.variable,
+  mono.variable,
+  "touch-manipulation font-sans antialiased"
+);

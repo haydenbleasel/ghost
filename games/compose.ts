@@ -12,10 +12,13 @@ export interface GamePort {
 
 export const GAME_CONTAINER_NAME = "ghost-game";
 
-export const escapeComposeValue = (value: string): string => value.replaceAll('"', '\\"');
+export const escapeComposeValue = (value: string): string =>
+  value.replaceAll('"', '\\"');
 
 const formatRange = (port: GamePort): string =>
   port.from === port.to ? `${port.from}` : `${port.from}:${port.to}`;
 
 export const buildUfwRules = (ports: readonly GamePort[]): string[] =>
-  ports.map((port) => `ufw allow ${formatRange(port)}/${port.protocol} || true`);
+  ports.map(
+    (port) => `ufw allow ${formatRange(port)}/${port.protocol} || true`
+  );

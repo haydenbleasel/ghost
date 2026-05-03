@@ -2,7 +2,10 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { ValheimSettings } from "./settings";
 
-export const buildValheimCompose = (config: ComposeConfig, settings: ValheimSettings): string => {
+export const buildValheimCompose = (
+  config: ComposeConfig,
+  settings: ValheimSettings
+): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
   const serverArgs = settings.crossplay ? "-crossplay" : "";

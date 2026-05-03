@@ -2,10 +2,14 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { RustSettings } from "./settings";
 
-export const buildRustCompose = (config: ComposeConfig, settings: RustSettings): string => {
+export const buildRustCompose = (
+  config: ComposeConfig,
+  settings: RustSettings
+): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
-  const description = settings.description || `${config.name} - Powered by Ghost`;
+  const description =
+    settings.description || `${config.name} - Powered by Ghost`;
   return `services:
   rust:
     image: didstopia/rust-server:latest

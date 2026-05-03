@@ -1,8 +1,9 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
 import { prisma } from "@/lib/db";
 import { hetzner } from "@/lib/hetzner";
 import { requireUser } from "@/lib/session";
-import { NextResponse } from "next/server";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -12,7 +13,10 @@ const querySchema = z.object({
   type: z.enum(["cpu", "disk", "network"]),
 });
 
-export const GET = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const GET = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 
@@ -24,7 +28,10 @@ export const GET = async (request: Request, context: { params: Promise<{ id: str
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   if (!server.hetznerServerId) {
-    return NextResponse.json({ error: "Server is not provisioned yet" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Server is not provisioned yet" },
+      { status: 409 }
+    );
   }
 
   const url = new URL(request.url);
@@ -40,7 +47,11 @@ export const GET = async (request: Request, context: { params: Promise<{ id: str
   const { data, error, response } = await hetzner.GET("/servers/{id}/metrics", {
     params: {
       path: { id: Number(server.hetznerServerId) },
-      query: { end: parsed.data.end, start: parsed.data.start, type: [parsed.data.type] },
+      query: {
+        end: parsed.data.end,
+        start: parsed.data.start,
+        type: [parsed.data.type],
+      },
     },
   });
   if (!response.ok) {

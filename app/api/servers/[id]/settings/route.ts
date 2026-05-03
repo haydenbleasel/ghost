@@ -1,12 +1,16 @@
+import { NextResponse } from "next/server";
+
 import { getGame, resolveSettings, validateSettings } from "@/games";
 import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
-import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-export const PATCH = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const PATCH = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 
@@ -43,7 +47,7 @@ export const PATCH = async (request: Request, context: { params: Promise<{ id: s
   if (agent && server.observedState === "running") {
     const compose = game.buildCompose(
       { name: server.name, rconPassword: server.rconPassword },
-      merged,
+      merged
     );
     await enqueueCommand({
       payload: { compose },

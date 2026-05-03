@@ -7,14 +7,23 @@ export interface CanonicalPayload {
 }
 
 export const canonicalize = (input: CanonicalPayload): string =>
-  [input.method.toUpperCase(), input.path, input.timestamp, input.nonce, input.body].join("\n");
+  [
+    input.method.toUpperCase(),
+    input.path,
+    input.timestamp,
+    input.nonce,
+    input.body,
+  ].join("\n");
 
 export const toBase64Url = (bytes: Uint8Array): string => {
   let binary = "";
   for (const byte of bytes) {
     binary += String.fromCodePoint(byte);
   }
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+  return btoa(binary)
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replace(/=+$/, "");
 };
 
 export const fromBase64Url = (s: string): Uint8Array => {

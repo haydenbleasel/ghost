@@ -1,8 +1,9 @@
-import { env } from "@/lib/env";
 import withBundleAnalyzer from "@next/bundle-analyzer";
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import { withWorkflow } from "workflow/next";
+
+import { env } from "@/lib/env";
 
 const otelRegex = /@opentelemetry\/instrumentation/;
 
@@ -45,7 +46,7 @@ if (env.VERCEL) {
       silent: !env.CI,
       tunnelRoute: "/monitoring",
       widenClientFileUpload: true,
-    },
+    }
   );
 }
 

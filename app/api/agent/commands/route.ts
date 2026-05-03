@@ -1,5 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
+
 import { NextResponse } from "next/server";
+
 import { claimPendingCommands } from "@/lib/agent/commands";
 import { AgentAuthError, verifyAgentRequest } from "@/lib/agent/signing";
 
@@ -16,7 +18,10 @@ export const GET = async (request: Request) => {
     ({ verified } = await verifyAgentRequest(request));
   } catch (error) {
     if (error instanceof AgentAuthError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      );
     }
     throw error;
   }
@@ -24,7 +29,7 @@ export const GET = async (request: Request) => {
   const url = new URL(request.url);
   const waitSeconds = Math.min(
     MAX_WAIT_SECONDS,
-    Math.max(1, Number(url.searchParams.get("wait") ?? DEFAULT_WAIT_SECONDS)),
+    Math.max(1, Number(url.searchParams.get("wait") ?? DEFAULT_WAIT_SECONDS))
   );
   const deadline = Date.now() + waitSeconds * 1000;
 

@@ -3,8 +3,9 @@ import { createWriteStream } from "node:fs";
 import { mkdir, readdir, rename, rm, stat, unlink } from "node:fs/promises";
 import { dirname, join, normalize, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
-import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 import { pipeline } from "node:stream/promises";
+import type { ReadableStream as NodeReadableStream } from "node:stream/web";
+
 import type { FileEntry } from "../../protocol";
 
 const ignore = (): undefined => undefined;
@@ -22,7 +23,7 @@ const resolveInRoot = (relative: string): string => {
 };
 
 export const listFiles = async (
-  relativePath: string,
+  relativePath: string
 ): Promise<{ path: string; entries: FileEntry[] }> => {
   const abs = resolveInRoot(relativePath);
   await mkdir(abs, { recursive: true });

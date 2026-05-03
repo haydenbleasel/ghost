@@ -1,8 +1,14 @@
 "use client";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+
 import { Panel, PanelCard } from "@/components/panel";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
+
 import { formatBytes, formatTime } from "./use-server-metrics";
 import type { NetworkPoint, RangeKey } from "./use-server-metrics";
 
@@ -35,12 +41,19 @@ export const NetworkPanel = ({ data, loading, range }: Props) => (
               axisLine={false}
               minTickGap={32}
             />
-            <YAxis tickFormatter={formatBytes} tickLine={false} axisLine={false} width={72} />
+            <YAxis
+              tickFormatter={formatBytes}
+              tickLine={false}
+              axisLine={false}
+              width={72}
+            />
             <ChartTooltip
               content={
                 <ChartTooltipContent
                   labelFormatter={(_, payload) =>
-                    new Date(Number(payload?.[0]?.payload?.t ?? 0)).toLocaleString([], {
+                    new Date(
+                      Number(payload?.[0]?.payload?.t ?? 0)
+                    ).toLocaleString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })
@@ -48,7 +61,9 @@ export const NetworkPanel = ({ data, loading, range }: Props) => (
                   formatter={(value, name) => (
                     <span className="flex w-full justify-between gap-2">
                       <span className="text-muted-foreground">{name}</span>
-                      <span className="font-mono font-medium">{formatBytes(Number(value))}</span>
+                      <span className="font-mono font-medium">
+                        {formatBytes(Number(value))}
+                      </span>
                     </span>
                   )}
                 />

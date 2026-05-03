@@ -1,10 +1,17 @@
 "use client";
 
-import { ChevronsUpDown, LayoutDashboard, LogOut, Plus, Server, User } from "lucide-react";
+import {
+  ChevronsUpDown,
+  LayoutDashboard,
+  LogOut,
+  Plus,
+  Server,
+  User,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { games } from "@/games";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -25,6 +32,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { games } from "@/games";
 import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
@@ -54,7 +62,13 @@ const statusDotClass = (state: string) => {
   return "bg-muted-foreground/40";
 };
 
-export const AppSidebar = ({ servers, user }: { servers: SidebarServer[]; user: SidebarUser }) => {
+export const AppSidebar = ({
+  servers,
+  user,
+}: {
+  servers: SidebarServer[];
+  user: SidebarUser;
+}) => {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -67,7 +81,11 @@ export const AppSidebar = ({ servers, user }: { servers: SidebarServer[]; user: 
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Dashboard">
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/dashboard"}
+                  tooltip="Dashboard"
+                >
                   <Link href="/dashboard">
                     <LayoutDashboard />
                     <span>Dashboard</span>
@@ -106,7 +124,11 @@ export const AppSidebar = ({ servers, user }: { servers: SidebarServer[]; user: 
                   const game = games.find((g) => g.id === server.game);
                   return (
                     <SidebarMenuItem key={server.id}>
-                      <SidebarMenuButton asChild isActive={pathname === href} tooltip={server.name}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === href}
+                        tooltip={server.name}
+                      >
                         <Link href={href}>
                           {game ? (
                             <Image
@@ -122,7 +144,7 @@ export const AppSidebar = ({ servers, user }: { servers: SidebarServer[]; user: 
                           <span
                             className={cn(
                               "size-2 shrink-0 rounded-full",
-                              statusDotClass(server.observedState),
+                              statusDotClass(server.observedState)
                             )}
                             aria-label={server.observedState}
                           />
@@ -156,9 +178,13 @@ export const AppSidebar = ({ servers, user }: { servers: SidebarServer[]; user: 
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left leading-tight">
-                    <span className="truncate text-sm font-medium">{user.name ?? user.email}</span>
+                    <span className="truncate text-sm font-medium">
+                      {user.name ?? user.email}
+                    </span>
                     {user.name ? (
-                      <span className="truncate text-muted-foreground text-xs">{user.email}</span>
+                      <span className="truncate text-muted-foreground text-xs">
+                        {user.email}
+                      </span>
                     ) : null}
                   </div>
                   <ChevronsUpDown className="ml-auto" />
@@ -171,8 +197,12 @@ export const AppSidebar = ({ servers, user }: { servers: SidebarServer[]; user: 
               >
                 <DropdownMenuLabel className="font-normal">
                   <div className="grid text-left leading-tight">
-                    <span className="truncate text-sm font-medium">{user.name ?? user.email}</span>
-                    <span className="truncate text-muted-foreground text-xs">{user.email}</span>
+                    <span className="truncate text-sm font-medium">
+                      {user.name ?? user.email}
+                    </span>
+                    <span className="truncate text-muted-foreground text-xs">
+                      {user.email}
+                    </span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

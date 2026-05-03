@@ -1,8 +1,10 @@
 import "server-only";
 import crypto from "node:crypto";
+
+import { SignJWT, jwtVerify } from "jose";
+
 import { env } from "@/lib/env";
 import { BOOTSTRAP_TTL_SECONDS } from "@/protocol";
-import { SignJWT, jwtVerify } from "jose";
 
 const secret = new TextEncoder().encode(env.BOOTSTRAP_JWT_SECRET);
 const ISSUER = "ghost";
@@ -29,7 +31,7 @@ export const mintBootstrapJwt = async (input: {
 };
 
 export const verifyBootstrapJwt = async (
-  token: string,
+  token: string
 ): Promise<{ serverId: string; jti: string }> => {
   const { payload } = await jwtVerify(token, secret, {
     audience: AUDIENCE,

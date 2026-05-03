@@ -4,7 +4,7 @@ import type { EnshroudedSettings } from "./settings";
 
 export const buildEnshroudedCompose = (
   config: ComposeConfig,
-  settings: EnshroudedSettings,
+  settings: EnshroudedSettings
 ): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;

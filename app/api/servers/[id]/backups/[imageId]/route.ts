@@ -1,7 +1,8 @@
+import { NextResponse } from "next/server";
+
 import { prisma } from "@/lib/db";
 import { hetzner } from "@/lib/hetzner";
 import { requireUser } from "@/lib/session";
-import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ const hetznerErrorMessage = (error: unknown, response: Response): string => {
 
 export const DELETE = async (
   _request: Request,
-  context: { params: Promise<{ id: string; imageId: string }> },
+  context: { params: Promise<{ id: string; imageId: string }> }
 ) => {
   const user = await requireUser();
   const { id, imageId } = await context.params;
@@ -33,19 +34,24 @@ export const DELETE = async (
   }
 
   if (!server.hetznerServerId) {
-    return NextResponse.json({ error: "Server is not provisioned yet" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Server is not provisioned yet" },
+      { status: 409 }
+    );
   }
 
   const {
     data: imageData,
     error: getError,
     response: getResponse,
-  } = await hetzner.GET("/images/{id}", { params: { path: { id: parsedImageId } } });
+  } = await hetzner.GET("/images/{id}", {
+    params: { path: { id: parsedImageId } },
+  });
 
   if (!getResponse.ok) {
     return NextResponse.json(
       { error: hetznerErrorMessage(getError, getResponse) },
-      { status: getResponse.status },
+      { status: getResponse.status }
     );
   }
 
@@ -66,7 +72,7 @@ export const DELETE = async (
   if (!response.ok) {
     return NextResponse.json(
       { error: hetznerErrorMessage(error, response) },
-      { status: response.status },
+      { status: response.status }
     );
   }
 

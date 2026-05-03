@@ -9,7 +9,8 @@ const buildCompose = (config: ComposeConfig, raw: unknown): string =>
 
 export const enshrouded = {
   buildCompose,
-  description: "A game of survival, crafting, and action on a sprawling voxel-based continent.",
+  description:
+    "A game of survival, crafting, and action on a sprawling voxel-based continent.",
   enabled: true,
   gamedigId: "enshrouded",
   id: "enshrouded",

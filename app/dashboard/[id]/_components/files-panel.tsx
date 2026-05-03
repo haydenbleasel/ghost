@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+import { Panel, PanelCard } from "@/components/panel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,7 +47,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Panel, PanelCard } from "@/components/panel";
 
 interface FileEntry {
   name: string;
@@ -78,7 +79,8 @@ const formatDate = (iso: string): string =>
     month: "short",
   });
 
-const joinPath = (base: string, name: string): string => (base ? `${base}/${name}` : name);
+const joinPath = (base: string, name: string): string =>
+  base ? `${base}/${name}` : name;
 
 const filenameFromUrl = (url: string): string => {
   try {
@@ -99,7 +101,7 @@ const sleep = (ms: number): Promise<void> =>
 const waitForCommand = async (
   serverId: string,
   commandId: string,
-  timeoutMs = 60_000,
+  timeoutMs = 60_000
 ): Promise<{ status: string; error: string | null; result: unknown }> => {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -147,7 +149,8 @@ const EntryRow = ({ entry, onOpenDir, onDelete }: EntryRowProps) => {
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="truncate font-medium text-sm">{entry.name}</span>
           <span className="text-muted-foreground text-xs">
-            {isDir ? "Folder" : formatSize(entry.size)} · {formatDate(entry.mtime)}
+            {isDir ? "Folder" : formatSize(entry.size)} ·{" "}
+            {formatDate(entry.mtime)}
           </span>
         </div>
       </button>
@@ -158,7 +161,10 @@ const EntryRow = ({ entry, onOpenDir, onDelete }: EntryRowProps) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => onDelete(entry)} variant="destructive">
+          <DropdownMenuItem
+            onSelect={() => onDelete(entry)}
+            variant="destructive"
+          >
             <Trash2Icon />
             Delete
           </DropdownMenuItem>
@@ -175,12 +181,21 @@ interface EntryListProps {
   onDelete: (entry: FileEntry) => void;
 }
 
-const renderEntryList = ({ entries, loadError, onOpenDir, onDelete }: EntryListProps) => {
+const renderEntryList = ({
+  entries,
+  loadError,
+  onOpenDir,
+  onDelete,
+}: EntryListProps) => {
   if (loadError) {
-    return <div className="px-3 py-4 text-destructive text-sm">{loadError}</div>;
+    return (
+      <div className="px-3 py-4 text-destructive text-sm">{loadError}</div>
+    );
   }
   if (entries === null) {
-    return <div className="px-3 py-4 text-muted-foreground text-sm">Loading…</div>;
+    return (
+      <div className="px-3 py-4 text-muted-foreground text-sm">Loading…</div>
+    );
   }
   if (entries.length === 0) {
     return (
@@ -190,7 +205,12 @@ const renderEntryList = ({ entries, loadError, onOpenDir, onDelete }: EntryListP
     );
   }
   return entries.map((entry) => (
-    <EntryRow entry={entry} key={entry.name} onDelete={onDelete} onOpenDir={onOpenDir} />
+    <EntryRow
+      entry={entry}
+      key={entry.name}
+      onDelete={onDelete}
+      onOpenDir={onOpenDir}
+    />
   ));
 };
 
@@ -209,7 +229,9 @@ export const FilesPanel = ({ serverId }: Props) => {
   const load = useCallback(
     async (target: string) => {
       setLoadError(null);
-      const res = await fetch(`/api/servers/${serverId}/files?path=${encodeURIComponent(target)}`);
+      const res = await fetch(
+        `/api/servers/${serverId}/files?path=${encodeURIComponent(target)}`
+      );
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         setEntries(null);
@@ -219,7 +241,7 @@ export const FilesPanel = ({ serverId }: Props) => {
       const body = (await res.json()) as { path: string; entries: FileEntry[] };
       setEntries(body.entries);
     },
-    [serverId],
+    [serverId]
   );
 
   useEffect(() => {
@@ -233,16 +255,21 @@ export const FilesPanel = ({ serverId }: Props) => {
     setDeletePending(true);
     try {
       const full = joinPath(path, deleteTarget.name);
-      const res = await fetch(`/api/servers/${serverId}/files?path=${encodeURIComponent(full)}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/servers/${serverId}/files?path=${encodeURIComponent(full)}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(err.error ?? "Delete failed");
       }
       toast.success(`Deleted ${deleteTarget.name}`);
       setDeleteTarget(null);
-      setEntries((prev) => prev?.filter((e) => e.name !== deleteTarget.name) ?? null);
+      setEntries(
+        (prev) => prev?.filter((e) => e.name !== deleteTarget.name) ?? null
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Delete failed");
     } finally {
@@ -352,7 +379,12 @@ export const FilesPanel = ({ serverId }: Props) => {
           </Breadcrumb>
         </div>
         <div className="flex items-center gap-2">
-          <input ref={fileInputRef} type="file" className="hidden" onChange={onFilePicked} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={onFilePicked}
+          />
           <Button
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
@@ -363,7 +395,12 @@ export const FilesPanel = ({ serverId }: Props) => {
             <UploadIcon />
             {uploading ? "Uploading…" : "Upload"}
           </Button>
-          <Button onClick={() => setUrlDialogOpen(true)} size="sm" type="button" variant="outline">
+          <Button
+            onClick={() => setUrlDialogOpen(true)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
             <LinkIcon />
             Install from URL
           </Button>
@@ -384,8 +421,8 @@ export const FilesPanel = ({ serverId }: Props) => {
           <DialogHeader>
             <DialogTitle>Install from URL</DialogTitle>
             <DialogDescription>
-              Paste a direct download URL (e.g. a Modrinth file link). The server will fetch it into{" "}
-              {path || "data"}.
+              Paste a direct download URL (e.g. a Modrinth file link). The
+              server will fetch it into {path || "data"}.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
@@ -432,7 +469,9 @@ export const FilesPanel = ({ serverId }: Props) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletePending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deletePending}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction disabled={deletePending} onClick={runDelete}>
               {deletePending ? "Deleting…" : "Delete"}
             </AlertDialogAction>

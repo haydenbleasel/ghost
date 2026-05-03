@@ -1,14 +1,18 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
 import { prisma } from "@/lib/db";
 import { hetzner } from "@/lib/hetzner";
 import { requireUser } from "@/lib/session";
-import { NextResponse } from "next/server";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 
 const postSchema = z.object({ serverType: z.string().min(1) });
 
-export const POST = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const POST = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 
@@ -27,21 +31,33 @@ export const POST = async (request: Request, context: { params: Promise<{ id: st
   }
 
   if (!server.hetznerServerId) {
-    return NextResponse.json({ error: "Server is not provisioned yet" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Server is not provisioned yet" },
+      { status: 409 }
+    );
   }
 
   if (server.observedState !== "stopped") {
-    return NextResponse.json({ error: "Server must be stopped before rescaling" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Server must be stopped before rescaling" },
+      { status: 409 }
+    );
   }
 
   if (parsed.data.serverType === server.serverType) {
-    return NextResponse.json({ error: "Already on this server type" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Already on this server type" },
+      { status: 400 }
+    );
   }
 
-  const { error: apiError, response } = await hetzner.POST("/servers/{id}/actions/change_type", {
-    body: { server_type: parsed.data.serverType, upgrade_disk: false },
-    params: { path: { id: Number(server.hetznerServerId) } },
-  });
+  const { error: apiError, response } = await hetzner.POST(
+    "/servers/{id}/actions/change_type",
+    {
+      body: { server_type: parsed.data.serverType, upgrade_disk: false },
+      params: { path: { id: Number(server.hetznerServerId) } },
+    }
+  );
   if (!response.ok) {
     const errorBody = apiError as { error?: { message?: string } } | undefined;
     const message = errorBody?.error?.message ?? response.statusText;

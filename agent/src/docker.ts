@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
+
 import { spawn } from "bun";
 import type { Subprocess } from "bun";
+
 import type { EventBuffer } from "./events";
 
 const COMPOSE_DIR = process.env.GHOST_COMPOSE_DIR ?? "/var/lib/ghost/game";
@@ -86,7 +88,7 @@ let tailProc: Subprocess | null = null;
 const pipeStream = async (
   readable: ReadableStream<Uint8Array> | undefined,
   stream: "stdout" | "stderr",
-  buffer: EventBuffer,
+  buffer: EventBuffer
 ): Promise<void> => {
   if (!readable) {
     return;
@@ -125,7 +127,10 @@ export const stopLogTail = (): void => {
   }
 };
 
-export const startLogTail = (containerName: string, buffer: EventBuffer): void => {
+export const startLogTail = (
+  containerName: string,
+  buffer: EventBuffer
+): void => {
   stopLogTail();
 
   tailProc = spawn({

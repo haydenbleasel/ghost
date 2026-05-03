@@ -1,8 +1,8 @@
-import type { State } from "./config";
-import { signedFetch } from "./signing";
-import { saveState } from "./config";
 import { AGENT_HEADERS } from "../../protocol";
 import type { Phase } from "../../protocol";
+import type { State } from "./config";
+import { saveState } from "./config";
+import { signedFetch } from "./signing";
 
 const FLUSH_INTERVAL_MS = 500;
 const FLUSH_BYTES = 32 * 1024;
@@ -35,10 +35,13 @@ export class EventBuffer {
   }
 
   enqueueActivity(
-    input: Omit<PendingActivity, "agentSeq" | "clientEventId" | "occurredAt"> & {
+    input: Omit<
+      PendingActivity,
+      "agentSeq" | "clientEventId" | "occurredAt"
+    > & {
       clientEventId?: string;
       occurredAt?: string;
-    },
+    }
   ) {
     this.state.agentSeq += 1;
     this.activity.push({
@@ -52,7 +55,11 @@ export class EventBuffer {
     this.scheduleFlush();
   }
 
-  enqueueLog(input: { stream: "stdout" | "stderr"; line: string; ts?: string }) {
+  enqueueLog(input: {
+    stream: "stdout" | "stderr";
+    line: string;
+    ts?: string;
+  }) {
     this.state.agentSeq += 1;
     this.logs.push({
       agentSeq: this.state.agentSeq,

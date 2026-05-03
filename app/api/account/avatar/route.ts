@@ -1,12 +1,18 @@
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
 import { del, get, put } from "@vercel/blob";
 import { NextResponse } from "next/server";
+
+import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
 
 const MAX_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const ALLOWED_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 
 export const GET = async (request: Request) => {
   const user = await requireUser();
@@ -25,20 +31,20 @@ export const GET = async (request: Request) => {
 
   if (result.statusCode === 304) {
     return new NextResponse(null, {
-      status: 304,
       headers: {
-        ETag: result.blob.etag,
         "Cache-Control": "private, no-cache",
+        ETag: result.blob.etag,
       },
+      status: 304,
     });
   }
 
   return new NextResponse(result.stream, {
     headers: {
-      "Content-Type": result.blob.contentType,
-      "X-Content-Type-Options": "nosniff",
-      ETag: result.blob.etag,
       "Cache-Control": "private, no-cache",
+      "Content-Type": result.blob.contentType,
+      ETag: result.blob.etag,
+      "X-Content-Type-Options": "nosniff",
     },
   });
 };
@@ -52,10 +58,16 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ error: "Missing file" }, { status: 400 });
   }
   if (!ALLOWED_TYPES.has(file.type)) {
-    return NextResponse.json({ error: "Unsupported image type" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Unsupported image type" },
+      { status: 400 }
+    );
   }
   if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: "Image must be under 5 MB" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Image must be under 5 MB" },
+      { status: 400 }
+    );
   }
 
   const blob = await put(`avatars/${user.id}/${file.name}`, file, {
@@ -70,7 +82,11 @@ export const POST = async (request: Request) => {
   });
 
   if (previous && previous !== blob.pathname) {
-    await del(previous).catch(() => undefined);
+    try {
+      await del(previous);
+    } catch (error) {
+      console.error("Failed to delete previous avatar", error);
+    }
   }
 
   return NextResponse.json({ ok: true });
@@ -82,7 +98,11 @@ export const DELETE = async () => {
     return NextResponse.json({ ok: true });
   }
 
-  await del(user.image).catch(() => undefined);
+  try {
+    await del(user.image);
+  } catch (error) {
+    console.error("Failed to delete avatar", error);
+  }
   await prisma.user.update({
     data: { image: null },
     where: { id: user.id },

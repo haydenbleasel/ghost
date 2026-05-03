@@ -3,6 +3,7 @@
 import createGlobe from "cobe";
 import type { Marker } from "cobe";
 import { useEffect, useRef } from "react";
+
 import { cn } from "@/lib/utils";
 
 interface CobeProps {
@@ -18,7 +19,9 @@ const locationToAngles = (lat: number, long: number): [number, number] => [
 
 const shortestPhi = (current: number, target: number) => {
   const diff = target - current;
-  const wrapped = ((((diff + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI;
+  const wrapped =
+    ((((diff + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) -
+    Math.PI;
   return current + wrapped;
 };
 
@@ -82,5 +85,7 @@ export const Cobe = ({ markers, focus, className }: CobeProps) => {
     targetThetaRef.current = theta;
   }, [focus]);
 
-  return <canvas ref={canvasRef} className={cn("aspect-square w-full", className)} />;
+  return (
+    <canvas ref={canvasRef} className={cn("aspect-square w-full", className)} />
+  );
 };

@@ -9,7 +9,8 @@ const buildCompose = (config: ComposeConfig, raw: unknown): string =>
 
 export const rust = {
   buildCompose,
-  description: "The only aim in Rust is to survive when everything on the island wants you to die.",
+  description:
+    "The only aim in Rust is to survive when everything on the island wants you to die.",
   enabled: true,
   gamedigId: "rust",
   id: "rust",

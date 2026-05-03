@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
+
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 
 export interface Specs {
@@ -52,6 +53,10 @@ export const useServer = () => {
   return ctx;
 };
 
-export const ServerProvider = ({ value, children }: { value: Value; children: ReactNode }) => (
-  <ServerContext.Provider value={value}>{children}</ServerContext.Provider>
-);
+export const ServerProvider = ({
+  value,
+  children,
+}: {
+  value: Value;
+  children: ReactNode;
+}) => <ServerContext.Provider value={value}>{children}</ServerContext.Provider>;

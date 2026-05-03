@@ -1,7 +1,7 @@
+import { enrollResponseSchema } from "../../protocol";
 import { deleteBootstrap, saveState } from "./config";
 import type { Bootstrap, State } from "./config";
 import { generateKeypair } from "./signing";
-import { enrollResponseSchema } from "../../protocol";
 
 export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
   const keypair = await generateKeypair();

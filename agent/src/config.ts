@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+
 import { z } from "zod";
 
 const bootstrapSchema = z.object({
@@ -21,7 +22,8 @@ const stateSchema = z.object({
 export type Bootstrap = z.infer<typeof bootstrapSchema>;
 export type State = z.infer<typeof stateSchema>;
 
-const BOOTSTRAP_PATH = process.env.GHOST_BOOTSTRAP_PATH ?? "/etc/ghost/bootstrap.json";
+const BOOTSTRAP_PATH =
+  process.env.GHOST_BOOTSTRAP_PATH ?? "/etc/ghost/bootstrap.json";
 const STATE_PATH = process.env.GHOST_STATE_PATH ?? "/var/lib/ghost/state.json";
 const STATE_DIR = STATE_PATH.replace(/\/[^/]+$/, "");
 

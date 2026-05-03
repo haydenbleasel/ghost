@@ -1,6 +1,7 @@
 "use client";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useState } from "react";
+
 import { Panel, PanelCard } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { games } from "@/games";
@@ -11,11 +12,14 @@ interface Props {
 }
 
 const formatPort = (port: { from: number; to: number; protocol: string }) => {
-  const range = port.from === port.to ? `${port.from}` : `${port.from}–${port.to}`;
+  const range =
+    port.from === port.to ? `${port.from}` : `${port.from}–${port.to}`;
   return `${range}/${port.protocol.toUpperCase()}`;
 };
 
-const primaryPort = (ports: readonly { from: number; to: number; protocol: string }[]) => {
+const primaryPort = (
+  ports: readonly { from: number; to: number; protocol: string }[]
+) => {
   const tcp = ports.find((p) => p.protocol === "tcp");
   return tcp ?? ports[0];
 };
@@ -50,9 +54,13 @@ export const ConnectPanel = ({ game: gameId, ipv4 }: Props) => {
     <Panel>
       <PanelCard className="flex flex-col gap-4 p-4">
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted-foreground">Server address</span>
+          <span className="text-xs font-medium text-muted-foreground">
+            Server address
+          </span>
           <div className="flex items-center gap-2">
-            <code className="rounded-md bg-muted px-2 py-1 font-mono text-sm">{address}</code>
+            <code className="rounded-md bg-muted px-2 py-1 font-mono text-sm">
+              {address}
+            </code>
             <Button
               type="button"
               variant="ghost"
@@ -61,14 +69,20 @@ export const ConnectPanel = ({ game: gameId, ipv4 }: Props) => {
               onClick={copy}
               className="size-7 text-muted-foreground hover:text-foreground"
             >
-              {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
+              {copied ? (
+                <CheckIcon className="size-3.5" />
+              ) : (
+                <CopyIcon className="size-3.5" />
+              )}
             </Button>
           </div>
         </div>
         {game && (
           <>
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Ports</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                Ports
+              </span>
               <div className="flex flex-wrap gap-2">
                 {game.ports.map((port) => (
                   <code
@@ -81,9 +95,12 @@ export const ConnectPanel = ({ game: gameId, ipv4 }: Props) => {
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted-foreground">How to connect</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                How to connect
+              </span>
               <p className="text-sm">
-                Open {game.name}, go to the multiplayer menu, and connect to the address above.
+                Open {game.name}, go to the multiplayer menu, and connect to the
+                address above.
               </p>
             </div>
           </>

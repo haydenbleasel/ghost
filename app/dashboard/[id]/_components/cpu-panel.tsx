@@ -1,8 +1,14 @@
 "use client";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+
 import { Panel, PanelCard } from "@/components/panel";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
+
 import { formatTime } from "./use-server-metrics";
 import type { CpuPoint, RangeKey } from "./use-server-metrics";
 
@@ -35,7 +41,10 @@ export const CpuPanel = ({ data, loading, range }: Props) => (
               minTickGap={32}
             />
             <YAxis
-              domain={[0, (max: number) => Math.max(100, Math.ceil(max / 100) * 100)]}
+              domain={[
+                0,
+                (max: number) => Math.max(100, Math.ceil(max / 100) * 100),
+              ]}
               tickFormatter={(v) => `${v}%`}
               tickLine={false}
               axisLine={false}
@@ -45,7 +54,9 @@ export const CpuPanel = ({ data, loading, range }: Props) => (
               content={
                 <ChartTooltipContent
                   labelFormatter={(_, payload) =>
-                    new Date(Number(payload?.[0]?.payload?.t ?? 0)).toLocaleString([], {
+                    new Date(
+                      Number(payload?.[0]?.payload?.t ?? 0)
+                    ).toLocaleString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+
 import { SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +14,10 @@ export const AppContainer = ({ children }: AppContainerProps) => {
 
   return (
     <SidebarInset
-      className={cn("transition-all bg-background", sidebar.open && "rounded-l-3xl border-l")}
+      className={cn(
+        "transition-all bg-background",
+        sidebar.open && "rounded-l-3xl border-l"
+      )}
     >
       {children}
     </SidebarInset>

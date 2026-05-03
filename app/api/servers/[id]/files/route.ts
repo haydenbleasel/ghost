@@ -1,8 +1,9 @@
+import { NextResponse } from "next/server";
+
 import { enqueueCommand, waitForCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { filesListResultSchema } from "@/protocol";
-import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -13,12 +14,17 @@ const requireOwnedServer = async (id: string) => {
     where: { deletedAt: null, id, userId: user.id },
   });
   if (!server) {
-    return { error: NextResponse.json({ error: "Not found" }, { status: 404 }) } as const;
+    return {
+      error: NextResponse.json({ error: "Not found" }, { status: 404 }),
+    } as const;
   }
   return { server } as const;
 };
 
-export const GET = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const GET = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const { id } = await context.params;
   const owned = await requireOwnedServer(id);
   if ("error" in owned) {
@@ -38,11 +44,14 @@ export const GET = async (request: Request, context: { params: Promise<{ id: str
   if (outcome.status === "timeout") {
     return NextResponse.json(
       { error: "Agent did not respond — server may be offline" },
-      { status: 504 },
+      { status: 504 }
     );
   }
   if (outcome.status === "failed") {
-    return NextResponse.json({ error: outcome.error ?? "List failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: outcome.error ?? "List failed" },
+      { status: 500 }
+    );
   }
 
   const parsed = filesListResultSchema.safeParse(outcome.result);
@@ -52,7 +61,10 @@ export const GET = async (request: Request, context: { params: Promise<{ id: str
   return NextResponse.json(parsed.data);
 };
 
-export const DELETE = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const DELETE = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const { id } = await context.params;
   const owned = await requireOwnedServer(id);
   if ("error" in owned) {
@@ -75,11 +87,14 @@ export const DELETE = async (request: Request, context: { params: Promise<{ id: 
   if (outcome.status === "timeout") {
     return NextResponse.json(
       { error: "Agent did not respond — server may be offline" },
-      { status: 504 },
+      { status: 504 }
     );
   }
   if (outcome.status === "failed") {
-    return NextResponse.json({ error: outcome.error ?? "Delete failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: outcome.error ?? "Delete failed" },
+      { status: 500 }
+    );
   }
   return NextResponse.json({ ok: true });
 };

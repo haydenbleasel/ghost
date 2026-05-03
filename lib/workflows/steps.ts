@@ -1,4 +1,8 @@
 import crypto from "node:crypto";
+
+import { FatalError, getStepMetadata } from "workflow";
+import { resumeHook } from "workflow/api";
+
 import { buildUfwRules, getGame } from "@/games";
 import type { GamePort } from "@/games";
 import { mintBootstrapJwt } from "@/lib/agent/bootstrap";
@@ -8,11 +12,13 @@ import { env } from "@/lib/env";
 import { emitActivity } from "@/lib/events/emit";
 import { hetzner, HetznerApiError, throwIfHetznerError } from "@/lib/hetzner";
 import type { Phase } from "@/protocol";
-import { FatalError, getStepMetadata } from "workflow";
-import { resumeHook } from "workflow/api";
+
 import { hookTokens } from "./hook-tokens";
 
-const safeResumeHook = async (token: string, payload?: unknown): Promise<void> => {
+const safeResumeHook = async (
+  token: string,
+  payload?: unknown
+): Promise<void> => {
   try {
     await resumeHook(token, payload);
   } catch {
@@ -42,7 +48,9 @@ const postCreateHetznerServer = async (input: {
     },
   });
   if (!response.ok) {
-    const body = error as { error?: { code?: string; message?: string } } | undefined;
+    const body = error as
+      | { error?: { code?: string; message?: string } }
+      | undefined;
     const code = body?.error?.code ?? String(response.status);
     const message = body?.error?.message ?? response.statusText;
     const apiError = new HetznerApiError(response.status, code, message);
@@ -95,7 +103,9 @@ export const stepCreateHetznerServer = async (serverId: string) => {
   if (!server || server.desiredState === "deleted") {
     return {
       cancelled: true as const,
-      hetznerServerId: server?.hetznerServerId ? Number(server.hetznerServerId) : null,
+      hetznerServerId: server?.hetznerServerId
+        ? Number(server.hetznerServerId)
+        : null,
     };
   }
   if (server.hetznerServerId) {
@@ -160,9 +170,12 @@ export const stepCreateHetznerServer = async (serverId: string) => {
       : null;
 
   if (!updated || updated.desiredState === "deleted") {
-    const { error: delError, response: delResponse } = await hetzner.DELETE("/servers/{id}", {
-      params: { path: { id: created.id } },
-    });
+    const { error: delError, response: delResponse } = await hetzner.DELETE(
+      "/servers/{id}",
+      {
+        params: { path: { id: created.id } },
+      }
+    );
     if (!delResponse.ok && delResponse.status !== 404) {
       throwIfHetznerError(delError, delResponse);
     }
@@ -200,7 +213,10 @@ export const stepGetHetznerStatus = async (hetznerServerId: number) => {
   };
 };
 
-export const stepMarkHetznerRunning = async (input: { serverId: string; ipv4: string | null }) => {
+export const stepMarkHetznerRunning = async (input: {
+  serverId: string;
+  ipv4: string | null;
+}) => {
   "use step";
   const { count } = await prisma.server.updateMany({
     data: { ipv4: input.ipv4, phase: "booting" },
@@ -262,7 +278,7 @@ export const stepSendInstallConfig = async (serverId: string) => {
       name: server.name,
       rconPassword: server.rconPassword,
     },
-    server.settings,
+    server.settings
   );
 
   await enqueueCommand({
@@ -303,7 +319,10 @@ export const stepMarkReady = async (serverId: string) => {
   });
 };
 
-export const stepMarkFailed = async (input: { serverId: string; reason: string }) => {
+export const stepMarkFailed = async (input: {
+  serverId: string;
+  reason: string;
+}) => {
   "use step";
   const { count } = await prisma.server.updateMany({
     data: { errorReason: input.reason, observedState: "failed" },
@@ -381,7 +400,9 @@ export const stepSignalCancelProvision = async (serverId: string) => {
   await safeResumeHook(hookTokens.cancel(serverId));
 };
 
-export const stepReadPhase = async (serverId: string): Promise<Phase | null> => {
+export const stepReadPhase = async (
+  serverId: string
+): Promise<Phase | null> => {
   "use step";
   const server = await prisma.server.findUnique({
     select: { phase: true },

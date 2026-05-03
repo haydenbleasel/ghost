@@ -6,7 +6,9 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 const normalizeSslMode = (url: string | undefined) => {
-  if (!url) return url;
+  if (!url) {
+    return url;
+  }
   const parsed = new URL(url);
   if (parsed.searchParams.get("sslmode") === "require") {
     parsed.searchParams.set("sslmode", "verify-full");

@@ -45,7 +45,12 @@ export const COMMAND_TYPES = [
 ] as const;
 export type CommandType = (typeof COMMAND_TYPES)[number];
 
-export const COMMAND_STATUSES = ["pending", "delivered", "succeeded", "failed"] as const;
+export const COMMAND_STATUSES = [
+  "pending",
+  "delivered",
+  "succeeded",
+  "failed",
+] as const;
 export type CommandStatus = (typeof COMMAND_STATUSES)[number];
 
 export const LOG_STREAMS = ["stdout", "stderr"] as const;

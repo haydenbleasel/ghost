@@ -6,20 +6,29 @@ import type { StaticImageData } from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { CatalogServerType } from "@/lib/hetzner/catalog";
-import { cn } from "@/lib/utils";
-import { Cobe } from "./cobe";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { SettingsFields } from "../../[id]/_components/game-settings-form";
-import type { FieldValue, SettingsValuesRecord } from "../../[id]/_components/game-settings-form";
 import { getDefaults } from "@/games";
 import type { SettingsSchema } from "@/games";
+import type { CatalogServerType } from "@/lib/hetzner/catalog";
+import { cn } from "@/lib/utils";
+
+import { SettingsFields } from "../../[id]/_components/game-settings-form";
+import type {
+  FieldValue,
+  SettingsValuesRecord,
+} from "../../[id]/_components/game-settings-form";
+import { Cobe } from "./cobe";
 
 const VISIBLE_ALL_SIZES = 3;
 
@@ -41,7 +50,9 @@ const SizeCard = ({ type, selected, currency, recommended }: SizeCardProps) => (
   <label
     className={cn(
       "flex cursor-pointer items-center justify-between gap-4 rounded-md border-2 p-3 transition",
-      selected ? "border-primary" : "border-border hover:border-muted-foreground",
+      selected
+        ? "border-primary"
+        : "border-border hover:border-muted-foreground"
     )}
   >
     <div className="flex items-center gap-3">
@@ -66,7 +77,9 @@ const SizeCard = ({ type, selected, currency, recommended }: SizeCardProps) => (
       </div>
     </div>
     <div className="flex items-center gap-3">
-      {recommended && <Badge className="bg-blue-500 text-white">Recommended</Badge>}
+      {recommended && (
+        <Badge className="bg-blue-500 text-white">Recommended</Badge>
+      )}
       <div className="text-right text-sm tabular-nums">
         {formatPrice(type.pricePerMonth, currency)}
         <span className="text-muted-foreground">/mo</span>
@@ -115,7 +128,7 @@ const submitLabel = (isLast: boolean, pending: boolean) => {
 const useLocationSync = (
   selectedType: CatalogServerType | undefined,
   locationName: string,
-  setLocationName: (value: string) => void,
+  setLocationName: (value: string) => void
 ) => {
   useEffect(() => {
     if (!selectedType) {
@@ -124,7 +137,9 @@ const useLocationSync = (
       }
       return;
     }
-    const current = selectedType.locations.find((l) => l.name === locationName && l.available);
+    const current = selectedType.locations.find(
+      (l) => l.name === locationName && l.available
+    );
     if (!current) {
       setLocationName(firstAvailableLocation(selectedType));
     }
@@ -134,7 +149,7 @@ const useLocationSync = (
 const useTypeSync = (
   eligibleTypes: CatalogServerType[],
   typeName: string,
-  setTypeName: (value: string) => void,
+  setTypeName: (value: string) => void
 ) => {
   useEffect(() => {
     if (!eligibleTypes.some((t) => t.name === typeName)) {
@@ -150,7 +165,12 @@ interface SizeStepProps {
   currency: string;
 }
 
-const SizeStep = ({ eligibleTypes, typeName, setTypeName, currency }: SizeStepProps) => {
+const SizeStep = ({
+  eligibleTypes,
+  typeName,
+  setTypeName,
+  currency,
+}: SizeStepProps) => {
   if (eligibleTypes.length === 0) {
     return (
       <p className="rounded-md border border-border bg-muted/50 p-3 text-muted-foreground text-sm">
@@ -201,9 +221,18 @@ const SizeStep = ({ eligibleTypes, typeName, setTypeName, currency }: SizeStepPr
                 ))}
               </CollapsibleContent>
               <CollapsibleTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="group w-full">
-                  <span className="group-data-[state=open]:hidden">Show all sizes</span>
-                  <span className="hidden group-data-[state=open]:inline">Show fewer</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="group w-full"
+                >
+                  <span className="group-data-[state=open]:hidden">
+                    Show all sizes
+                  </span>
+                  <span className="hidden group-data-[state=open]:inline">
+                    Show fewer
+                  </span>
                   <ChevronDown className="transition-transform group-data-[state=open]:rotate-180" />
                 </Button>
               </CollapsibleTrigger>
@@ -221,7 +250,11 @@ interface LocationStepProps {
   setLocationName: (value: string) => void;
 }
 
-const LocationStep = ({ selectedType, locationName, setLocationName }: LocationStepProps) => {
+const LocationStep = ({
+  selectedType,
+  locationName,
+  setLocationName,
+}: LocationStepProps) => {
   if (!selectedType) {
     return (
       <p className="rounded-md border border-border bg-muted/50 p-3 text-muted-foreground text-sm">
@@ -231,17 +264,27 @@ const LocationStep = ({ selectedType, locationName, setLocationName }: LocationS
   }
   return (
     <div className="grid gap-6 md:grid-cols-[1fr_2fr] md:items-center">
-      <RadioGroup value={locationName} onValueChange={setLocationName} className="grid gap-1">
+      <RadioGroup
+        value={locationName}
+        onValueChange={setLocationName}
+        className="grid gap-1"
+      >
         {selectedType.locations.map((loc) => (
           <label
             key={loc.name}
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-              loc.available ? "cursor-pointer hover:bg-muted/60" : "cursor-not-allowed opacity-50",
-              locationName === loc.name && "bg-muted",
+              loc.available
+                ? "cursor-pointer hover:bg-muted/60"
+                : "cursor-not-allowed opacity-50",
+              locationName === loc.name && "bg-muted"
             )}
           >
-            <RadioGroupItem value={loc.name} id={`loc-${loc.name}`} disabled={!loc.available} />
+            <RadioGroupItem
+              value={loc.name}
+              id={`loc-${loc.name}`}
+              disabled={!loc.available}
+            />
             <span className="flex-1 truncate font-medium">
               {loc.city}, {loc.country}
             </span>
@@ -256,7 +299,9 @@ const LocationStep = ({ selectedType, locationName, setLocationName }: LocationS
               location: [loc.latitude, loc.longitude],
               size: locationName === loc.name ? 0.1 : 0.05,
             }))}
-          focus={selectedType.locations.find((l) => l.name === locationName) ?? null}
+          focus={
+            selectedType.locations.find((l) => l.name === locationName) ?? null
+          }
         />
       </div>
     </div>
@@ -279,16 +324,26 @@ const StepIndicator = ({ step }: StepIndicatorProps) => (
               "flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium tabular-nums",
               active && "border-primary bg-primary text-primary-foreground",
               done && "border-primary bg-primary/10 text-primary",
-              !(active || done) && "border-border text-muted-foreground",
+              !(active || done) && "border-border text-muted-foreground"
             )}
           >
             {i + 1}
           </div>
-          <span className={cn("text-sm", active ? "font-medium" : "text-muted-foreground")}>
+          <span
+            className={cn(
+              "text-sm",
+              active ? "font-medium" : "text-muted-foreground"
+            )}
+          >
             {s.title}
           </span>
           {i < STEPS.length - 1 && (
-            <span className={cn("ml-2 h-px flex-1", done ? "bg-primary" : "bg-border")} />
+            <span
+              className={cn(
+                "ml-2 h-px flex-1",
+                done ? "bg-primary" : "bg-border"
+              )}
+            />
           )}
         </li>
       );
@@ -311,7 +366,9 @@ const GameStep = ({ games, gameId, setGameId }: GameStepProps) => (
           key={game.id}
           className={cn(
             "relative cursor-pointer overflow-hidden rounded-lg border-2 transition",
-            gameId === game.id ? "border-primary" : "border-border hover:border-muted-foreground",
+            gameId === game.id
+              ? "border-primary"
+              : "border-border hover:border-muted-foreground"
           )}
         >
           <input
@@ -351,7 +408,13 @@ interface NameStepProps {
   currency: string;
 }
 
-const SummaryRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+const SummaryRow = ({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) => (
   <div className="flex justify-between gap-4">
     <dt className="text-muted-foreground">{label}</dt>
     <dd className="font-medium">{children}</dd>
@@ -368,7 +431,9 @@ const NameStep = ({
   setSettingField,
   currency,
 }: NameStepProps) => {
-  const locationCity = selectedType?.locations.find((l) => l.name === locationName)?.city;
+  const locationCity = selectedType?.locations.find(
+    (l) => l.name === locationName
+  )?.city;
   return (
     <section className="space-y-4">
       <div className="space-y-2">
@@ -387,9 +452,18 @@ const NameStep = ({
       {selectedGame && (
         <Collapsible>
           <CollapsibleTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" className="group w-full">
-              <span className="group-data-[state=open]:hidden">Customize game settings</span>
-              <span className="hidden group-data-[state=open]:inline">Hide settings</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="group w-full"
+            >
+              <span className="group-data-[state=open]:hidden">
+                Customize game settings
+              </span>
+              <span className="hidden group-data-[state=open]:inline">
+                Hide settings
+              </span>
               <ChevronDown className="transition-transform group-data-[state=open]:rotate-180" />
             </Button>
           </CollapsibleTrigger>
@@ -406,7 +480,8 @@ const NameStep = ({
         <SummaryRow label="Game">{selectedGame?.name}</SummaryRow>
         {selectedType && (
           <SummaryRow label="Size">
-            {selectedType.cores} vCPU · {selectedType.memory} GB RAM · {selectedType.disk} GB SSD
+            {selectedType.cores} vCPU · {selectedType.memory} GB RAM ·{" "}
+            {selectedType.disk} GB SSD
           </SummaryRow>
         )}
         <SummaryRow label="Location">{locationCity ?? locationName}</SummaryRow>
@@ -460,14 +535,21 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
   const selectedGame = games.find((g) => g.id === gameId);
 
   const eligibleTypes = useMemo(
-    () => (selectedGame ? serverTypes.filter((t) => typeFitsGame(t, selectedGame)) : []),
-    [serverTypes, selectedGame],
+    () =>
+      selectedGame
+        ? serverTypes.filter((t) => typeFitsGame(t, selectedGame))
+        : [],
+    [serverTypes, selectedGame]
   );
 
   const [typeName, setTypeName] = useState(() => eligibleTypes[0]?.name ?? "");
-  const [locationName, setLocationName] = useState(() => firstAvailableLocation(eligibleTypes[0]));
+  const [locationName, setLocationName] = useState(() =>
+    firstAvailableLocation(eligibleTypes[0])
+  );
   const [settings, setSettings] = useState<SettingsValuesRecord>(() =>
-    selectedGame ? (getDefaults(selectedGame.settings) as SettingsValuesRecord) : {},
+    selectedGame
+      ? (getDefaults(selectedGame.settings) as SettingsValuesRecord)
+      : {}
   );
 
   useEffect(() => {
@@ -495,7 +577,8 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
     nameValid,
   ];
 
-  const canSubmit = nameValid && Boolean(gameId) && Boolean(typeName) && Boolean(locationName);
+  const canSubmit =
+    nameValid && Boolean(gameId) && Boolean(typeName) && Boolean(locationName);
 
   const submit = async () => {
     if (!canSubmit) {
@@ -512,7 +595,9 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
       });
       router.push(`/dashboard/${server.id}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not create server");
+      toast.error(
+        error instanceof Error ? error.message : "Could not create server"
+      );
     } finally {
       setPending(false);
     }
@@ -539,7 +624,9 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       <StepIndicator step={step} />
 
-      {step === 0 && <GameStep games={games} gameId={gameId} setGameId={setGameId} />}
+      {step === 0 && (
+        <GameStep games={games} gameId={gameId} setGameId={setGameId} />
+      )}
 
       {step === 1 && (
         <section className="space-y-2">

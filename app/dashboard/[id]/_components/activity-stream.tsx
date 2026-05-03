@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+
 import { Panel, PanelCard } from "@/components/panel";
 
 interface ActivityItem {
@@ -24,11 +25,15 @@ export const ActivityStream = ({ serverId }: { serverId: string }) => {
       if (cancelled) {
         return;
       }
-      es = new EventSource(`/api/servers/${serverId}/activity/stream?cursor=${cursorRef.current}`);
+      es = new EventSource(
+        `/api/servers/${serverId}/activity/stream?cursor=${cursorRef.current}`
+      );
       es.addEventListener("activity", (event) => {
         const data = JSON.parse((event as MessageEvent).data) as ActivityItem;
         cursorRef.current = Math.max(cursorRef.current, data.seq);
-        setEvents((prev) => (prev.some((e) => e.seq === data.seq) ? prev : [...prev, data]));
+        setEvents((prev) =>
+          prev.some((e) => e.seq === data.seq) ? prev : [...prev, data]
+        );
       });
       es.addEventListener("close", () => {
         es?.close();

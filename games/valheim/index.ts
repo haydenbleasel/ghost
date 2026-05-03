@@ -9,7 +9,8 @@ const buildCompose = (config: ComposeConfig, raw: unknown): string =>
 
 export const valheim = {
   buildCompose,
-  description: "A Viking-themed action RPG where you explore, craft, build, and survive.",
+  description:
+    "A Viking-themed action RPG where you explore, craft, build, and survive.",
   enabled: true,
   gamedigId: "valheim",
   id: "valheim",

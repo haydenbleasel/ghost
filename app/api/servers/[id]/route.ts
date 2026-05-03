@@ -1,12 +1,16 @@
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
-import { teardownServer } from "@/lib/workflows/teardown-server";
 import { NextResponse } from "next/server";
 import { start } from "workflow/api";
 
+import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/session";
+import { teardownServer } from "@/lib/workflows/teardown-server";
+
 export const runtime = "nodejs";
 
-export const GET = async (_request: Request, context: { params: Promise<{ id: string }> }) => {
+export const GET = async (
+  _request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 
@@ -22,7 +26,10 @@ export const GET = async (_request: Request, context: { params: Promise<{ id: st
   return NextResponse.json({ server });
 };
 
-export const DELETE = async (_request: Request, context: { params: Promise<{ id: string }> }) => {
+export const DELETE = async (
+  _request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 

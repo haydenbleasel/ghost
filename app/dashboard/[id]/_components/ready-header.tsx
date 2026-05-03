@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +36,7 @@ interface Props {
 
 const badgeVariant = (
   state: string,
-  deleting: boolean,
+  deleting: boolean
 ): "default" | "secondary" | "destructive" | "outline" => {
   if (deleting || state === "failed" || state === "lost") {
     return "destructive";
@@ -96,7 +97,10 @@ export const ReadyHeader = ({
             <p className="font-medium tracking-tight text-2xl">{name}</p>
             <Badge
               variant={badgeVariant(observedState, deleting)}
-              className={cn("capitalize", stateClassName(observedState, deleting))}
+              className={cn(
+                "capitalize",
+                stateClassName(observedState, deleting)
+              )}
             >
               {label}
             </Badge>
@@ -115,7 +119,11 @@ export const ReadyHeader = ({
                   onClick={copyIp}
                   className="size-5 text-muted-foreground hover:text-foreground"
                 >
-                  {copied ? <CheckIcon className="size-3" /> : <CopyIcon className="size-3" />}
+                  {copied ? (
+                    <CheckIcon className="size-3" />
+                  ) : (
+                    <CopyIcon className="size-3" />
+                  )}
                 </Button>
               </>
             )}
@@ -152,7 +160,11 @@ export const ReadyHeader = ({
               Restart
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={onDelete} disabled={pending}>
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={onDelete}
+              disabled={pending}
+            >
               <Trash2Icon />
               Delete
             </DropdownMenuItem>

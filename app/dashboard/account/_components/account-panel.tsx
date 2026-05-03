@@ -1,12 +1,13 @@
 "use client";
-import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+
+import { Panel, PanelCard } from "@/components/panel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Panel, PanelCard } from "@/components/panel";
 import { authClient } from "@/lib/auth-client";
 
 interface Props {
@@ -36,7 +37,16 @@ export const AccountPanel = ({ user }: Props) => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [profilePending, setProfilePending] = useState(false);
 
-  const imageSrc = hasImage ? `/api/account/avatar?v=${imageVersion}` : undefined;
+  const imageSrc = hasImage
+    ? `/api/account/avatar?v=${imageVersion}`
+    : undefined;
+
+  let imageButtonLabel = "Upload";
+  if (imagePending) {
+    imageButtonLabel = "Uploading…";
+  } else if (hasImage) {
+    imageButtonLabel = "Change";
+  }
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -44,7 +54,9 @@ export const AccountPanel = ({ user }: Props) => {
 
   const profileDirty = name.trim() !== user.name && name.trim().length > 0;
 
-  const handleImagePicked = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImagePicked = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) {
@@ -82,13 +94,17 @@ export const AccountPanel = ({ user }: Props) => {
       toast.success("Photo removed");
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not remove photo");
+      toast.error(
+        error instanceof Error ? error.message : "Could not remove photo"
+      );
     } finally {
       setImagePending(false);
     }
   };
 
-  const handleProfileSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleProfileSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
     if (!profileDirty) {
       return;
@@ -104,7 +120,9 @@ export const AccountPanel = ({ user }: Props) => {
     router.refresh();
   };
 
-  const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handlePasswordSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
     if (newPassword.length < 8) {
       toast.error("New password must be at least 8 characters");
@@ -129,12 +147,18 @@ export const AccountPanel = ({ user }: Props) => {
   return (
     <>
       <Panel title="Profile">
-        <PanelCard as="form" onSubmit={handleProfileSubmit} className="flex flex-col gap-4 p-5">
+        <PanelCard
+          as="form"
+          onSubmit={handleProfileSubmit}
+          className="flex flex-col gap-4 p-5"
+        >
           <div className="space-y-2">
             <Label>Photo</Label>
             <div className="flex items-center gap-4">
               <Avatar size="lg" className="size-16">
-                {imageSrc ? <AvatarImage src={imageSrc} alt={name || user.email} /> : null}
+                {imageSrc ? (
+                  <AvatarImage src={imageSrc} alt={name || user.email} />
+                ) : null}
                 <AvatarFallback className="text-base">
                   {getInitials(name, user.email)}
                 </AvatarFallback>
@@ -154,7 +178,7 @@ export const AccountPanel = ({ user }: Props) => {
                   disabled={imagePending}
                   onClick={() => imageInputRef.current?.click()}
                 >
-                  {imagePending ? "Uploading…" : hasImage ? "Change" : "Upload"}
+                  {imageButtonLabel}
                 </Button>
                 {hasImage ? (
                   <Button
@@ -183,13 +207,26 @@ export const AccountPanel = ({ user }: Props) => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" value={user.email} disabled readOnly />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={user.email}
+              disabled
+              readOnly
+            />
             <p className="text-muted-foreground text-xs">
-              {user.emailVerified ? "Verified." : "Email change isn't supported yet."}
+              {user.emailVerified
+                ? "Verified."
+                : "Email change isn't supported yet."}
             </p>
           </div>
           <div className="flex justify-end">
-            <Button type="submit" size="sm" disabled={!profileDirty || profilePending}>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!profileDirty || profilePending}
+            >
               {profilePending ? "Saving…" : "Save"}
             </Button>
           </div>
@@ -197,7 +234,11 @@ export const AccountPanel = ({ user }: Props) => {
       </Panel>
 
       <Panel title="Password">
-        <PanelCard as="form" onSubmit={handlePasswordSubmit} className="flex flex-col gap-4 p-5">
+        <PanelCard
+          as="form"
+          onSubmit={handlePasswordSubmit}
+          className="flex flex-col gap-4 p-5"
+        >
           <div className="space-y-2">
             <Label htmlFor="current-password">Current password</Label>
             <Input

@@ -1,5 +1,6 @@
 "use client";
 import { CheckIcon, CircleXIcon } from "lucide-react";
+
 import { Panel, PanelCard } from "@/components/panel";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ const stepStatus = (
   currentIndex: number,
   stepStart: number,
   stepEnd: number,
-  isErrorStep: boolean,
+  isErrorStep: boolean
 ): StepStatus => {
   if (isErrorStep) {
     return "error";
@@ -68,18 +69,27 @@ export const ProvisioningStatus = ({
         {STEPS.map((step) => {
           const stepStart = PHASE_ORDER.indexOf(step.phases[0]);
           const stepEnd = stepStart + step.phases.length - 1;
-          const isErrorStep = errored && errorIndex >= stepStart && errorIndex <= stepEnd;
-          const status = stepStatus(currentIndex, stepStart, stepEnd, isErrorStep);
+          const isErrorStep =
+            errored && errorIndex >= stepStart && errorIndex <= stepEnd;
+          const status = stepStatus(
+            currentIndex,
+            stepStart,
+            stepEnd,
+            isErrorStep
+          );
 
           return (
-            <div key={step.key} className="flex flex-col gap-1 rounded-lg px-3 py-2">
+            <div
+              key={step.key}
+              className="flex flex-col gap-1 rounded-lg px-3 py-2"
+            >
               <div className="flex flex-row items-center gap-4">
                 <StepIcon status={status} />
                 <span
                   className={cn(
                     "text-sm",
                     status === "pending" && "text-muted-foreground",
-                    status === "error" && "text-destructive",
+                    status === "error" && "text-destructive"
                   )}
                 >
                   {step.label}

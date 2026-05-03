@@ -10,7 +10,12 @@ export const minecraftSettings = defineSettings({
   difficulty: {
     default: "normal",
     label: "Difficulty",
-    options: [{ value: "peaceful" }, { value: "easy" }, { value: "normal" }, { value: "hard" }],
+    options: [
+      { value: "peaceful" },
+      { value: "easy" },
+      { value: "normal" },
+      { value: "hard" },
+    ],
     type: "select",
   },
   enableCommandBlock: {

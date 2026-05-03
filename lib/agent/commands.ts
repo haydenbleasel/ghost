@@ -1,9 +1,11 @@
 import "server-only";
 import { setTimeout as sleep } from "node:timers/promises";
-import { prisma } from "@/lib/db";
-import type { Command } from "@/protocol";
+
 import { Prisma } from "@prisma/client";
 import { ulid } from "ulid";
+
+import { prisma } from "@/lib/db";
+import type { Command } from "@/protocol";
 
 export const enqueueCommand = async (input: {
   serverId: string;
@@ -16,7 +18,9 @@ export const enqueueCommand = async (input: {
    */
   idempotencyKey?: string;
 }): Promise<Command> => {
-  const id = input.idempotencyKey ? `cmd_${input.idempotencyKey}` : `cmd_${ulid()}`;
+  const id = input.idempotencyKey
+    ? `cmd_${input.idempotencyKey}`
+    : `cmd_${ulid()}`;
   const issuedAt = new Date();
 
   try {
@@ -57,7 +61,10 @@ export const enqueueCommand = async (input: {
   } as Command;
 };
 
-export const claimPendingCommands = async (serverId: string, max = 5): Promise<Command[]> => {
+export const claimPendingCommands = async (
+  serverId: string,
+  max = 5
+): Promise<Command[]> => {
   const pending = await prisma.command.findMany({
     orderBy: { issuedAt: "asc" },
     take: max,
@@ -81,13 +88,13 @@ export const claimPendingCommands = async (serverId: string, max = 5): Promise<C
         issuedAt: command.issuedAt.toISOString(),
         payload: command.payload as Record<string, unknown>,
         type: command.type as Command["type"],
-      }) as Command,
+      }) as Command
   );
 };
 
 export const waitForCommand = async (
   commandId: string,
-  timeoutMs = 15_000,
+  timeoutMs = 15_000
 ): Promise<{
   status: "succeeded" | "failed" | "timeout";
   result?: Record<string, unknown>;

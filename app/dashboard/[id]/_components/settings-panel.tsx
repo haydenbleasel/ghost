@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Panel, PanelCard } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +13,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
 
@@ -88,7 +93,12 @@ export const SettingsPanel = ({
             </span>
           </div>
           {canRescale ? (
-            <Button type="button" variant="outline" size="sm" onClick={openRescale}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={openRescale}
+            >
               Rescale
             </Button>
           ) : (
@@ -131,11 +141,16 @@ export const SettingsPanel = ({
                   key={type.name}
                   className={cn(
                     "flex cursor-pointer items-center justify-between gap-4 rounded-md border-2 p-3 transition",
-                    isSelected ? "border-primary" : "border-border hover:border-muted-foreground",
+                    isSelected
+                      ? "border-primary"
+                      : "border-border hover:border-muted-foreground"
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <RadioGroupItem value={type.name} id={`rescale-${type.name}`} />
+                    <RadioGroupItem
+                      value={type.name}
+                      id={`rescale-${type.name}`}
+                    />
                     <div>
                       <div className="font-medium text-sm uppercase">
                         {type.name}
@@ -146,7 +161,8 @@ export const SettingsPanel = ({
                         )}
                       </div>
                       <div className="text-muted-foreground text-xs">
-                        {type.cores} vCPU · {type.memory} GB RAM · {type.disk} GB SSD
+                        {type.cores} vCPU · {type.memory} GB RAM · {type.disk}{" "}
+                        GB SSD
                       </div>
                     </div>
                   </div>

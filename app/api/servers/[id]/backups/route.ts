@@ -1,8 +1,9 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
 import { prisma } from "@/lib/db";
 import { hetzner } from "@/lib/hetzner";
 import { requireUser } from "@/lib/session";
-import { NextResponse } from "next/server";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,10 @@ const hetznerErrorMessage = (error: unknown, response: Response): string => {
   return body?.error?.message ?? response.statusText;
 };
 
-export const GET = async (_request: Request, context: { params: Promise<{ id: string }> }) => {
+export const GET = async (
+  _request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 
@@ -37,13 +41,19 @@ export const GET = async (_request: Request, context: { params: Promise<{ id: st
   const hetznerId = Number(server.hetznerServerId);
 
   const { data, error, response } = await hetzner.GET("/images", {
-    params: { query: { per_page: 50, sort: ["created:desc"], type: ["backup", "snapshot"] } },
+    params: {
+      query: {
+        per_page: 50,
+        sort: ["created:desc"],
+        type: ["backup", "snapshot"],
+      },
+    },
   });
 
   if (!response.ok) {
     return NextResponse.json(
       { error: hetznerErrorMessage(error, response) },
-      { status: response.status },
+      { status: response.status }
     );
   }
 
@@ -51,7 +61,7 @@ export const GET = async (_request: Request, context: { params: Promise<{ id: st
     .filter(
       (img) =>
         img.bound_to === hetznerId ||
-        (img.type === "snapshot" && img.created_from?.id === hetznerId),
+        (img.type === "snapshot" && img.created_from?.id === hetznerId)
     )
     .map((img) => ({
       created: img.created,
@@ -67,7 +77,10 @@ export const GET = async (_request: Request, context: { params: Promise<{ id: st
   return NextResponse.json({ images });
 };
 
-export const POST = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const POST = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 
@@ -80,7 +93,10 @@ export const POST = async (request: Request, context: { params: Promise<{ id: st
   }
 
   if (!server.hetznerServerId) {
-    return NextResponse.json({ error: "Server is not provisioned yet" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Server is not provisioned yet" },
+      { status: 409 }
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -89,25 +105,31 @@ export const POST = async (request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { error, response, data } = await hetzner.POST("/servers/{id}/actions/create_image", {
-    body: {
-      description: parsed.data.description || undefined,
-      type: "snapshot",
-    },
-    params: { path: { id: Number(server.hetznerServerId) } },
-  });
+  const { error, response, data } = await hetzner.POST(
+    "/servers/{id}/actions/create_image",
+    {
+      body: {
+        description: parsed.data.description || undefined,
+        type: "snapshot",
+      },
+      params: { path: { id: Number(server.hetznerServerId) } },
+    }
+  );
 
   if (!response.ok) {
     return NextResponse.json(
       { error: hetznerErrorMessage(error, response) },
-      { status: response.status },
+      { status: response.status }
     );
   }
 
   return NextResponse.json({ image: data?.image ?? null });
 };
 
-export const PATCH = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const PATCH = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 
@@ -126,7 +148,10 @@ export const PATCH = async (request: Request, context: { params: Promise<{ id: s
   }
 
   if (!server.hetznerServerId) {
-    return NextResponse.json({ error: "Server is not provisioned yet" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Server is not provisioned yet" },
+      { status: 409 }
+    );
   }
 
   const hetznerId = Number(server.hetznerServerId);
@@ -140,7 +165,7 @@ export const PATCH = async (request: Request, context: { params: Promise<{ id: s
   if (!response.ok) {
     return NextResponse.json(
       { error: hetznerErrorMessage(apiError, response) },
-      { status: response.status },
+      { status: response.status }
     );
   }
 

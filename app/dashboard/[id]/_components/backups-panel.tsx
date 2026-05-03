@@ -1,7 +1,14 @@
 "use client";
-import { CameraIcon, MoreHorizontalIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
+import {
+  CameraIcon,
+  MoreHorizontalIcon,
+  RotateCcwIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+
+import { Panel, PanelCard } from "@/components/panel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +39,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Panel, PanelCard } from "@/components/panel";
 
 interface Image {
   id: number;
@@ -87,7 +93,9 @@ const BackupRow = ({ image, onRestore, onDelete }: RowProps) => {
           <Badge variant="outline" className="capitalize">
             {isManual ? "Manual" : "Automatic"}
           </Badge>
-          <span className="truncate text-sm font-medium">{image.description || "Backup"}</span>
+          <span className="truncate text-sm font-medium">
+            {image.description || "Backup"}
+          </span>
           {!isReady && (
             <Badge variant="secondary" className="capitalize">
               {image.status}
@@ -110,7 +118,11 @@ const BackupRow = ({ image, onRestore, onDelete }: RowProps) => {
             Restore
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" onSelect={onDelete} disabled={image.protection}>
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={onDelete}
+            disabled={image.protection}
+          >
             <Trash2Icon />
             Delete
           </DropdownMenuItem>
@@ -127,12 +139,21 @@ interface ListProps {
   onDelete: (image: Image) => void;
 }
 
-const renderImageList = ({ images, loadError, onRestore, onDelete }: ListProps) => {
+const renderImageList = ({
+  images,
+  loadError,
+  onRestore,
+  onDelete,
+}: ListProps) => {
   if (loadError) {
-    return <div className="px-3 py-4 text-destructive text-sm">{loadError}</div>;
+    return (
+      <div className="px-3 py-4 text-destructive text-sm">{loadError}</div>
+    );
   }
   if (images === null) {
-    return <div className="px-3 py-4 text-muted-foreground text-sm">Loading…</div>;
+    return (
+      <div className="px-3 py-4 text-muted-foreground text-sm">Loading…</div>
+    );
   }
   if (images.length === 0) {
     return (
@@ -151,7 +172,11 @@ const renderImageList = ({ images, loadError, onRestore, onDelete }: ListProps) 
   ));
 };
 
-export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Props) => {
+export const BackupsPanel = ({
+  serverId,
+  backupsEnabled,
+  onBackupsChange,
+}: Props) => {
   const [images, setImages] = useState<Image[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
@@ -200,9 +225,13 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
         throw new Error(err.error ?? "Could not update backups");
       }
       onBackupsChange(enabled);
-      toast.success(enabled ? "Automatic backups enabled" : "Automatic backups disabled");
+      toast.success(
+        enabled ? "Automatic backups enabled" : "Automatic backups disabled"
+      );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update backups");
+      toast.error(
+        error instanceof Error ? error.message : "Could not update backups"
+      );
     } finally {
       setToggling(false);
     }
@@ -212,7 +241,9 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
     setCreating(true);
     try {
       const res = await fetch(`/api/servers/${serverId}/backups`, {
-        body: JSON.stringify({ description: createDescription.trim() || undefined }),
+        body: JSON.stringify({
+          description: createDescription.trim() || undefined,
+        }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
@@ -225,7 +256,9 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
       setCreateDescription("");
       load();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not create backup");
+      toast.error(
+        error instanceof Error ? error.message : "Could not create backup"
+      );
     } finally {
       setCreating(false);
     }
@@ -237,9 +270,12 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
     }
     setActionPending(true);
     try {
-      const res = await fetch(`/api/servers/${serverId}/backups/${restoreTarget.id}/restore`, {
-        method: "POST",
-      });
+      const res = await fetch(
+        `/api/servers/${serverId}/backups/${restoreTarget.id}/restore`,
+        {
+          method: "POST",
+        }
+      );
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(err.error ?? "Restore failed");
@@ -259,16 +295,21 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
     }
     setActionPending(true);
     try {
-      const res = await fetch(`/api/servers/${serverId}/backups/${deleteTarget.id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/servers/${serverId}/backups/${deleteTarget.id}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(err.error ?? "Delete failed");
       }
       toast.success("Backup deleted");
       setDeleteTarget(null);
-      setImages((prev) => prev?.filter((i) => i.id !== deleteTarget.id) ?? null);
+      setImages(
+        (prev) => prev?.filter((i) => i.id !== deleteTarget.id) ?? null
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Delete failed");
     } finally {
@@ -297,7 +338,12 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
       <Panel
         title="Backups"
         action={
-          <Button type="button" variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCreateOpen(true)}
+          >
             <CameraIcon />
             Create backup
           </Button>
@@ -318,7 +364,8 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
           <DialogHeader>
             <DialogTitle>Create backup</DialogTitle>
             <DialogDescription>
-              Saves the current disk state. For the cleanest backup, stop the server first.
+              Saves the current disk state. For the cleanest backup, stop the
+              server first.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
@@ -356,12 +403,14 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
           <AlertDialogHeader>
             <AlertDialogTitle>Restore from this backup?</AlertDialogTitle>
             <AlertDialogDescription>
-              This wipes the current disk and reboots the server from the selected backup. Any
-              changes since it was taken will be lost.
+              This wipes the current disk and reboots the server from the
+              selected backup. Any changes since it was taken will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={actionPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={actionPending}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction onClick={runRestore} disabled={actionPending}>
               {actionPending ? "Restoring…" : "Restore"}
             </AlertDialogAction>
@@ -381,7 +430,9 @@ export const BackupsPanel = ({ serverId, backupsEnabled, onBackupsChange }: Prop
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={actionPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={actionPending}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction onClick={runDelete} disabled={actionPending}>
               {actionPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>

@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+
 import { games } from "@/games";
 import { prisma } from "@/lib/db";
 import { getHetznerCatalog } from "@/lib/hetzner/catalog";
 import { requireUser } from "@/lib/session";
+
 import { ServerShell } from "./_components/shell";
 
 const ServerLayout = async ({
@@ -26,8 +28,12 @@ const ServerLayout = async ({
   }
 
   const catalog = await getHetznerCatalog();
-  const serverType = catalog.serverTypes.find((t) => t.name === server.serverType);
-  const location = serverType?.locations.find((l) => l.name === server.location);
+  const serverType = catalog.serverTypes.find(
+    (t) => t.name === server.serverType
+  );
+  const location = serverType?.locations.find(
+    (l) => l.name === server.location
+  );
 
   const specs = serverType
     ? {
@@ -50,7 +56,7 @@ const ServerLayout = async ({
         (t) =>
           t.memory >= game.requirements.memory &&
           t.cores >= game.requirements.cpu &&
-          t.locations.some((l) => l.name === server.location && l.available),
+          t.locations.some((l) => l.name === server.location && l.available)
       )
     : [];
 

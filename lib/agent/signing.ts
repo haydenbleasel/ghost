@@ -1,4 +1,6 @@
 import "server-only";
+import { verifyAsync } from "@noble/ed25519";
+
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import {
@@ -9,7 +11,6 @@ import {
   canonicalize,
   fromBase64Url,
 } from "@/protocol";
-import { verifyAsync } from "@noble/ed25519";
 
 export interface VerifiedAgent {
   agentId: string;
@@ -27,7 +28,7 @@ export class AgentAuthError extends Error {
 }
 
 export const verifyAgentRequest = async (
-  request: Request,
+  request: Request
 ): Promise<{ verified: VerifiedAgent; body: string }> => {
   const agentId = request.headers.get(AGENT_HEADERS.AGENT);
   const timestamp = request.headers.get(AGENT_HEADERS.TIMESTAMP);
@@ -35,7 +36,12 @@ export const verifyAgentRequest = async (
   const signature = request.headers.get(AGENT_HEADERS.SIGNATURE);
 
   if (!agentId || !timestamp || !nonce || !signature) {
-    console.error("[agent-auth] missing headers", { agentId, hasNonce: !!nonce, hasSignature: !!signature, hasTimestamp: !!timestamp });
+    console.error("[agent-auth] missing headers", {
+      agentId,
+      hasNonce: !!nonce,
+      hasSignature: !!signature,
+      hasTimestamp: !!timestamp,
+    });
     throw new AgentAuthError("Missing signature headers");
   }
 

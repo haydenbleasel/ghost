@@ -1,8 +1,9 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
 import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
-import { NextResponse } from "next/server";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,10 @@ const bodySchema = z.object({
   url: z.string().url(),
 });
 
-export const POST = async (request: Request, context: { params: Promise<{ id: string }> }) => {
+export const POST = async (
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) => {
   const user = await requireUser();
   const { id } = await context.params;
 
