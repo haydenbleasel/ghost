@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   title: string;
+  icon?: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
   flush?: boolean;
@@ -18,6 +19,7 @@ interface PageHeaderProps {
 
 export const PageHeader = ({
   title,
+  icon,
   meta,
   actions,
   flush,
@@ -29,7 +31,8 @@ export const PageHeader = ({
       flush && "pb-0 md:pb-0"
     )}
   >
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
+      {icon ? <div className="shrink-0">{icon}</div> : null}
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -51,11 +54,13 @@ export const PageHeader = ({
 export const PageBody = ({
   children,
   className,
+  wide,
 }: {
   children: ReactNode;
   className?: string;
+  wide?: boolean;
 }) => (
   <div className={cn("flex-1 px-4 py-6 md:px-8 md:py-8", className)}>
-    <div className="w-full max-w-3xl">{children}</div>
+    {wide ? children : <div className="w-full max-w-3xl">{children}</div>}
   </div>
 );

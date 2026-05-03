@@ -28,6 +28,7 @@ import type {
   FieldValue,
   SettingsValuesRecord,
 } from "../../[id]/_components/game-settings-form";
+import { PageBody, PageHeader } from "../../_components/page-header";
 import { Cobe } from "./cobe";
 
 const VISIBLE_ALL_SIZES = 3;
@@ -210,7 +211,7 @@ const SizeStep = ({
           </div>
           {hiddenRest.length > 0 && (
             <Collapsible>
-              <CollapsibleContent className="grid gap-2">
+              <CollapsibleContent className="grid gap-2 pb-2">
                 {hiddenRest.map((type) => (
                   <SizeCard
                     key={type.name}
@@ -291,7 +292,7 @@ const LocationStep = ({
           </label>
         ))}
       </RadioGroup>
-      <div className="w-full">
+      <div className="mx-auto w-full max-w-xs">
         <Cobe
           markers={selectedType.locations
             .filter((loc) => loc.available)
@@ -467,7 +468,7 @@ const NameStep = ({
               <ChevronDown className="transition-transform group-data-[state=open]:rotate-180" />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="flex flex-col gap-1 rounded-md border border-border bg-background p-1">
+          <CollapsibleContent className="mt-2 flex flex-col gap-1 rounded-md border border-border bg-background p-1">
             <SettingsFields
               schema={selectedGame.settings}
               values={settings}
@@ -621,62 +622,67 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
   const isLast = step === STEPS.length - 1;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <StepIndicator step={step} />
+    <>
+      <PageHeader title="New server">
+        <StepIndicator step={step} />
+      </PageHeader>
+      <PageBody>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {step === 0 && (
+            <GameStep games={games} gameId={gameId} setGameId={setGameId} />
+          )}
 
-      {step === 0 && (
-        <GameStep games={games} gameId={gameId} setGameId={setGameId} />
-      )}
+          {step === 1 && (
+            <section className="space-y-2">
+              <Label>Pick a server size</Label>
+              <SizeStep
+                eligibleTypes={eligibleTypes}
+                typeName={typeName}
+                setTypeName={setTypeName}
+                currency={currency}
+              />
+            </section>
+          )}
 
-      {step === 1 && (
-        <section className="space-y-2">
-          <Label>Pick a server size</Label>
-          <SizeStep
-            eligibleTypes={eligibleTypes}
-            typeName={typeName}
-            setTypeName={setTypeName}
-            currency={currency}
-          />
-        </section>
-      )}
+          {step === 2 && (
+            <section className="space-y-4">
+              <Label>Pick a location</Label>
+              <LocationStep
+                selectedType={selectedType}
+                locationName={locationName}
+                setLocationName={setLocationName}
+              />
+            </section>
+          )}
 
-      {step === 2 && (
-        <section className="space-y-4">
-          <Label>Pick a location</Label>
-          <LocationStep
-            selectedType={selectedType}
-            locationName={locationName}
-            setLocationName={setLocationName}
-          />
-        </section>
-      )}
+          {step === 3 && (
+            <NameStep
+              name={name}
+              setName={setName}
+              selectedGame={selectedGame}
+              selectedType={selectedType}
+              locationName={locationName}
+              settings={settings}
+              setSettingField={setSettingField}
+              currency={currency}
+            />
+          )}
 
-      {step === 3 && (
-        <NameStep
-          name={name}
-          setName={setName}
-          selectedGame={selectedGame}
-          selectedType={selectedType}
-          locationName={locationName}
-          settings={settings}
-          setSettingField={setSettingField}
-          currency={currency}
-        />
-      )}
-
-      <div className="flex items-center justify-between gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0 || pending}
-        >
-          Back
-        </Button>
-        <Button type="submit" disabled={!stepValid[step] || pending}>
-          {submitLabel(isLast, pending)}
-        </Button>
-      </div>
-    </form>
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0 || pending}
+            >
+              Back
+            </Button>
+            <Button type="submit" disabled={!stepValid[step] || pending}>
+              {submitLabel(isLast, pending)}
+            </Button>
+          </div>
+        </form>
+      </PageBody>
+    </>
   );
 };

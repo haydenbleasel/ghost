@@ -6,7 +6,6 @@ import { getHetznerCatalog } from "@/lib/hetzner/catalog";
 import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
-import { PageBody, PageHeader } from "../_components/page-header";
 import { NewServerForm } from "./_components/form";
 import type { GameOption } from "./_components/form";
 
@@ -35,18 +34,11 @@ const NewServerPage = async () => {
     }));
 
   return (
-    <>
-      <PageHeader title="New server" />
-      <PageBody>
-        <div className="space-y-6">
-          <NewServerForm
-            games={gameOptions}
-            serverTypes={catalog.serverTypes}
-            currency={catalog.currency}
-          />
-        </div>
-      </PageBody>
-    </>
+    <NewServerForm
+      games={gameOptions}
+      serverTypes={catalog.serverTypes}
+      currency={catalog.currency}
+    />
   );
 };
 

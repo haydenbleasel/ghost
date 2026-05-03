@@ -247,36 +247,32 @@ export const ServerShell = ({
     </AlertDialog>
   );
 
+  const gameIcon = (
+    <Image
+      alt={game.name}
+      className="size-10 rounded-lg object-cover"
+      placeholder="blur"
+      src={game.image}
+    />
+  );
+
   if (isProvisioning) {
     return (
       <>
-        <PageHeader actions={actions} meta={meta} title={server.name} />
+        <PageHeader
+          actions={actions}
+          icon={gameIcon}
+          meta={meta}
+          title={server.name}
+        />
         <PageBody>
-          <div className="grid gap-8">
-            <div className="flex items-center gap-4">
-              <Image
-                alt={game.name}
-                className="size-14 shrink-0 rounded-lg object-cover"
-                placeholder="blur"
-                src={game.image}
-              />
-              <div>
-                <p className="font-medium text-2xl tracking-tight">
-                  {game.name}
-                </p>
-                <p className="text-muted-foreground text-sm">
-                  {game.description}
-                </p>
-              </div>
-            </div>
-            <ProvisioningStatus
-              errored={
-                server.phase === "errored" || server.observedState === "failed"
-              }
-              errorReason={server.errorReason}
-              phase={server.phase}
-            />
-          </div>
+          <ProvisioningStatus
+            errored={
+              server.phase === "errored" || server.observedState === "failed"
+            }
+            errorReason={server.errorReason}
+            phase={server.phase}
+          />
         </PageBody>
         {deleteDialog}
       </>
@@ -285,7 +281,13 @@ export const ServerShell = ({
 
   return (
     <ServerProvider value={{ currency, eligibleTypes, server, updateServer }}>
-      <PageHeader actions={actions} flush meta={meta} title={server.name}>
+      <PageHeader
+        actions={actions}
+        flush
+        icon={gameIcon}
+        meta={meta}
+        title={server.name}
+      >
         <Tabs className="[&_[data-slot=tabs-trigger]]:flex-none" value={activeTab}>
           <TabsList variant="line">
             {TABS.map((tab) => (

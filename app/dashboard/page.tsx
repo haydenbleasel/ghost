@@ -54,7 +54,7 @@ const DashboardPage = async () => {
     return (
       <>
         <PageHeader actions={newServerAction} title="Servers" />
-        <PageBody>
+        <PageBody wide>
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
