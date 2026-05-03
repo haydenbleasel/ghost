@@ -26,11 +26,7 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
         }}
       />
       <SidebarTrigger className="fixed top-3 left-3 z-50 text-muted-foreground" />
-      <AppContainer>
-        <div className="flex-1 px-6 py-20">
-          <div className="mx-auto w-full max-w-5xl">{children}</div>
-        </div>
-      </AppContainer>
+      <AppContainer>{children}</AppContainer>
     </SidebarProvider>
   );
 };

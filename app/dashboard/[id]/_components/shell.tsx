@@ -1,6 +1,12 @@
 "use client";
+import {
+  MoreHorizontalIcon,
+  PlayIcon,
+  RotateCcwIcon,
+  SquareIcon,
+  Trash2Icon,
+} from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter, useSelectedLayoutSegment } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
@@ -16,13 +22,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { games } from "@/games";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
+import { cn } from "@/lib/utils";
 
+import { PageBody, PageHeader } from "../../_components/page-header";
+import type { PageHeaderTab } from "../../_components/page-header";
 import { ProvisioningStatus } from "./provisioning-status";
-import { ReadyHeader } from "./ready-header";
 import { ServerProvider } from "./server-context";
 import type { ServerView } from "./server-context";
 
@@ -54,6 +69,29 @@ interface Props {
   currency: string;
   children: ReactNode;
 }
+
+const stateBadgeClass = (state: string, deleting: boolean): string => {
+  if (deleting || state === "failed" || state === "lost") {
+    return "";
+  }
+  if (state === "running") {
+    return "border-emerald-600 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400";
+  }
+  return "";
+};
+
+const stateBadgeVariant = (
+  state: string,
+  deleting: boolean
+): "default" | "secondary" | "destructive" | "outline" => {
+  if (deleting || state === "failed" || state === "lost") {
+    return "destructive";
+  }
+  if (state === "unhealthy") {
+    return "secondary";
+  }
+  return "outline";
+};
 
 export const ServerShell = ({
   server: initial,
@@ -133,6 +171,72 @@ export const ServerShell = ({
     return null;
   }
 
+  const deleting = server.desiredState === "deleted";
+  const statusLabel = deleting ? "deleting" : server.observedState;
+
+  const tabs: PageHeaderTab[] = TABS.map((tab) => ({
+    href:
+      tab.value === "connect"
+        ? `/dashboard/${server.id}`
+        : `/dashboard/${server.id}/${tab.value}`,
+    label: tab.label,
+    value: tab.value,
+  }));
+
+  const meta = (
+    <Badge
+      className={cn(
+        "capitalize",
+        stateBadgeClass(server.observedState, deleting)
+      )}
+      variant={stateBadgeVariant(server.observedState, deleting)}
+    >
+      {statusLabel}
+    </Badge>
+  );
+
+  const actions = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button aria-label="Server actions" size="icon" variant="ghost">
+          <MoreHorizontalIcon />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          disabled={pending !== null || server.observedState !== "stopped"}
+          onSelect={() => sendCommand("START")}
+        >
+          <PlayIcon />
+          Start
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={pending !== null || server.observedState !== "running"}
+          onSelect={() => sendCommand("STOP")}
+        >
+          <SquareIcon />
+          Stop
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={pending !== null || server.observedState !== "running"}
+          onSelect={() => sendCommand("RESTART")}
+        >
+          <RotateCcwIcon />
+          Restart
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={pending !== null}
+          onSelect={() => setDeleteOpen(true)}
+          variant="destructive"
+        >
+          <Trash2Icon />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   const deleteDialog = (
     <AlertDialog onOpenChange={setDeleteOpen} open={deleteOpen}>
       <AlertDialogContent>
@@ -153,72 +257,50 @@ export const ServerShell = ({
 
   if (isProvisioning) {
     return (
-      <div className="grid gap-8">
-        <div className="flex items-center gap-4">
-          <Image
-            alt={game.name}
-            className="size-14 shrink-0 rounded-lg object-cover"
-            placeholder="blur"
-            src={game.image}
-          />
-          <div>
-            <p className="font-medium text-2xl tracking-tight">{game.name}</p>
-            <p className="text-muted-foreground text-sm">{game.description}</p>
+      <>
+        <PageHeader actions={actions} meta={meta} title={server.name} />
+        <PageBody>
+          <div className="grid gap-8">
+            <div className="flex items-center gap-4">
+              <Image
+                alt={game.name}
+                className="size-14 shrink-0 rounded-lg object-cover"
+                placeholder="blur"
+                src={game.image}
+              />
+              <div>
+                <p className="font-medium text-2xl tracking-tight">
+                  {game.name}
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  {game.description}
+                </p>
+              </div>
+            </div>
+            <ProvisioningStatus
+              errored={
+                server.phase === "errored" || server.observedState === "failed"
+              }
+              errorReason={server.errorReason}
+              phase={server.phase}
+            />
           </div>
-        </div>
-        <ProvisioningStatus
-          errored={
-            server.phase === "errored" || server.observedState === "failed"
-          }
-          errorReason={server.errorReason}
-          phase={server.phase}
-        />
-        <div className="flex justify-end">
-          <Button
-            disabled={Boolean(pending)}
-            onClick={() => setDeleteOpen(true)}
-            variant="destructive"
-          >
-            Delete
-          </Button>
-        </div>
+        </PageBody>
         {deleteDialog}
-      </div>
+      </>
     );
   }
 
   return (
     <ServerProvider value={{ currency, eligibleTypes, server, updateServer }}>
-      <div className="grid gap-8">
-        <ReadyHeader
-          desiredState={server.desiredState}
-          game={server.game}
-          ipv4={server.ipv4}
-          name={server.name}
-          observedState={server.observedState}
-          onCommand={sendCommand}
-          onDelete={() => setDeleteOpen(true)}
-          pending={Boolean(pending)}
-        />
-        <Tabs value={activeTab}>
-          <TabsList>
-            {TABS.map((tab) => (
-              <TabsTrigger asChild key={tab.value} value={tab.value}>
-                <Link
-                  href={
-                    tab.value === "connect"
-                      ? `/dashboard/${server.id}`
-                      : `/dashboard/${server.id}/${tab.value}`
-                  }
-                >
-                  {tab.label}
-                </Link>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        {children}
-      </div>
+      <PageHeader
+        actions={actions}
+        activeTab={activeTab}
+        meta={meta}
+        tabs={tabs}
+        title={server.name}
+      />
+      <PageBody>{children}</PageBody>
       {deleteDialog}
     </ServerProvider>
   );

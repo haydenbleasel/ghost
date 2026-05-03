@@ -6,6 +6,7 @@ import { getHetznerCatalog } from "@/lib/hetzner/catalog";
 import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
+import { PageBody, PageHeader } from "../_components/page-header";
 import { NewServerForm } from "./_components/form";
 import type { GameOption } from "./_components/form";
 
@@ -34,19 +35,18 @@ const NewServerPage = async () => {
     }));
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <header className="space-y-1">
-        <h1 className="font-semibold text-2xl">New server</h1>
-        <p className="text-muted-foreground text-sm">
-          Step through game, size, location, and name to start provisioning.
-        </p>
-      </header>
-      <NewServerForm
-        games={gameOptions}
-        serverTypes={catalog.serverTypes}
-        currency={catalog.currency}
-      />
-    </div>
+    <>
+      <PageHeader title="New server" />
+      <PageBody>
+        <div className="mx-auto max-w-2xl space-y-6">
+          <NewServerForm
+            games={gameOptions}
+            serverTypes={catalog.serverTypes}
+            currency={catalog.currency}
+          />
+        </div>
+      </PageBody>
+    </>
   );
 };
 
