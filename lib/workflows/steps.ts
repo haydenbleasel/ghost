@@ -10,7 +10,12 @@ import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { emitActivity } from "@/lib/events/emit";
-import { hetzner, HetznerApiError, throwIfHetznerError } from "@/lib/hetzner";
+import {
+  type HetznerClient,
+  HetznerApiError,
+  throwIfHetznerError,
+} from "@/lib/hetzner";
+import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import type { Phase } from "@/protocol";
 
 import { hookTokens } from "./hook-tokens";
@@ -28,21 +33,20 @@ const safeResumeHook = async (
 };
 
 const postCreateHetznerServer = async (input: {
+  client: HetznerClient;
   image: string;
   location: string;
   name: string;
   serverType: string;
-  sshKeys: string[] | undefined;
   userData: string;
 }) => {
-  const { data, error, response } = await hetzner.POST("/servers", {
+  const { data, error, response } = await input.client.POST("/servers", {
     body: {
       image: input.image,
       location: input.location,
       name: input.name,
       public_net: { enable_ipv4: true, enable_ipv6: false },
       server_type: input.serverType,
-      ssh_keys: input.sshKeys,
       start_after_create: true,
       user_data: input.userData,
     },
@@ -120,6 +124,16 @@ export const stepCreateHetznerServer = async (serverId: string) => {
     throw new FatalError(`Unknown game: ${server.game}`);
   }
 
+  let hetzner: HetznerClient;
+  let imageId: string;
+  try {
+    const ctx = await getUserHetznerContext(server.userId);
+    hetzner = ctx.client;
+    imageId = ctx.imageId;
+  } catch {
+    throw new FatalError("Owner has not configured Hetzner credentials");
+  }
+
   const { token, jti, expiresAt } = await mintBootstrapJwt({ serverId });
 
   await prisma.agentEnrollment.create({
@@ -137,18 +151,12 @@ export const stepCreateHetznerServer = async (serverId: string) => {
     .randomBytes(2)
     .toString("hex")}`;
 
-  const sshKeys = env.HETZNER_ADMIN_SSH_KEYS
-    ? env.HETZNER_ADMIN_SSH_KEYS.split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : undefined;
-
   const created = await postCreateHetznerServer({
-    image: env.HETZNER_IMAGE_ID,
+    client: hetzner,
+    image: imageId,
     location: server.location,
     name: hetznerName,
     serverType: server.serverType,
-    sshKeys,
     userData,
   });
 
@@ -192,10 +200,21 @@ export const stepCreateHetznerServer = async (serverId: string) => {
   return { cancelled: false as const, hetznerServerId: created.id };
 };
 
-export const stepGetHetznerStatus = async (hetznerServerId: number) => {
+export const stepGetHetznerStatus = async (input: {
+  serverId: string;
+  hetznerServerId: number;
+}) => {
   "use step";
-  const { data, error, response } = await hetzner.GET("/servers/{id}", {
-    params: { path: { id: hetznerServerId } },
+  const owner = await prisma.server.findUnique({
+    select: { userId: true },
+    where: { id: input.serverId },
+  });
+  if (!owner) {
+    return { ip: null, status: "unknown" as const };
+  }
+  const { client } = await getUserHetznerContext(owner.userId);
+  const { data, error, response } = await client.GET("/servers/{id}", {
+    params: { path: { id: input.hetznerServerId } },
   });
   if (response.status === 404) {
     return { ip: null, status: "unknown" as const };
@@ -366,7 +385,15 @@ export const stepDeleteHetzner = async (serverId: string) => {
   if (!server?.hetznerServerId) {
     return { deleted: false };
   }
-  const { error, response } = await hetzner.DELETE("/servers/{id}", {
+  let client: HetznerClient;
+  try {
+    ({ client } = await getUserHetznerContext(server.userId));
+  } catch {
+    // Owner cleared their token; mark deleted in DB anyway since we can't
+    // reach Hetzner. The VM may need to be cleaned up manually.
+    return { deleted: false };
+  }
+  const { error, response } = await client.DELETE("/servers/{id}", {
     params: { path: { id: Number(server.hetznerServerId) } },
   });
   if (!response.ok && response.status !== 404) {

@@ -1,9 +1,11 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { games } from "@/games";
 import { prisma } from "@/lib/db";
+import { MissingHetznerCredentialsError } from "@/lib/hetzner";
 import { getHetznerCatalog } from "@/lib/hetzner/catalog";
+import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
 import { ServerShell } from "./_components/shell";
@@ -27,7 +29,16 @@ const ServerLayout = async ({
     notFound();
   }
 
-  const catalog = await getHetznerCatalog();
+  let catalog: Awaited<ReturnType<typeof getHetznerCatalog>>;
+  try {
+    const { client, imageId } = await getUserHetznerContext(user.id);
+    catalog = await getHetznerCatalog(client, imageId);
+  } catch (error) {
+    if (error instanceof MissingHetznerCredentialsError) {
+      redirect("/dashboard/account?reason=hetzner-required");
+    }
+    throw error;
+  }
   const serverType = catalog.serverTypes.find(
     (t) => t.name === server.serverType
   );

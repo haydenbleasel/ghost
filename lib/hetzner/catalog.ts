@@ -1,7 +1,6 @@
 import "server-only";
-import { env } from "@/lib/env";
 
-import { hetzner, throwIfHetznerError } from "./index";
+import { type HetznerClient, throwIfHetznerError } from "./index";
 
 export interface CatalogLocation {
   name: string;
@@ -31,19 +30,22 @@ export interface Catalog {
   currency: string;
 }
 
-export const getHetznerCatalog = async (): Promise<Catalog> => {
+export const getHetznerCatalog = async (
+  client: HetznerClient,
+  imageId: string
+): Promise<Catalog> => {
   const [serverTypesRes, datacentersRes, imageRes, pricingRes] =
     await Promise.all([
-      hetzner.GET("/server_types", {
+      client.GET("/server_types", {
         next: { revalidate: 60 },
         params: { query: { per_page: 50 } },
       }),
-      hetzner.GET("/datacenters", { next: { revalidate: 60 } }),
-      hetzner.GET("/images/{id}", {
+      client.GET("/datacenters", { next: { revalidate: 60 } }),
+      client.GET("/images/{id}", {
         next: { revalidate: 3600 },
-        params: { path: { id: Number(env.HETZNER_IMAGE_ID) } },
+        params: { path: { id: Number(imageId) } },
       }),
-      hetzner.GET("/pricing", { next: { revalidate: 86_400 } }),
+      client.GET("/pricing", { next: { revalidate: 86_400 } }),
     ]);
 
   throwIfHetznerError(serverTypesRes.error, serverTypesRes.response);

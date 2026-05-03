@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
-import { hetzner } from "@/lib/hetzner";
+import { MissingHetznerCredentialsError } from "@/lib/hetzner";
+import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -12,6 +13,12 @@ const hetznerErrorMessage = (error: unknown, response: Response): string => {
   const body = error as HetznerError;
   return body?.error?.message ?? response.statusText;
 };
+
+const credsErrorResponse = () =>
+  NextResponse.json(
+    { error: "Configure your Hetzner credentials in account settings." },
+    { status: 412 }
+  );
 
 export const POST = async (
   _request: Request,
@@ -42,11 +49,21 @@ export const POST = async (
 
   const hetznerServerId = Number(server.hetznerServerId);
 
+  let client: Awaited<ReturnType<typeof getUserHetznerContext>>["client"];
+  try {
+    ({ client } = await getUserHetznerContext(user.id));
+  } catch (err) {
+    if (err instanceof MissingHetznerCredentialsError) {
+      return credsErrorResponse();
+    }
+    throw err;
+  }
+
   const {
     data: imageData,
     error: getError,
     response: getResponse,
-  } = await hetzner.GET("/images/{id}", {
+  } = await client.GET("/images/{id}", {
     params: { path: { id: parsedImageId } },
   });
 
@@ -73,7 +90,7 @@ export const POST = async (
     );
   }
 
-  const { error, response } = await hetzner.POST(
+  const { error, response } = await client.POST(
     "/servers/{id}/actions/rebuild",
     {
       body: { image: String(parsedImageId) },

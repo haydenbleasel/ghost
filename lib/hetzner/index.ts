@@ -1,16 +1,17 @@
 import "server-only";
 import createClient from "openapi-fetch";
 
-import { env } from "@/lib/env";
-
 import type { paths } from "./schema";
 
-export const hetzner = createClient<paths>({
-  baseUrl: "https://api.hetzner.cloud/v1",
-  headers: {
-    Authorization: `Bearer ${env.HETZNER_TOKEN}`,
-  },
-});
+export type HetznerClient = ReturnType<typeof createClient<paths>>;
+
+export const createHetznerClient = (token: string): HetznerClient =>
+  createClient<paths>({
+    baseUrl: "https://api.hetzner.cloud/v1",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
 export class HetznerApiError extends Error {
   readonly status: number;
@@ -25,6 +26,13 @@ export class HetznerApiError extends Error {
 
   get isClientError(): boolean {
     return this.status >= 400 && this.status < 500;
+  }
+}
+
+export class MissingHetznerCredentialsError extends Error {
+  constructor() {
+    super("Hetzner credentials not configured");
+    this.name = "MissingHetznerCredentialsError";
   }
 }
 

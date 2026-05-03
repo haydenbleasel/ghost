@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { hetzner } from "@/lib/hetzner";
+import { MissingHetznerCredentialsError } from "@/lib/hetzner";
+import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -44,7 +45,20 @@ export const GET = async (
     return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
 
-  const { data, error, response } = await hetzner.GET("/servers/{id}/metrics", {
+  let client: Awaited<ReturnType<typeof getUserHetznerContext>>["client"];
+  try {
+    ({ client } = await getUserHetznerContext(user.id));
+  } catch (err) {
+    if (err instanceof MissingHetznerCredentialsError) {
+      return NextResponse.json(
+        { error: "Configure your Hetzner credentials in account settings." },
+        { status: 412 }
+      );
+    }
+    throw err;
+  }
+
+  const { data, error, response } = await client.GET("/servers/{id}/metrics", {
     params: {
       path: { id: Number(server.hetznerServerId) },
       query: {

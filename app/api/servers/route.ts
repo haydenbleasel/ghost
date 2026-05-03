@@ -8,7 +8,9 @@ import { z } from "zod";
 
 import { games, validateSettings } from "@/games";
 import { prisma } from "@/lib/db";
+import { MissingHetznerCredentialsError } from "@/lib/hetzner";
 import { getHetznerCatalog } from "@/lib/hetzner/catalog";
+import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 import { provisionServer } from "@/lib/workflows/provision-server";
 
@@ -51,7 +53,19 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ error: "Unknown game" }, { status: 400 });
   }
 
-  const catalog = await getHetznerCatalog();
+  let catalog: Awaited<ReturnType<typeof getHetznerCatalog>>;
+  try {
+    const { client, imageId } = await getUserHetznerContext(user.id);
+    catalog = await getHetznerCatalog(client, imageId);
+  } catch (error) {
+    if (error instanceof MissingHetznerCredentialsError) {
+      return NextResponse.json(
+        { error: "Configure your Hetzner credentials in account settings." },
+        { status: 412 }
+      );
+    }
+    throw error;
+  }
   const type = catalog.serverTypes.find(
     (t) => t.name === parsed.data.serverType
   );

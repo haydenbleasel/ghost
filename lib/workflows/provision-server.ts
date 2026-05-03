@@ -77,7 +77,10 @@ export const provisionServer = async (input: { serverId: string }) => {
     const hetznerDeadline = Date.now() + MAX_HETZNER_WAIT_SECONDS * 1000;
     let ipv4: string | null = null;
     while (Date.now() < hetznerDeadline) {
-      const status = await stepGetHetznerStatus(hetznerServerId);
+      const status = await stepGetHetznerStatus({
+        hetznerServerId,
+        serverId,
+      });
       if (status.status === "running") {
         ipv4 = status.ip;
         break;

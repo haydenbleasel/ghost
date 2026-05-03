@@ -9,17 +9,19 @@ datasource db {
 // ─── Better Auth ────────────────────────────────────────────────
 
 model User {
-  id            String    @id
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  passkeys      Passkey[]
-  servers       Server[]
+  id             String    @id
+  name           String
+  email          String    @unique
+  emailVerified  Boolean   @default(false)
+  image          String?
+  hetznerToken   String?
+  hetznerImageId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  sessions       Session[]
+  accounts       Account[]
+  passkeys       Passkey[]
+  servers        Server[]
 
   @@map("users")
 }

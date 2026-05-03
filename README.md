@@ -42,11 +42,9 @@ DIRECT_URL=               # pooled vs direct for Prisma migrate
 KV_REST_API_URL=
 KV_REST_API_TOKEN=
 
-# Hetzner Cloud
-HETZNER_TOKEN=            # read/write token from Hetzner console
-HETZNER_IMAGE_ID=         # snapshot id produced by scripts/build-image.sh
-HETZNER_LOCATION=nbg1
-HETZNER_SERVER_TYPE=cx23
+# Hetzner Cloud — per-user, set in /dashboard/account.
+# (The build-snapshot.sh script below still reads HETZNER_TOKEN/IMAGE_ID/
+# LOCATION/SERVER_TYPE/SSH_KEY from .env.local for the admin gold-image build.)
 
 # Secrets (32+ char random strings)
 BOOTSTRAP_JWT_SECRET=

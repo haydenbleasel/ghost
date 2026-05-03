@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { hetzner } from "@/lib/hetzner";
+import { MissingHetznerCredentialsError } from "@/lib/hetzner";
+import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -17,6 +18,23 @@ type HetznerError = { error?: { message?: string } } | undefined;
 const hetznerErrorMessage = (error: unknown, response: Response): string => {
   const body = error as HetznerError;
   return body?.error?.message ?? response.statusText;
+};
+
+const credsErrorResponse = () =>
+  NextResponse.json(
+    { error: "Configure your Hetzner credentials in account settings." },
+    { status: 412 }
+  );
+
+const resolveClient = async (userId: string) => {
+  try {
+    return (await getUserHetznerContext(userId)).client;
+  } catch (error) {
+    if (error instanceof MissingHetznerCredentialsError) {
+      return null;
+    }
+    throw error;
+  }
 };
 
 export const GET = async (
@@ -40,7 +58,12 @@ export const GET = async (
 
   const hetznerId = Number(server.hetznerServerId);
 
-  const { data, error, response } = await hetzner.GET("/images", {
+  const client = await resolveClient(user.id);
+  if (!client) {
+    return credsErrorResponse();
+  }
+
+  const { data, error, response } = await client.GET("/images", {
     params: {
       query: {
         per_page: 50,
@@ -105,7 +128,12 @@ export const POST = async (
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { error, response, data } = await hetzner.POST(
+  const client = await resolveClient(user.id);
+  if (!client) {
+    return credsErrorResponse();
+  }
+
+  const { error, response, data } = await client.POST(
     "/servers/{id}/actions/create_image",
     {
       body: {
@@ -156,10 +184,15 @@ export const PATCH = async (
 
   const hetznerId = Number(server.hetznerServerId);
 
+  const client = await resolveClient(user.id);
+  if (!client) {
+    return credsErrorResponse();
+  }
+
   const path = parsed.data.enabled
     ? ("/servers/{id}/actions/enable_backup" as const)
     : ("/servers/{id}/actions/disable_backup" as const);
-  const { error: apiError, response } = await hetzner.POST(path, {
+  const { error: apiError, response } = await client.POST(path, {
     params: { path: { id: hetznerId } },
   });
   if (!response.ok) {

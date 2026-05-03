@@ -1,13 +1,26 @@
+import { redirect } from "next/navigation";
+
 import { games } from "@/games";
+import { MissingHetznerCredentialsError } from "@/lib/hetzner";
 import { getHetznerCatalog } from "@/lib/hetzner/catalog";
+import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
 import { NewServerForm } from "./_components/form";
 import type { GameOption } from "./_components/form";
 
 const NewServerPage = async () => {
-  await requireUser();
-  const catalog = await getHetznerCatalog();
+  const user = await requireUser();
+  let catalog: Awaited<ReturnType<typeof getHetznerCatalog>>;
+  try {
+    const { client, imageId } = await getUserHetznerContext(user.id);
+    catalog = await getHetznerCatalog(client, imageId);
+  } catch (error) {
+    if (error instanceof MissingHetznerCredentialsError) {
+      redirect("/dashboard/account?reason=hetzner-required");
+    }
+    throw error;
+  }
 
   const gameOptions: GameOption[] = games
     .filter((g) => g.enabled)

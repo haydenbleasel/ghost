@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { hetzner } from "@/lib/hetzner";
+import { MissingHetznerCredentialsError } from "@/lib/hetzner";
+import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -51,7 +52,20 @@ export const POST = async (
     );
   }
 
-  const { error: apiError, response } = await hetzner.POST(
+  let client: Awaited<ReturnType<typeof getUserHetznerContext>>["client"];
+  try {
+    ({ client } = await getUserHetznerContext(user.id));
+  } catch (error) {
+    if (error instanceof MissingHetznerCredentialsError) {
+      return NextResponse.json(
+        { error: "Configure your Hetzner credentials in account settings." },
+        { status: 412 }
+      );
+    }
+    throw error;
+  }
+
+  const { error: apiError, response } = await client.POST(
     "/servers/{id}/actions/change_type",
     {
       body: { server_type: parsed.data.serverType, upgrade_disk: false },
