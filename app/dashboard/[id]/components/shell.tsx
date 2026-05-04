@@ -306,7 +306,9 @@ export const ServerShell = ({
           </TabsList>
         </Tabs>
       </PageHeader>
-      <PageBody>{children}</PageBody>
+      <PageBody flush={activeTab === "console"} wide={activeTab === "console"}>
+        {children}
+      </PageBody>
       {deleteDialog}
     </ServerProvider>
   );

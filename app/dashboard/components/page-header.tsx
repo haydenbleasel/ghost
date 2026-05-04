@@ -55,12 +55,20 @@ export const PageBody = ({
   children,
   className,
   wide,
+  flush,
 }: {
   children: ReactNode;
   className?: string;
   wide?: boolean;
+  flush?: boolean;
 }) => (
-  <div className={cn("flex-1 px-4 py-6 md:px-8 md:py-8", className)}>
+  <div
+    className={cn(
+      "flex-1",
+      flush ? "flex flex-col" : "px-4 py-6 md:px-8 md:py-8",
+      className
+    )}
+  >
     {wide ? children : <div className="w-full max-w-3xl">{children}</div>}
   </div>
 );

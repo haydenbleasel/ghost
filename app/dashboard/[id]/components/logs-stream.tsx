@@ -2,8 +2,6 @@
 import Anser from "anser";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Panel, PanelCard } from "@/components/panel";
-
 interface LogItem {
   id: string;
   seq: number;
@@ -104,22 +102,18 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
   }, [lines]);
 
   return (
-    <Panel>
-      <PanelCard>
-        <div
-          ref={scrollRef}
-          className="flex max-h-80 flex-col gap-1 overflow-auto px-3 py-2 font-mono text-xs"
-        >
-          {lines.length === 0 && (
-            <span className="text-sm text-muted-foreground">
-              Waiting for logs…
-            </span>
-          )}
-          {lines.map((line) => (
-            <AnsiLine key={line.seq} text={line.line} />
-          ))}
-        </div>
-      </PanelCard>
-    </Panel>
+    <div
+      ref={scrollRef}
+      className="flex flex-1 flex-col gap-1 overflow-auto font-mono text-xs"
+    >
+      {lines.length === 0 && (
+        <span className="px-3 py-2 text-sm text-muted-foreground">
+          Waiting for logs…
+        </span>
+      )}
+      {lines.map((line) => (
+        <AnsiLine key={line.seq} text={line.line} />
+      ))}
+    </div>
   );
 };
