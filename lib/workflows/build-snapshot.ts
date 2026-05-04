@@ -15,8 +15,9 @@ import {
   stepUpdateBuildStatus,
 } from "./build-snapshot-steps";
 
-// 30 min: covers apt upgrade + 6 docker pulls on a fresh Ubuntu 24.04 VM
-const MAX_BUILD_WAIT_SECONDS = 30 * 60;
+// 45 min: covers apt upgrade + 6 docker pulls on a fresh Ubuntu 24.04 VM,
+// with headroom for slow apt mirrors / docker hub pulls.
+const MAX_BUILD_WAIT_SECONDS = 45 * 60;
 const BUILD_POLL_SECONDS = 15;
 const MAX_SNAPSHOT_WAIT_SECONDS = 15 * 60;
 const SNAPSHOT_POLL_SECONDS = 10;
@@ -110,18 +111,18 @@ export const buildSnapshot = async (input: {
 
     await stepDeleteAgentBlob({ agentBlobUrl });
   } catch (error) {
-    const reason = error instanceof Error ? error.message : "Unknown error";
+    const baseReason = error instanceof Error ? error.message : "Unknown error";
+    const state = await stepReadBuildState({ buildId });
+
+    // Leave the builder VM up on failure so the user can SSH in / use the
+    // Hetzner web console to read cloud-init logs. Surface the VM id in the
+    // error reason so they know what to delete once they're done debugging.
+    const reason = state?.hetznerBuilderId
+      ? `${baseReason} (builder VM left for inspection — delete with \`hcloud server delete ${state.hetznerBuilderId}\`)`
+      : baseReason;
+
     await stepMarkFailed({ buildId, reason, userId });
 
-    const state = await stepReadBuildState({ buildId });
-    if (state?.hetznerBuilderId) {
-      await stepDeleteBuilder({
-        hetznerBuilderId: state.hetznerBuilderId,
-        userId,
-      }).catch(() => {
-        // best-effort cleanup
-      });
-    }
     if (state?.agentBlobUrl) {
       await stepDeleteAgentBlob({ agentBlobUrl: state.agentBlobUrl });
     }

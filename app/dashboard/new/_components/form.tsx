@@ -532,7 +532,7 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
   const [pending, setPending] = useState(false);
   const [step, setStep] = useState(0);
   const [name, setName] = useState(() =>
-    humanId({ separator: "-", capitalize: false })
+    humanId({ capitalize: false, separator: "-" })
   );
   const [gameId, setGameId] = useState(games[0]?.id ?? "");
 
