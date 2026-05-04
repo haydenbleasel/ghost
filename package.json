@@ -17,7 +17,11 @@
     "codegen": "openapi-typescript https://docs.hetzner.cloud/cloud.spec.json -o lib/hetzner/schema.ts",
     "workflow:ui": "workflow inspect runs --web",
     "check": "ultracite check",
-    "fix": "ultracite fix"
+    "fix": "ultracite fix",
+    "types": "tsgo --noEmit",
+    "test": "bun test --pass-with-no-tests",
+    "test:coverage": "bun test --coverage --pass-with-no-tests",
+    "prepare": "husky"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.6.9",
@@ -88,6 +92,8 @@
     "@types/node": "25.6.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "@typescript/native-preview": "^7.0.0-dev.20260503.1",
+    "husky": "^9.1.7",
     "openapi-typescript": "^7.13.0",
     "oxfmt": "^0.47.0",
     "oxlint": "^1.62.0",
@@ -96,7 +102,7 @@
     "tailwindcss": "^4.2.4",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^6.0.3",
-    "ultracite": "7.6.2"
+    "ultracite": "^7.6.3"
   },
   "packageManager": "bun@1.3.13",
   "patchedDependencies": {

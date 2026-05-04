@@ -1,0 +1,3 @@
+bun run check
+bun run types
+bun run test
