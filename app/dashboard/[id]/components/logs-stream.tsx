@@ -12,9 +12,19 @@ interface LogItem {
   ts: string;
 }
 
+// Some upstream log producers emit ANSI in caret notation (`^[[0m`) rather than
+// the raw ESC byte. Convert it back so anser can parse it.
+const CARET_CSI = /\^\[\[([0-9;]*)([a-zA-Z])/g;
+const normalizeAnsi = (text: string) =>
+  text.replace(CARET_CSI, "\x1b[$1$2");
+
 const AnsiLine = ({ text }: { text: string }) => {
   const parts = useMemo(
-    () => Anser.ansiToJson(text, { remove_empty: true, json: true }),
+    () =>
+      Anser.ansiToJson(normalizeAnsi(text), {
+        remove_empty: true,
+        json: true,
+      }),
     [text]
   );
   return (
