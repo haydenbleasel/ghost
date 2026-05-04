@@ -17,6 +17,9 @@ export const buildPalworldCompose = (
     restart: unless-stopped
     security_opt:
       - seccomp=unconfined
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
     ports:
       - "8211:8211/udp"
       - "27015:27015/udp"

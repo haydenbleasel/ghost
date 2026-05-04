@@ -17,6 +17,9 @@ export const buildEnshroudedCompose = (
     stop_grace_period: 90s
     security_opt:
       - seccomp=unconfined
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
     ports:
       - "15637:15637/udp"
     environment:

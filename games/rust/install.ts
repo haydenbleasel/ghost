@@ -22,6 +22,9 @@ export const buildRustCompose = (
     restart: unless-stopped
     security_opt:
       - seccomp=unconfined
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
     depends_on:
       init:
         condition: service_completed_successfully
