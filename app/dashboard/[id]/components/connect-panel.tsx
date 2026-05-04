@@ -92,7 +92,7 @@ export const ConnectPanel = ({ game: gameId, ipv4, joinPassword }: Props) => {
   if (!ipv4) {
     return (
       <Panel>
-        <PanelCard className="p-6 text-sm text-muted-foreground">
+        <PanelCard className="text-sm text-muted-foreground">
           No IP address assigned yet.
         </PanelCard>
       </Panel>
@@ -101,7 +101,7 @@ export const ConnectPanel = ({ game: gameId, ipv4, joinPassword }: Props) => {
 
   return (
     <Panel>
-      <PanelCard className="flex flex-col gap-4 p-4">
+      <PanelCard className="flex flex-col gap-4">
         {address && <Copyable label="Server address" value={address} />}
         {game?.usesJoinPassword && joinPassword && (
           <Copyable label="Server password" value={joinPassword} reveal />

@@ -15,12 +15,9 @@ export const Panel = ({
   children,
   ...props
 }: PanelProps) => (
-  <section
-    className={cn("flex flex-col gap-2 rounded-2xl bg-sidebar p-2", className)}
-    {...props}
-  >
+  <section className={cn("flex flex-col gap-3", className)} {...props}>
     {(title || action) && (
-      <div className="flex items-center justify-between gap-2 px-4 pt-2 pb-1">
+      <div className="flex items-center justify-between gap-2">
         {title ? (
           <h2 className="font-medium text-sm text-muted-foreground">{title}</h2>
         ) : (
@@ -38,15 +35,13 @@ type PanelCardProps =
   | ({ as: "form" } & FormHTMLAttributes<HTMLFormElement>);
 
 export const PanelCard = ({ className, ...props }: PanelCardProps) => {
-  const baseClass = cn("rounded-2xl bg-background p-2 shadow-sm/5", className);
-
   if (props.as === "form") {
     const { as: _as, ...formProps } = props;
-    return <form className={baseClass} {...formProps} />;
+    return <form className={className} {...formProps} />;
   }
 
   const { as: _as, ...divProps } = props as {
     as?: "div";
   } & HTMLAttributes<HTMLDivElement>;
-  return <div className={baseClass} {...divProps} />;
+  return <div className={className} {...divProps} />;
 };

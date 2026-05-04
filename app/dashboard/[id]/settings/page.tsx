@@ -10,7 +10,7 @@ const SettingsTab = () => {
   const game = getGame(server.game);
 
   return (
-    <div className="grid gap-6">
+    <div className="flex flex-col gap-3">
       {game && (
         <GameSettingsForm
           initialValues={resolveSettings(game.settings, server.settings)}

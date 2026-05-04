@@ -25,7 +25,7 @@ interface Props {
 
 export const DiskPanel = ({ data, loading, range }: Props) => (
   <Panel title="Disk bandwidth">
-    <PanelCard className="p-3">
+    <PanelCard>
       {loading ? (
         <div className="flex aspect-[8/3] items-center justify-center text-muted-foreground text-sm">
           Loading…

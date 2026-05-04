@@ -23,7 +23,7 @@ const GraphsTab = () => {
   if (server.observedState !== "running") {
     return (
       <Panel>
-        <PanelCard className="p-6 text-sm text-muted-foreground">
+        <PanelCard className="text-sm text-muted-foreground">
           Metrics are only available while the server is running.
         </PanelCard>
       </Panel>
@@ -31,12 +31,12 @@ const GraphsTab = () => {
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-3">
       <GraphsRangePanel error={error} onChange={setRange} range={range} />
       <CpuPanel data={cpu} loading={loading} range={range} />
       <DiskPanel data={disk} loading={loading} range={range} />
       <NetworkPanel data={network} loading={loading} range={range} />
-    </>
+    </div>
   );
 };
 

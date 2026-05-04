@@ -24,7 +24,7 @@ interface Props {
 
 export const CpuPanel = ({ data, loading, range }: Props) => (
   <Panel title="CPU">
-    <PanelCard className="p-3">
+    <PanelCard>
       {loading ? (
         <div className="flex aspect-[8/3] items-center justify-center text-muted-foreground text-sm">
           Loading…

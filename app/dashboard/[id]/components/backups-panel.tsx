@@ -318,7 +318,7 @@ export const BackupsPanel = ({
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-3">
       <Panel
         title="Automatic backups"
         action={
@@ -330,7 +330,7 @@ export const BackupsPanel = ({
           />
         }
       >
-        <PanelCard className="px-4 py-3 text-sm text-muted-foreground">
+        <PanelCard className="text-sm text-muted-foreground">
           Daily snapshots taken by Hetzner, retained for 7 days.
         </PanelCard>
       </Panel>
@@ -439,6 +439,6 @@ export const BackupsPanel = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 };

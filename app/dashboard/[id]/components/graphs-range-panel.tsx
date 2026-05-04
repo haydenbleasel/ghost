@@ -12,7 +12,7 @@ interface Props {
 
 export const GraphsRangePanel = ({ range, onChange, error }: Props) => (
   <Panel title="Time range">
-    <PanelCard className="flex items-center justify-between p-3">
+    <PanelCard className="flex items-center justify-between">
       <span className="text-muted-foreground text-sm">Last {range}</span>
       <Tabs
         className="[&_[data-slot=tabs-trigger]]:flex-none"
@@ -28,7 +28,7 @@ export const GraphsRangePanel = ({ range, onChange, error }: Props) => (
       </Tabs>
     </PanelCard>
     {error && (
-      <PanelCard className="p-6 text-destructive text-sm">{error}</PanelCard>
+      <PanelCard className="text-destructive text-sm">{error}</PanelCard>
     )}
   </Panel>
 );
