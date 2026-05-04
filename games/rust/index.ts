@@ -23,17 +23,11 @@ export const rust = {
       protocol: "udp",
       to: 28_015,
     },
-    // This is the port for RCON
+    // This is the port for RCON (web RCON uses the same port via WebSocket).
     {
       from: 28_016,
       protocol: "tcp",
       to: 28_016,
-    },
-    // This port was mentioned in the dockerfile.
-    {
-      from: 28_082,
-      protocol: "tcp",
-      to: 28_082,
     },
   ],
   requirements: {

@@ -11,30 +11,51 @@ export const buildRustCompose = (
   const description =
     settings.description || `${config.name} - Powered by Ghost`;
   return `services:
+  init:
+    image: alpine:3
+    command: chown -R 10001:10001 /srv/rust/server/ghost
+    volumes:
+      - /var/lib/ghost/game/data:/srv/rust/server/ghost
   rust:
-    image: didstopia/rust-server:latest
+    image: pfeiffermax/rust-game-server:latest
     container_name: ghost-game
     restart: unless-stopped
     security_opt:
       - seccomp=unconfined
+    depends_on:
+      init:
+        condition: service_completed_successfully
     ports:
       - "28015:28015/udp"
       - "28016:28016/tcp"
-      - "28082:28082/tcp"
     environment:
-      RUST_SERVER_STARTUP_ARGUMENTS: "-batchmode -load -nographics"
-      RUST_SERVER_IDENTITY: "ghost"
-      RUST_SERVER_NAME: "${escape(config.name)}"
-      RUST_SERVER_DESCRIPTION: "${escape(description)}"
-      RUST_SERVER_MAXPLAYERS: "${settings.maxPlayers}"
-      RUST_SERVER_WORLDSIZE: "${settings.worldSize}"
-      RUST_SERVER_SEED: "${settings.seed}"
-      RUST_SERVER_PORT: "28015"
-      RUST_RCON_PASSWORD: "${escape(config.rconPassword)}"
-      RUST_RCON_PORT: "28016"
-      RUST_RCON_WEB: "${settings.rconWeb ? 1 : 0}"
       TZ: "${timezone}"
+    command:
+      - "+server.ip"
+      - "0.0.0.0"
+      - "+server.port"
+      - "28015"
+      - "+server.hostname"
+      - "${escape(config.name)}"
+      - "+server.description"
+      - "${escape(description)}"
+      - "+server.maxplayers"
+      - "${settings.maxPlayers}"
+      - "+server.worldsize"
+      - "${settings.worldSize}"
+      - "+server.seed"
+      - "${settings.seed}"
+      - "+rcon.ip"
+      - "0.0.0.0"
+      - "+rcon.port"
+      - "28016"
+      - "+rcon.password"
+      - "${escape(config.rconPassword)}"
+      - "+rcon.web"
+      - "${settings.rconWeb ? 1 : 0}"
+      - "+server.identity"
+      - "ghost"
     volumes:
-      - /var/lib/ghost/game/data:/steamcmd/rust
+      - /var/lib/ghost/game/data:/srv/rust/server/ghost
 `;
 };
