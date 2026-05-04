@@ -18,6 +18,8 @@ export const buildEnshroudedCompose = (
     image: sknnr/enshrouded-dedicated-server:latest
     container_name: ghost-game
     restart: unless-stopped
+    security_opt:
+      - seccomp=unconfined
     depends_on:
       init:
         condition: service_completed_successfully

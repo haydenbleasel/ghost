@@ -15,6 +15,8 @@ export const buildPalworldCompose = (
     image: thijsvanloef/palworld-server-docker:latest
     container_name: ghost-game
     restart: unless-stopped
+    security_opt:
+      - seccomp=unconfined
     ports:
       - "8211:8211/udp"
       - "27015:27015/udp"

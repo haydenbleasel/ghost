@@ -15,6 +15,8 @@ export const buildRustCompose = (
     image: didstopia/rust-server:latest
     container_name: ghost-game
     restart: unless-stopped
+    security_opt:
+      - seccomp=unconfined
     ports:
       - "28015:28015/udp"
       - "28016:28016/tcp"
