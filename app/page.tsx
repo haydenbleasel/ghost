@@ -12,7 +12,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
-import { HomeHeader } from "@/app/_components/home-header";
+import { HomeHeader } from "@/app/components/home-header";
 import { Button } from "@/components/ui/button";
 import { games } from "@/games";
 import { getSession } from "@/lib/session";

@@ -1,9 +1,9 @@
 "use client";
 import { getGame, resolveSettings } from "@/games";
 
-import { GameSettingsForm } from "../_components/game-settings-form";
-import { useServer } from "../_components/server-context";
-import { SettingsPanel } from "../_components/settings-panel";
+import { GameSettingsForm } from "../components/game-settings-form";
+import { useServer } from "../components/server-context";
+import { SettingsPanel } from "../components/settings-panel";
 
 const SettingsTab = () => {
   const { currency, eligibleTypes, server, updateServer } = useServer();

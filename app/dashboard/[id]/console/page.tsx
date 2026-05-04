@@ -1,6 +1,6 @@
 "use client";
-import { LogsStream } from "../_components/logs-stream";
-import { useServer } from "../_components/server-context";
+import { LogsStream } from "../components/logs-stream";
+import { useServer } from "../components/server-context";
 
 const ConsoleTab = () => {
   const { server } = useServer();

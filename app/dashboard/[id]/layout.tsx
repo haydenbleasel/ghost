@@ -8,7 +8,7 @@ import { getHetznerCatalog } from "@/lib/hetzner/catalog";
 import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
-import { ServerShell } from "./_components/shell";
+import { ServerShell } from "./components/shell";
 
 const ServerLayout = async ({
   children,

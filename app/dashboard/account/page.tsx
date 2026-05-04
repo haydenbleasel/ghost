@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/session";
 
-import { PageBody } from "../_components/page-header";
-import { ProfilePanel } from "./_components/profile-panel";
+import { PageBody } from "../components/page-header";
+import { ProfilePanel } from "./components/profile-panel";
 
 const AccountPage = async () => {
   const user = await requireUser();

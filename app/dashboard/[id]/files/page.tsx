@@ -1,6 +1,6 @@
 "use client";
-import { FilesPanel } from "../_components/files-panel";
-import { useServer } from "../_components/server-context";
+import { FilesPanel } from "../components/files-panel";
+import { useServer } from "../components/server-context";
 
 const FilesTab = () => {
   const { server } = useServer();

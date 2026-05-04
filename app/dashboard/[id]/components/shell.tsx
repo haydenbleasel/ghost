@@ -37,7 +37,7 @@ import { games } from "@/games";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
 
-import { PageBody, PageHeader } from "../../_components/page-header";
+import { PageBody, PageHeader } from "../../components/page-header";
 import { ProvisioningStatus } from "./provisioning-status";
 import { ServerProvider } from "./server-context";
 import type { ServerView } from "./server-context";

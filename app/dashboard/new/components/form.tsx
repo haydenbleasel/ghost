@@ -24,13 +24,13 @@ import type { SettingsSchema } from "@/games";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
 
-import { SettingsFields } from "../../[id]/_components/game-settings-form";
+import { SettingsFields } from "../../[id]/components/game-settings-form";
 import type {
   FieldValue,
   SettingsValuesRecord,
-} from "../../[id]/_components/game-settings-form";
-import { PageBody, PageHeader } from "../../_components/page-header";
-import { createServer } from "../_actions/create-server";
+} from "../../[id]/components/game-settings-form";
+import { PageBody, PageHeader } from "../../components/page-header";
+import { createServer } from "../actions/create-server";
 import { Cobe } from "./cobe";
 
 const VISIBLE_ALL_SIZES = 3;

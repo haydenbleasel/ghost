@@ -16,7 +16,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
-import { PageBody, PageHeader } from "./_components/page-header";
+import { PageBody, PageHeader } from "./components/page-header";
 
 const statusDotClass = (state: string, deleting: boolean) => {
   if (deleting) {

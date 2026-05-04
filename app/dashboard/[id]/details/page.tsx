@@ -1,6 +1,6 @@
 "use client";
-import { DetailsPanel } from "../_components/details-panel";
-import { useServer } from "../_components/server-context";
+import { DetailsPanel } from "../components/details-panel";
+import { useServer } from "../components/server-context";
 
 const DetailsTab = () => {
   const { server } = useServer();

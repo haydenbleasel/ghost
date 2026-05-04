@@ -4,8 +4,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
-import { AppContainer } from "./_components/app-container";
-import { AppSidebar } from "./_components/app-sidebar";
+import { AppContainer } from "./components/app-container";
+import { AppSidebar } from "./components/app-sidebar";
 
 const DashboardLayout = async ({ children }: { children: ReactNode }) => {
   const user = await requireUser();

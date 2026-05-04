@@ -1,6 +1,6 @@
 "use client";
-import { ConnectPanel } from "../_components/connect-panel";
-import { useServer } from "../_components/server-context";
+import { ConnectPanel } from "../components/connect-panel";
+import { useServer } from "../components/server-context";
 
 const ConnectTab = () => {
   const { server } = useServer();

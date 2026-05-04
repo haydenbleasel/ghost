@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-import { PageHeader } from "../_components/page-header";
-import { AccountTabs } from "./_components/account-tabs";
+import { PageHeader } from "../components/page-header";
+import { AccountTabs } from "./components/account-tabs";
 
 const AccountLayout = ({ children }: { children: ReactNode }) => (
   <>

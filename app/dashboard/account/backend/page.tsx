@@ -2,8 +2,8 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import type { SnapshotBuildSummary } from "@/lib/snapshot-build/types";
 
-import { PageBody } from "../../_components/page-header";
-import { HetznerPanel } from "../_components/hetzner-panel";
+import { PageBody } from "../../components/page-header";
+import { HetznerPanel } from "../components/hetzner-panel";
 
 const BackendPage = async () => {
   const user = await requireUser();

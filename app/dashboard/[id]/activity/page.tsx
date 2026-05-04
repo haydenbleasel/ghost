@@ -1,6 +1,6 @@
 "use client";
-import { ActivityStream } from "../_components/activity-stream";
-import { useServer } from "../_components/server-context";
+import { ActivityStream } from "../components/activity-stream";
+import { useServer } from "../components/server-context";
 
 const ActivityTab = () => {
   const { server } = useServer();

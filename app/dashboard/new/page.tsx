@@ -6,8 +6,8 @@ import { getHetznerCatalog } from "@/lib/hetzner/catalog";
 import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
-import { NewServerForm } from "./_components/form";
-import type { GameOption } from "./_components/form";
+import { NewServerForm } from "./components/form";
+import type { GameOption } from "./components/form";
 
 const NewServerPage = async () => {
   const user = await requireUser();

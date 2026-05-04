@@ -1,6 +1,6 @@
 "use client";
-import { BackupsPanel } from "../_components/backups-panel";
-import { useServer } from "../_components/server-context";
+import { BackupsPanel } from "../components/backups-panel";
+import { useServer } from "../components/server-context";
 
 const BackupsTab = () => {
   const { server, updateServer } = useServer();

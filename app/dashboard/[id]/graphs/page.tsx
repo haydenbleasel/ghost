@@ -3,13 +3,13 @@ import { useState } from "react";
 
 import { Panel, PanelCard } from "@/components/panel";
 
-import { CpuPanel } from "../_components/cpu-panel";
-import { DiskPanel } from "../_components/disk-panel";
-import { GraphsRangePanel } from "../_components/graphs-range-panel";
-import { NetworkPanel } from "../_components/network-panel";
-import { useServer } from "../_components/server-context";
-import { useServerMetrics } from "../_components/use-server-metrics";
-import type { RangeKey } from "../_components/use-server-metrics";
+import { CpuPanel } from "../components/cpu-panel";
+import { DiskPanel } from "../components/disk-panel";
+import { GraphsRangePanel } from "../components/graphs-range-panel";
+import { NetworkPanel } from "../components/network-panel";
+import { useServer } from "../components/server-context";
+import { useServerMetrics } from "../components/use-server-metrics";
+import type { RangeKey } from "../components/use-server-metrics";
 
 const GraphsTab = () => {
   const { server } = useServer();
