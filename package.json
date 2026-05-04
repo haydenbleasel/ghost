@@ -1,5 +1,6 @@
 {
   "name": "ghost",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,6 +22,9 @@
     "types": "tsgo --noEmit",
     "test": "bun test --pass-with-no-tests",
     "test:coverage": "bun test --coverage --pass-with-no-tests",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset tag",
     "prepare": "husky"
   },
   "dependencies": {
@@ -83,6 +87,8 @@
     "zod": "4.3.6"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.31.0",
     "@next/bundle-analyzer": "^16.2.4",
     "@tailwindcss/postcss": "^4.2.4",
     "@tailwindcss/typography": "^0.5.19",
