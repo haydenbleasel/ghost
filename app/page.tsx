@@ -1,6 +1,4 @@
 import {
-  ArrowRightIcon,
-  ArrowUpRightIcon,
   CodeIcon,
   PlusIcon,
   ScrollTextIcon,
@@ -108,10 +106,7 @@ const Home = async () => {
           <nav className="flex items-center gap-6">
             {isAuthenticated ? (
               <Button asChild size="sm">
-                <Link href="/dashboard">
-                  Dashboard
-                  <ArrowRightIcon />
-                </Link>
+                <Link href="/dashboard">Dashboard</Link>
               </Button>
             ) : (
               <>
@@ -122,10 +117,7 @@ const Home = async () => {
                   Sign in
                 </Link>
                 <Button asChild size="sm">
-                  <Link href="/sign-up">
-                    Get started
-                    <ArrowRightIcon />
-                  </Link>
+                  <Link href="/sign-up">Get started</Link>
                 </Button>
               </>
             )}
@@ -152,25 +144,16 @@ const Home = async () => {
                 {isAuthenticated ? (
                   <>
                     <Button asChild size="lg">
-                      <Link href="/dashboard">
-                        Dashboard
-                        <ArrowRightIcon />
-                      </Link>
+                      <Link href="/dashboard">Dashboard</Link>
                     </Button>
                     <Button asChild size="lg" variant="ghost">
-                      <Link href="/dashboard/new">
-                        Create a game
-                        <ArrowRightIcon />
-                      </Link>
+                      <Link href="/dashboard/new">Create a game</Link>
                     </Button>
                   </>
                 ) : (
                   <>
                     <Button asChild size="lg">
-                      <Link href="/sign-up">
-                        Get started
-                        <ArrowRightIcon />
-                      </Link>
+                      <Link href="/sign-up">Get started</Link>
                     </Button>
                     <Button asChild size="lg" variant="ghost">
                       <Link
@@ -179,7 +162,6 @@ const Home = async () => {
                         rel="noreferrer"
                       >
                         Read the source
-                        <ArrowUpRightIcon />
                       </Link>
                     </Button>
                   </>
@@ -297,10 +279,7 @@ const Home = async () => {
               {isAuthenticated ? (
                 <>
                   <Button asChild size="lg">
-                    <Link href="/dashboard">
-                      Dashboard
-                      <ArrowRightIcon />
-                    </Link>
+                    <Link href="/dashboard">Dashboard</Link>
                   </Button>
                   <Button asChild size="lg" variant="ghost">
                     <Link href="/dashboard/new">Create a game</Link>
@@ -309,10 +288,7 @@ const Home = async () => {
               ) : (
                 <>
                   <Button asChild size="lg">
-                    <Link href="/sign-up">
-                      Get started
-                      <ArrowRightIcon />
-                    </Link>
+                    <Link href="/sign-up">Get started</Link>
                   </Button>
                   <Button asChild size="lg" variant="ghost">
                     <Link href="/sign-in">Sign in</Link>
