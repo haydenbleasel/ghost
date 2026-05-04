@@ -143,7 +143,7 @@ const Home = async () => {
               <h1 className="max-w-[20ch] text-balance font-medium text-5xl tracking-tight sm:text-7xl">
                 Simple, beautiful game servers.
               </h1>
-              <p className="max-w-[48ch] text-pretty text-lg text-muted-foreground">
+              <p className="max-w-[48ch] text-balance text-lg text-muted-foreground">
                 Ghost is a dedicated game server platform you can read, fork,
                 and self-host. Spin one up in seconds — Docker, SSH, and
                 firewall rules handled for you.
