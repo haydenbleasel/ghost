@@ -20,10 +20,7 @@ const formatPort = (port: { from: number; to: number; protocol: string }) => {
 
 const primaryPort = (
   ports: readonly { from: number; to: number; protocol: string }[]
-) => {
-  const tcp = ports.find((p) => p.protocol === "tcp");
-  return tcp ?? ports[0];
-};
+) => ports[0];
 
 interface CopyableProps {
   label: string;
