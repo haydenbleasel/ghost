@@ -67,6 +67,19 @@ mkdir -p /etc/ghost /var/lib/ghost/game
 chmod 700 /etc/ghost /var/lib/ghost
 
 curl -fsSL "${agentBinaryUrl}" -o /usr/local/bin/ghost-agent
+
+# Verify the download is a Linux ELF — guards against silently baking an HTML
+# auth-wall or sign-in redirect into the snapshot. Aborts the script (set -e)
+# so the VM never reaches \`shutdown -h now\` and the workflow's wait-for-off
+# loop times out with a clear failure instead of producing a broken image.
+magic=$(head -c 4 /usr/local/bin/ghost-agent | od -An -tx1 | tr -d ' ')
+if [ "$magic" != "7f454c46" ]; then
+  echo "agent binary is not an ELF (magic=$magic, size=$(stat -c %s /usr/local/bin/ghost-agent) bytes)" >&2
+  echo "first 200 bytes:" >&2
+  head -c 200 /usr/local/bin/ghost-agent >&2 || true
+  exit 1
+fi
+
 chmod +x /usr/local/bin/ghost-agent
 
 systemctl daemon-reload
