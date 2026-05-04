@@ -79,6 +79,9 @@ SENTRY_PROJECT=
 
 Each user then signs in, saves their own Hetzner token on `/dashboard/account/backend`, and clicks **Build snapshot** — the `buildSnapshot` workflow compiles the agent in a Vercel Sandbox, uploads it to Blob, spins up a throwaway Hetzner VM whose cloud-init pulls the binary and pre-pulls every game's Docker image, snapshots it, and writes the new image ID onto the user's row.
 
+> [!IMPORTANT]
+> New Hetzner Cloud accounts are capped at **5 servers per project** until the account is verified. Provisioning will fail with `resource_limit_exceeded: server limit reached` once you hit it — request a limit increase from Hetzner support to raise it.
+
 ## Building the gold image
 
 Triggered from the UI, not the CLI. The flow:
