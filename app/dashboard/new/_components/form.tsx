@@ -1,5 +1,6 @@
 "use client";
 import type { Marker } from "cobe";
+import { humanId } from "human-id";
 import { ChevronDown, Cpu, HardDrive, MemoryStick, Server } from "lucide-react";
 import Image from "next/image";
 import type { StaticImageData } from "next/image";
@@ -530,7 +531,9 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() =>
+    humanId({ separator: "-", capitalize: false })
+  );
   const [gameId, setGameId] = useState(games[0]?.id ?? "");
 
   const selectedGame = games.find((g) => g.id === gameId);
