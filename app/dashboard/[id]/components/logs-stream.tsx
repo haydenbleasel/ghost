@@ -1,6 +1,7 @@
 "use client";
 import Anser from "anser";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { StickToBottom } from "use-stick-to-bottom";
 
 interface LogItem {
   id: string;
@@ -60,7 +61,6 @@ const AnsiPart = ({ part }: { part: Anser.AnserJsonEntry }) => {
 export const LogsStream = ({ serverId }: { serverId: string }) => {
   const [lines, setLines] = useState<LogItem[]>([]);
   const cursorRef = useRef(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,23 +97,22 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
     };
   }, [serverId]);
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [lines]);
-
   return (
-    <div
-      ref={scrollRef}
-      className="flex flex-1 flex-col gap-1 overflow-auto font-mono text-xs"
+    <StickToBottom
+      className="flex flex-1 flex-col"
+      initial="instant"
+      resize="smooth"
     >
-      {lines.length === 0 && (
-        <span className="px-3 py-2 text-sm text-muted-foreground">
-          Waiting for logs…
-        </span>
-      )}
-      {lines.map((line) => (
-        <AnsiLine key={line.seq} text={line.line} />
-      ))}
-    </div>
+      <StickToBottom.Content className="flex flex-col gap-1 font-mono text-xs">
+        {lines.length === 0 && (
+          <span className="px-3 py-2 text-sm text-muted-foreground">
+            Waiting for logs…
+          </span>
+        )}
+        {lines.map((line) => (
+          <AnsiLine key={line.seq} text={line.line} />
+        ))}
+      </StickToBottom.Content>
+    </StickToBottom>
   );
 };
