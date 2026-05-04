@@ -21,13 +21,20 @@ export const buildTerrariaCompose = (
       - "7878:7878/tcp"
     environment:
       WORLD_FILENAME: "ghost.wld"
-      AUTOCREATE: "${settings.worldSize}"
-      DIFFICULTY: "${settings.difficulty}"
-      MAXPLAYERS: "${settings.maxPlayers}"
-      WORLDNAME: "${escape(config.name)}"
-      MOTD: "${escape(motd)}"
-      PASSWORD: "${escape(config.rconPassword)}"
       TZ: "${timezone}"
+    command:
+      - "-autocreate"
+      - "${settings.worldSize}"
+      - "-difficulty"
+      - "${settings.difficulty}"
+      - "-maxplayers"
+      - "${settings.maxPlayers}"
+      - "-worldname"
+      - "${escape(config.name)}"
+      - "-motd"
+      - "${escape(motd)}"
+      - "-pass"
+      - "${escape(config.rconPassword)}"
     volumes:
       - /var/lib/ghost/game/data:/root/.local/share/Terraria/Worlds
 `;
