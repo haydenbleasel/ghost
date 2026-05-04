@@ -81,7 +81,7 @@ const features = [
 ] as const;
 
 const stats = [
-  { label: "Provision time", value: "~45s" },
+  { label: "Provision time", value: "~60s" },
   { label: "Games supported", value: "6" },
   { label: "Powered by", value: "Hetzner" },
   { label: "Vendor lock-in", value: "None" },
