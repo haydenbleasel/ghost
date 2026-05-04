@@ -41,6 +41,7 @@ export interface SidebarServer {
   name: string;
   game: string;
   observedState: string;
+  desiredState: string;
 }
 
 export interface SidebarUser {
@@ -49,7 +50,10 @@ export interface SidebarUser {
   hasImage: boolean;
 }
 
-const statusDotClass = (state: string) => {
+const statusDotClass = (state: string, deleting: boolean) => {
+  if (deleting) {
+    return "bg-destructive";
+  }
   if (state === "running") {
     return "bg-emerald-500";
   }
@@ -122,6 +126,7 @@ export const AppSidebar = ({
                 servers.map((server) => {
                   const href = `/dashboard/${server.id}`;
                   const game = games.find((g) => g.id === server.game);
+                  const deleting = server.desiredState === "deleted";
                   return (
                     <SidebarMenuItem key={server.id}>
                       <SidebarMenuButton
@@ -144,9 +149,11 @@ export const AppSidebar = ({
                           <span
                             className={cn(
                               "size-2 shrink-0 rounded-full",
-                              statusDotClass(server.observedState)
+                              statusDotClass(server.observedState, deleting)
                             )}
-                            aria-label={server.observedState}
+                            aria-label={
+                              deleting ? "deleting" : server.observedState
+                            }
                           />
                         </Link>
                       </SidebarMenuButton>

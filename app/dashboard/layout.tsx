@@ -11,7 +11,13 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
   const user = await requireUser();
   const servers = await prisma.server.findMany({
     orderBy: { createdAt: "desc" },
-    select: { game: true, id: true, name: true, observedState: true },
+    select: {
+      desiredState: true,
+      game: true,
+      id: true,
+      name: true,
+      observedState: true,
+    },
     where: { deletedAt: null, userId: user.id },
   });
 
