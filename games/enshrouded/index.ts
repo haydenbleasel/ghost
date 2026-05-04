@@ -17,17 +17,11 @@ export const enshrouded = {
   image,
   name: "Enshrouded",
   ports: [
-    // This is the default port for Enshrouded, used for game traffic.
+    // Enshrouded uses a single UDP port for both game traffic and Steam query.
     {
-      from: 15_636,
+      from: 15_637,
       protocol: "udp",
-      to: 15_636,
-    },
-    // This is the port for Steam Query
-    {
-      from: 27_015,
-      protocol: "udp",
-      to: 27_015,
+      to: 15_637,
     },
   ],
   requirements: {

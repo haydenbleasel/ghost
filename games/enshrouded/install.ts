@@ -9,32 +9,26 @@ export const buildEnshroudedCompose = (
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
   return `services:
-  init:
-    image: alpine:3
-    command: chown -R 10000:10000 /savegame
-    volumes:
-      - /var/lib/ghost/game/data:/savegame
   enshrouded:
-    image: sknnr/enshrouded-dedicated-server:latest
+    image: mornedhels/enshrouded-server:latest
     container_name: ghost-game
+    hostname: ghost-game
     restart: unless-stopped
+    stop_grace_period: 90s
     security_opt:
       - seccomp=unconfined
-    depends_on:
-      init:
-        condition: service_completed_successfully
     ports:
-      - "15636:15636/udp"
-      - "27015:27015/udp"
+      - "15637:15637/udp"
     environment:
       SERVER_NAME: "${escape(config.name)}"
-      SERVER_PASSWORD: "${escape(config.rconPassword)}"
-      SERVER_SLOTS: "${settings.slots}"
-      VOICE_CHAT_MODE: "${settings.voiceChat ? "proximity" : "none"}"
-      GAME_PORT: "15636"
-      QUERY_PORT: "27015"
+      SERVER_SLOT_COUNT: "${settings.slots}"
+      SERVER_ENABLE_VOICE_CHAT: "${settings.voiceChat}"
+      SERVER_VOICE_CHAT_MODE: "Proximity"
+      UPDATE_CRON: "*/30 * * * *"
+      PUID: "4711"
+      PGID: "4711"
       TZ: "${timezone}"
     volumes:
-      - /var/lib/ghost/game/data:/home/steam/enshrouded/savegame
+      - /var/lib/ghost/game/data:/opt/enshrouded
 `;
 };
