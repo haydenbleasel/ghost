@@ -1,0 +1,15 @@
+[test]
+preload = ["./test/setup.ts"]
+coverage = true
+coverageReporter = ["text"]
+coveragePathIgnorePatterns = [
+  "agent/",
+  "app/",
+  "components/",
+  "dist/",
+  "games/",
+  "node_modules/",
+  "prisma/",
+  "providers/",
+  "test/",
+]
