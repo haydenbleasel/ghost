@@ -82,6 +82,7 @@ const ServerLayout = async ({
         game: server.game,
         id: server.id,
         ipv4: server.ipv4,
+        joinPassword: server.joinPassword,
         lastHeartbeatAt: server.agent?.lastHeartbeatAt?.toISOString() ?? null,
         location: locationInfo,
         name: server.name,

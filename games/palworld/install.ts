@@ -37,7 +37,7 @@ export const buildPalworldCompose = (
       PVP: "${settings.pvp}"
       TZ: "${timezone}"
       ADMIN_PASSWORD: "${escape(config.rconPassword)}"
-      SERVER_PASSWORD: "${escape(config.rconPassword)}"
+      SERVER_PASSWORD: "${escape(config.joinPassword ?? "")}"
       SERVER_NAME: "${escape(config.name)}"
       SERVER_DESCRIPTION: "${escape(description)}"
     volumes:

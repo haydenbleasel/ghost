@@ -25,7 +25,7 @@ export const buildValheimCompose = (
     environment:
       SERVER_NAME: "${escape(config.name)}"
       WORLD_NAME: "${escape(settings.worldName)}"
-      SERVER_PASS: "${escape(config.rconPassword)}"
+      SERVER_PASS: "${escape(config.joinPassword ?? config.rconPassword)}"
       SERVER_PUBLIC: "${settings.public}"
       SERVER_ARGS: "${serverArgs}"
       BACKUPS_DIRECTORY: "/config/backups"

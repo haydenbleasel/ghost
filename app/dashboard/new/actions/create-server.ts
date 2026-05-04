@@ -3,6 +3,7 @@
 import crypto from "node:crypto";
 
 import type { Prisma } from "@prisma/client";
+import { humanId } from "human-id";
 import { revalidatePath } from "next/cache";
 import { ulid } from "ulid";
 import { start } from "workflow/api";
@@ -94,12 +95,16 @@ export const createServer = async (
 
   const id = ulid();
   const rconPassword = crypto.randomBytes(16).toString("hex");
+  const joinPassword = game.usesJoinPassword
+    ? humanId({ adjectiveCount: 0, capitalize: false, separator: "-" })
+    : null;
 
   const server = await prisma.server.create({
     data: {
       desiredState: "running",
       game: parsed.data.game,
       id,
+      joinPassword,
       location: parsed.data.location,
       name: parsed.data.name,
       observedState: "pending",

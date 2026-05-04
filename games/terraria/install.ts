@@ -9,6 +9,9 @@ export const buildTerrariaCompose = (
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
   const motd = settings.motd || `${config.name} - Powered by Ghost`;
+  const passLine = config.joinPassword
+    ? `\n      - "-pass"\n      - "${escape(config.joinPassword)}"`
+    : "";
   return `services:
   terraria:
     image: ryshe/terraria:latest
@@ -32,9 +35,7 @@ export const buildTerrariaCompose = (
       - "-worldname"
       - "${escape(config.name)}"
       - "-motd"
-      - "${escape(motd)}"
-      - "-pass"
-      - "${escape(config.rconPassword)}"
+      - "${escape(motd)}"${passLine}
     volumes:
       - /var/lib/ghost/game/data:/root/.local/share/Terraria/Worlds
 `;

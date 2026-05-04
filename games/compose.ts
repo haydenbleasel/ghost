@@ -1,6 +1,7 @@
 export interface ComposeConfig {
   name: string;
   rconPassword: string;
+  joinPassword: string | null;
   timezone?: string;
 }
 

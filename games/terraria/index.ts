@@ -35,4 +35,5 @@ export const terraria = {
     memory: 2,
   },
   settings: terrariaSettings,
+  usesJoinPassword: true,
 } as const;

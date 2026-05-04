@@ -1,5 +1,5 @@
 "use client";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { useState } from "react";
 
 import { Panel, PanelCard } from "@/components/panel";
@@ -9,6 +9,7 @@ import { games } from "@/games";
 interface Props {
   game: string;
   ipv4: string | null;
+  joinPassword: string | null;
 }
 
 const formatPort = (port: { from: number; to: number; protocol: string }) => {
@@ -24,21 +25,69 @@ const primaryPort = (
   return tcp ?? ports[0];
 };
 
-export const ConnectPanel = ({ game: gameId, ipv4 }: Props) => {
-  const game = games.find((g) => g.id === gameId);
-  const [copied, setCopied] = useState(false);
+interface CopyableProps {
+  label: string;
+  value: string;
+  reveal?: boolean;
+}
 
-  const primary = game ? primaryPort(game.ports) : null;
-  const address = ipv4 && primary ? `${ipv4}:${primary.from}` : ipv4;
+const Copyable = ({ label, value, reveal }: CopyableProps) => {
+  const [copied, setCopied] = useState(false);
+  const [shown, setShown] = useState(!reveal);
 
   const copy = async () => {
-    if (!address) {
-      return;
-    }
-    await navigator.clipboard.writeText(address);
+    await navigator.clipboard.writeText(value);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-2">
+        <code className="rounded-md bg-muted px-2 py-1 font-mono text-sm">
+          {shown ? value : "•".repeat(value.length)}
+        </code>
+        {reveal && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={shown ? "Hide" : "Show"}
+            onClick={() => setShown((v) => !v)}
+            className="size-7 text-muted-foreground hover:text-foreground"
+          >
+            {shown ? (
+              <EyeOffIcon className="size-3.5" />
+            ) : (
+              <EyeIcon className="size-3.5" />
+            )}
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={`Copy ${label.toLowerCase()}`}
+          onClick={copy}
+          className="size-7 text-muted-foreground hover:text-foreground"
+        >
+          {copied ? (
+            <CheckIcon className="size-3.5" />
+          ) : (
+            <CopyIcon className="size-3.5" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export const ConnectPanel = ({ game: gameId, ipv4, joinPassword }: Props) => {
+  const game = games.find((g) => g.id === gameId);
+
+  const primary = game ? primaryPort(game.ports) : null;
+  const address = ipv4 && primary ? `${ipv4}:${primary.from}` : ipv4;
 
   if (!ipv4) {
     return (
@@ -53,30 +102,10 @@ export const ConnectPanel = ({ game: gameId, ipv4 }: Props) => {
   return (
     <Panel>
       <PanelCard className="flex flex-col gap-4 p-4">
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted-foreground">
-            Server address
-          </span>
-          <div className="flex items-center gap-2">
-            <code className="rounded-md bg-muted px-2 py-1 font-mono text-sm">
-              {address}
-            </code>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Copy address"
-              onClick={copy}
-              className="size-7 text-muted-foreground hover:text-foreground"
-            >
-              {copied ? (
-                <CheckIcon className="size-3.5" />
-              ) : (
-                <CopyIcon className="size-3.5" />
-              )}
-            </Button>
-          </div>
-        </div>
+        {address && <Copyable label="Server address" value={address} />}
+        {game?.usesJoinPassword && joinPassword && (
+          <Copyable label="Server password" value={joinPassword} reveal />
+        )}
         {game && (
           <>
             <div className="flex flex-col gap-1">
@@ -101,6 +130,9 @@ export const ConnectPanel = ({ game: gameId, ipv4 }: Props) => {
               <p className="text-sm">
                 Open {game.name}, go to the multiplayer menu, and connect to the
                 address above.
+                {game.usesJoinPassword &&
+                  joinPassword &&
+                  " Share the password above with anyone you want to let in."}
               </p>
             </div>
           </>

@@ -35,4 +35,5 @@ export const rust = {
     memory: 8,
   },
   settings: rustSettings,
+  usesJoinPassword: false,
 } as const;

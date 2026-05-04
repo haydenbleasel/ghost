@@ -29,4 +29,5 @@ export const enshrouded = {
     memory: 4,
   },
   settings: enshroudedSettings,
+  usesJoinPassword: false,
 } as const;

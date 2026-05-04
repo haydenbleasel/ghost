@@ -24,6 +24,7 @@ export interface ServerView {
   name: string;
   game: string;
   ipv4: string | null;
+  joinPassword: string | null;
   phase: string;
   observedState: string;
   desiredState: string;

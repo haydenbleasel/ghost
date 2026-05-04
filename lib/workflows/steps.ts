@@ -291,6 +291,7 @@ export const stepSendInstallConfig = async (serverId: string) => {
 
   const compose = game.buildCompose(
     {
+      joinPassword: server.joinPassword,
       name: server.name,
       rconPassword: server.rconPassword,
     },

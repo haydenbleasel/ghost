@@ -35,4 +35,5 @@ export const minecraft = {
     memory: 8,
   },
   settings: minecraftSettings,
+  usesJoinPassword: false,
 } as const;

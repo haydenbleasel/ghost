@@ -29,4 +29,5 @@ export const valheim = {
     memory: 6,
   },
   settings: valheimSettings,
+  usesJoinPassword: true,
 } as const;

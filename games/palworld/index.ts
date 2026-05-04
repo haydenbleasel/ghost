@@ -41,4 +41,5 @@ export const palworld = {
     memory: 16,
   },
   settings: palworldSettings,
+  usesJoinPassword: true,
 } as const;

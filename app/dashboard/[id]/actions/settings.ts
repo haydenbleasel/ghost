@@ -61,7 +61,11 @@ export const updateServerSettings = async (
   });
   if (agent && server.observedState === "running") {
     const compose = game.buildCompose(
-      { name: server.name, rconPassword: server.rconPassword },
+      {
+        joinPassword: server.joinPassword,
+        name: server.name,
+        rconPassword: server.rconPassword,
+      },
       merged
     );
     await enqueueCommand({
