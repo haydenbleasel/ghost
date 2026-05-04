@@ -64,8 +64,8 @@ export const PageBody = ({
 }) => (
   <div
     className={cn(
-      "flex-1",
-      flush ? "flex flex-col" : "px-4 py-6 md:px-8 md:py-8",
+      "min-h-0 flex-1 px-4 py-6 md:px-8 md:py-8",
+      flush ? "flex flex-col" : "overflow-y-auto",
       className
     )}
   >

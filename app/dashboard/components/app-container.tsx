@@ -14,7 +14,10 @@ export const AppContainer = ({ children }: AppContainerProps) => {
 
   return (
     <SidebarInset
-      className={cn("transition-all bg-background", sidebar.open && "border-l")}
+      className={cn(
+        "h-svh overflow-hidden transition-all bg-background",
+        sidebar.open && "border-l"
+      )}
     >
       {children}
     </SidebarInset>

@@ -99,7 +99,7 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
 
   return (
     <StickToBottom
-      className="flex flex-1 flex-col"
+      className="flex min-h-0 flex-1 flex-col"
       initial="instant"
       resize="smooth"
     >
