@@ -56,7 +56,7 @@ const MarketingLayout = async ({ children }: { children: ReactNode }) => {
               href="https://github.com/haydenbleasel/ghost"
               target="_blank"
               rel="noreferrer"
-              className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+              className="hidden text-muted-foreground text-sm transition-colors hover:text-foreground sm:inline"
             >
               Source
             </Link>
@@ -68,7 +68,7 @@ const MarketingLayout = async ({ children }: { children: ReactNode }) => {
               <>
                 <Link
                   href="/sign-in"
-                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                  className="hidden text-muted-foreground text-sm transition-colors hover:text-foreground sm:inline"
                 >
                   Sign in
                 </Link>
