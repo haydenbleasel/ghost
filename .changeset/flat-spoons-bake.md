@@ -1,0 +1,5 @@
+---
+"ghost": major
+---
+
+Initial release
