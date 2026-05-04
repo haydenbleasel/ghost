@@ -27,7 +27,7 @@ lib/                  server-side libs (db, redis, hetzner, agent helpers, workf
 protocol/             Zod schemas + signing canonicalization shared with the agent
 agent/                Bun-built TypeScript agent (compiled to a Linux binary)
 prisma/               schema + migrations
-scripts/              gold-image build script, systemd unit, cloud-init example
+scripts/              cloud-init example, agent release tool, stuck-server cleanup
 games/                per-game compose generators (Minecraft only enabled in MVP)
 ```
 
@@ -42,9 +42,17 @@ DIRECT_URL=               # pooled vs direct for Prisma migrate
 KV_REST_API_URL=
 KV_REST_API_TOKEN=
 
-# Hetzner Cloud — per-user, set in /dashboard/account.
-# (The gold-image build script reads HETZNER_TOKEN and HETZNER_SSH_KEY
-# from .env.local — see "Building the gold image" below.)
+# Hetzner Cloud — per-user, saved encrypted in Postgres via /dashboard/account/backend
+
+# Vercel Blob (snapshot agent binary)
+BLOB_READ_WRITE_TOKEN=
+
+# Vercel Deployment Protection bypass — required.
+# Cloud-init on the throwaway snapshot-builder VM curls /api/snapshot/agent-binary;
+# without this, Vercel's auth wall returns 200 OK HTML and the snapshot bakes a
+# broken binary. Enable "Protection Bypass for Automation" in Vercel project
+# settings; the secret is auto-injected as VERCEL_AUTOMATION_BYPASS_SECRET.
+VERCEL_AUTOMATION_BYPASS_SECRET=
 
 # Secrets (32+ char random strings)
 BOOTSTRAP_JWT_SECRET=
@@ -65,8 +73,9 @@ SENTRY_PROJECT=
 1. **Neon** — create a Postgres database, set `DATABASE_URL`.
 2. **Vercel KV / Upstash** — create a Redis database, set `KV_REST_API_URL` + `KV_REST_API_TOKEN`.
 3. **Vercel Blob** — create a Blob store, set `BLOB_READ_WRITE_TOKEN`.
-4. **Prisma** — `bun migrate` (runs `prisma format && prisma generate && prisma db push`).
-5. **Deploy** the Next.js app to Vercel with the env vars above.
+4. **Vercel Deployment Protection** — Project → Settings → Deployment Protection → enable **Protection Bypass for Automation**. Vercel auto-injects the generated value as `VERCEL_AUTOMATION_BYPASS_SECRET`; the snapshot-build cloud-init appends it as `?x-vercel-protection-bypass=…` so the throwaway builder VM can fetch the agent binary past the auth wall.
+5. **Prisma** — `bun migrate` (runs `prisma format && prisma generate && prisma db push`).
+6. **Deploy** the Next.js app to Vercel with the env vars above.
 
 Each user then signs in, saves their own Hetzner token on `/dashboard/account/backend`, and clicks **Build snapshot** — the `buildSnapshot` workflow compiles the agent in a Vercel Sandbox, uploads it to Blob, spins up a throwaway Hetzner VM whose cloud-init pulls the binary and pre-pulls every game's Docker image, snapshots it, and writes the new image ID onto the user's row.
 

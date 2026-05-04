@@ -86,7 +86,11 @@ export const stepCompileAgent = async (input: {
     buildId: input.buildId,
     ttlSeconds: AGENT_DOWNLOAD_TOKEN_TTL_SECONDS,
   });
-  const agentDownloadUrl = `${env.NEXT_PUBLIC_APP_URL}/api/snapshot/agent-binary?t=${downloadToken}`;
+  const params = new URLSearchParams({
+    t: downloadToken,
+    "x-vercel-protection-bypass": env.VERCEL_AUTOMATION_BYPASS_SECRET,
+  });
+  const agentDownloadUrl = `${env.NEXT_PUBLIC_APP_URL}/api/snapshot/agent-binary?${params.toString()}`;
 
   return { agentBlobUrl, agentDownloadUrl, agentSha: sha };
 };

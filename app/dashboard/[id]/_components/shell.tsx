@@ -288,7 +288,10 @@ export const ServerShell = ({
         meta={meta}
         title={server.name}
       >
-        <Tabs className="[&_[data-slot=tabs-trigger]]:flex-none" value={activeTab}>
+        <Tabs
+          className="[&_[data-slot=tabs-trigger]]:flex-none"
+          value={activeTab}
+        >
           <TabsList variant="line">
             {TABS.map((tab) => (
               <TabsTrigger asChild key={tab.value} value={tab.value}>

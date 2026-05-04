@@ -34,6 +34,8 @@ export const env = createEnv({
     SENTRY_ORG: process.env.SENTRY_ORG,
     SENTRY_PROJECT: process.env.SENTRY_PROJECT,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    VERCEL_AUTOMATION_BYPASS_SECRET:
+      process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
   },
   server: {
     ANALYZE: z.string().optional(),
@@ -54,5 +56,6 @@ export const env = createEnv({
 
     SENTRY_PROJECT: z.string().min(1).optional(),
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
+    VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1),
   },
 });
