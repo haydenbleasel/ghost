@@ -36,7 +36,11 @@ describe("snapshot download token", () => {
       buildId: "build_tamper",
       ttlSeconds: 60,
     });
-    const tampered = `${token.slice(0, -1)}${token.endsWith("a") ? "b" : "a"}`;
+    const [header, payload, sig] = token.split(".");
+    // Flip the first signature char; avoid the last char, whose low base64
+    // bits are padding and don't affect the decoded signature bytes.
+    const flipped = sig[0] === "A" ? "B" : "A";
+    const tampered = `${header}.${payload}.${flipped}${sig.slice(1)}`;
     await expect(verifySnapshotDownloadToken(tampered)).rejects.toThrow();
   });
 });

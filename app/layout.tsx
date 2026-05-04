@@ -1,4 +1,5 @@
 import "./styles.css";
+import { Analytics } from "@vercel/analytics/next";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import type { SoftwareApplication, WithContext } from "schema-dts";
@@ -53,6 +54,7 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
         <Toaster position="bottom-center" />
       </ThemeProvider>
       <JsonLd code={softwareApplicationJsonLd} />
+      <Analytics />
     </body>
   </html>
 );
