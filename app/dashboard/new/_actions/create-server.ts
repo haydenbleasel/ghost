@@ -1,8 +1,9 @@
+"use server";
+
 import crypto from "node:crypto";
 
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { NextResponse } from "next/server";
 import { ulid } from "ulid";
 import { start } from "workflow/api";
 import { z } from "zod";
@@ -15,8 +16,6 @@ import { getUserHetznerContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 import { provisionServer } from "@/lib/workflows/provision-server";
 
-export const runtime = "nodejs";
-
 const createServerSchema = z.object({
   game: z.enum(games.map((g) => g.id) as [string, ...string[]]),
   location: z.string().min(1),
@@ -25,33 +24,25 @@ const createServerSchema = z.object({
   settings: z.record(z.string(), z.unknown()).optional(),
 });
 
-export const GET = async () => {
+export type CreateServerInput = z.infer<typeof createServerSchema>;
+
+export type CreateServerResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string };
+
+export const createServer = async (
+  input: CreateServerInput
+): Promise<CreateServerResult> => {
   const user = await requireUser();
 
-  const servers = await prisma.server.findMany({
-    orderBy: { createdAt: "desc" },
-    where: { deletedAt: null, userId: user.id },
-  });
-
-  return NextResponse.json({ servers });
-};
-
-export const POST = async (request: Request) => {
-  const user = await requireUser();
-
-  const body = await request.json().catch(() => null);
-  const parsed = createServerSchema.safeParse(body);
-
+  const parsed = createServerSchema.safeParse(input);
   if (!parsed.success) {
-    return NextResponse.json(
-      { details: parsed.error.flatten(), error: "Invalid body" },
-      { status: 400 }
-    );
+    return { error: "Invalid input", ok: false };
   }
 
   const game = games.find((g) => g.id === parsed.data.game);
   if (!game) {
-    return NextResponse.json({ error: "Unknown game" }, { status: 400 });
+    return { error: "Unknown game", ok: false };
   }
 
   let catalog: Awaited<ReturnType<typeof getHetznerCatalog>>;
@@ -60,47 +51,43 @@ export const POST = async (request: Request) => {
     catalog = await getHetznerCatalog(client, imageId);
   } catch (error) {
     if (error instanceof MissingHetznerCredentialsError) {
-      return NextResponse.json(
-        { error: "Configure your Hetzner credentials in account settings." },
-        { status: 412 }
-      );
+      return {
+        error: "Configure your Hetzner credentials in account settings.",
+        ok: false,
+      };
     }
     throw error;
   }
+
   const type = catalog.serverTypes.find(
     (t) => t.name === parsed.data.serverType
   );
   if (!type) {
-    return NextResponse.json({ error: "Unknown server type" }, { status: 400 });
+    return { error: "Unknown server type", ok: false };
   }
   if (
     type.memory < game.requirements.memory ||
     type.cores < game.requirements.cpu
   ) {
-    return NextResponse.json(
-      { error: "Server type does not meet game requirements" },
-      { status: 400 }
-    );
+    return { error: "Server type does not meet game requirements", ok: false };
   }
+
   const location = type.locations.find((l) => l.name === parsed.data.location);
   if (!location) {
-    return NextResponse.json(
-      { error: "Region not supported for this server type" },
-      { status: 400 }
-    );
+    return { error: "Region not supported for this server type", ok: false };
   }
   if (!location.available) {
-    return NextResponse.json(
-      { error: "Region is temporarily unavailable. Please pick another." },
-      { status: 409 }
-    );
+    return {
+      error: "Region is temporarily unavailable. Please pick another.",
+      ok: false,
+    };
   }
 
   let settings: Record<string, unknown> = {};
   if (parsed.data.settings) {
     const validation = validateSettings(game.settings, parsed.data.settings);
     if (!validation.ok) {
-      return NextResponse.json({ error: validation.error }, { status: 400 });
+      return { error: validation.error, ok: false };
     }
     settings = validation.data as Record<string, unknown>;
   }
@@ -128,5 +115,5 @@ export const POST = async (request: Request) => {
 
   revalidatePath("/dashboard", "layout");
 
-  return NextResponse.json({ server });
+  return { id: server.id, ok: true };
 };

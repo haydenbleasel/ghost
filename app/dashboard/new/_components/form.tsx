@@ -30,6 +30,7 @@ import type {
   SettingsValuesRecord,
 } from "../../[id]/_components/game-settings-form";
 import { PageBody, PageHeader } from "../../_components/page-header";
+import { createServer } from "../_actions/create-server";
 import { Cobe } from "./cobe";
 
 const VISIBLE_ALL_SIZES = 3;
@@ -499,34 +500,6 @@ const NameStep = ({
   );
 };
 
-interface SubmitArgs {
-  gameId: string;
-  locationName: string;
-  trimmedName: string;
-  typeName: string;
-  settings: SettingsValuesRecord;
-}
-
-const postServer = async (args: SubmitArgs) => {
-  const res = await fetch("/api/servers", {
-    body: JSON.stringify({
-      game: args.gameId,
-      location: args.locationName,
-      name: args.trimmedName,
-      serverType: args.typeName,
-      settings: args.settings,
-    }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.error ?? "Could not create server");
-  }
-  const { server } = await res.json();
-  return server as { id: string };
-};
-
 export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -590,14 +563,18 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
     }
     setPending(true);
     try {
-      const server = await postServer({
-        gameId,
-        locationName,
+      const result = await createServer({
+        game: gameId,
+        location: locationName,
+        name: trimmedName,
+        serverType: typeName,
         settings,
-        trimmedName,
-        typeName,
       });
-      router.push(`/dashboard/${server.id}`);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      router.push(`/dashboard/${result.id}`);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Could not create server"
