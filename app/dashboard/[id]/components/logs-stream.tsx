@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import Anser from "anser";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Panel, PanelCard } from "@/components/panel";
 
@@ -10,6 +11,43 @@ interface LogItem {
   line: string;
   ts: string;
 }
+
+const AnsiLine = ({ text }: { text: string }) => {
+  const parts = useMemo(
+    () => Anser.ansiToJson(text, { remove_empty: true, json: true }),
+    [text]
+  );
+  return (
+    <span className="whitespace-pre-wrap">
+      {parts.map((part, i) => (
+        <AnsiPart key={i} part={part} />
+      ))}
+    </span>
+  );
+};
+
+const AnsiPart = ({ part }: { part: Anser.AnserJsonEntry }) => {
+  const style: React.CSSProperties = {};
+  if (part.fg) {
+    style.color = `rgb(${part.fg})`;
+  }
+  if (part.bg) {
+    style.backgroundColor = `rgb(${part.bg})`;
+  }
+  if (part.decorations.includes("bold")) {
+    style.fontWeight = "bold";
+  }
+  if (part.decorations.includes("italic")) {
+    style.fontStyle = "italic";
+  }
+  if (part.decorations.includes("underline")) {
+    style.textDecoration = "underline";
+  }
+  if (part.decorations.includes("dim")) {
+    style.opacity = 0.7;
+  }
+  return <span style={style}>{part.content}</span>;
+};
 
 export const LogsStream = ({ serverId }: { serverId: string }) => {
   const [lines, setLines] = useState<LogItem[]>([]);
@@ -68,9 +106,7 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
             </span>
           )}
           {lines.map((line) => (
-            <span key={line.seq} className="whitespace-pre-wrap">
-              {line.line}
-            </span>
+            <AnsiLine key={line.seq} text={line.line} />
           ))}
         </div>
       </PanelCard>

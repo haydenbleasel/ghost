@@ -35,6 +35,7 @@
     "@vercel/blob": "^2.3.3",
     "@vercel/functions": "^3.4.5",
     "@vercel/sandbox": "^1.10.0",
+    "anser": "^2.3.5",
     "better-auth": "^1.6.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
