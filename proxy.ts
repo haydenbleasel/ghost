@@ -16,8 +16,11 @@ const securityHeaders = createMiddleware(noseconeOptions);
 
 const PUBLIC_PATHS = [
   "/",
+  "/how-it-works",
   "/sign-in",
   "/sign-up",
+  "/robots.txt",
+  "/sitemap.xml",
   "/api/auth",
   "/api/agent",
   "/api/snapshot",

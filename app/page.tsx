@@ -208,7 +208,7 @@ const Home = async () => {
                   <div className="relative aspect-square w-full overflow-hidden rounded-md">
                     <Image
                       src={game.image}
-                      alt={game.name}
+                      alt={`${game.name} dedicated game server`}
                       fill
                       sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
                       className="object-cover"

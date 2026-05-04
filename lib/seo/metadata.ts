@@ -1,10 +1,17 @@
 import merge from "lodash.merge";
 import type { Metadata } from "next";
 
+import { env } from "@/lib/env";
+
 type MetadataGenerator = Omit<Metadata, "description" | "title"> & {
   title: string;
   description: string;
   image?: string;
+  /**
+   * Skip appending " | Ghost" to the title. Use for the homepage where the
+   * title already leads with the brand context.
+   */
+  bareTitle?: boolean;
 };
 
 const applicationName = "Ghost";
@@ -19,9 +26,10 @@ export const createMetadata = ({
   title,
   description,
   image,
+  bareTitle,
   ...properties
 }: MetadataGenerator): Metadata => {
-  const parsedTitle = `${title} | ${applicationName}`;
+  const parsedTitle = bareTitle ? title : `${title} | ${applicationName}`;
   const defaultMetadata: Metadata = {
     appleWebApp: {
       capable: true,
@@ -35,6 +43,7 @@ export const createMetadata = ({
     formatDetection: {
       telephone: false,
     },
+    metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
     openGraph: {
       description,
       locale: "en_US",

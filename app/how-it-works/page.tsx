@@ -1,15 +1,15 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 
 import { HomeHeader } from "@/app/components/home-header";
 import { Button } from "@/components/ui/button";
+import { createMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/session";
 
-export const metadata: Metadata = {
+export const metadata = createMetadata({
   description:
     "How Ghost provisions a dedicated game server in under a minute — golden images on Hetzner, a signed long-poll agent, and a Vercel Workflow that ties it all together.",
-  title: "How it works · Ghost",
-};
+  title: "How it works",
+});
 
 const GhostLogo = ({ className }: { className?: string }) => (
   <svg
