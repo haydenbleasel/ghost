@@ -12,7 +12,6 @@ lib/                  server-side libs (db, redis, hetzner, agent helpers, workf
 protocol/             Zod schemas + signing canonicalization shared with the agent
 agent/                Bun-built TypeScript agent (compiled to a Linux binary)
 prisma/               schema + migrations
-scripts/              cloud-init example, agent release tool, stuck-server cleanup
 games/                per-game compose generators
 ```
 
