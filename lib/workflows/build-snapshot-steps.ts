@@ -228,7 +228,7 @@ export const stepSaveImageId = async (input: {
     });
     const previousSnapshotId = user?.hetznerImageId ?? null;
     await tx.user.update({
-      data: { activeSnapshotBuildId: null, hetznerImageId: newId },
+      data: { hetznerImageId: newId },
       where: { id: input.userId },
     });
     await tx.snapshotBuild.update({
@@ -309,24 +309,17 @@ export const stepDeleteAgentBlob = async (input: {
 
 export const stepMarkFailed = async (input: {
   buildId: string;
-  userId: string;
   reason: string;
 }) => {
   "use step";
-  await prisma.$transaction([
-    prisma.user.update({
-      data: { activeSnapshotBuildId: null },
-      where: { id: input.userId },
-    }),
-    prisma.snapshotBuild.update({
-      data: {
-        errorReason: input.reason,
-        finishedAt: new Date(),
-        status: "failed",
-      },
-      where: { id: input.buildId },
-    }),
-  ]);
+  await prisma.snapshotBuild.update({
+    data: {
+      errorReason: input.reason,
+      finishedAt: new Date(),
+      status: "failed",
+    },
+    where: { id: input.buildId },
+  });
 };
 
 export const stepReadBuildState = async (input: {

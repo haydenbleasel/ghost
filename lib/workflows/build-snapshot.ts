@@ -121,7 +121,7 @@ export const buildSnapshot = async (input: {
       ? `${baseReason} (builder VM left for inspection — delete with \`hcloud server delete ${state.hetznerBuilderId}\`)`
       : baseReason;
 
-    await stepMarkFailed({ buildId, reason, userId });
+    await stepMarkFailed({ buildId, reason });
 
     if (state?.agentBlobUrl) {
       await stepDeleteAgentBlob({ agentBlobUrl: state.agentBlobUrl });

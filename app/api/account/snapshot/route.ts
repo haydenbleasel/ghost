@@ -30,7 +30,7 @@ export const POST = async () => {
   const user = await requireUser();
 
   const row = await prisma.user.findUnique({
-    select: { activeSnapshotBuildId: true, hetznerToken: true },
+    select: { hetznerToken: true },
     where: { id: user.id },
   });
   if (!row?.hetznerToken) {
@@ -39,25 +39,29 @@ export const POST = async () => {
       { status: 412 }
     );
   }
-  if (row.activeSnapshotBuildId) {
-    return NextResponse.json(
-      { error: "A snapshot build is already running." },
-      { status: 409 }
-    );
-  }
 
   const buildId = ulid();
-  try {
-    await prisma.$transaction(async (tx) => {
-      await tx.snapshotBuild.create({
-        data: { id: buildId, status: "pending", userId: user.id },
-      });
-      await tx.user.update({
-        data: { activeSnapshotBuildId: buildId },
-        where: { id: user.id },
-      });
+  let alreadyRunning = false;
+  await prisma.$transaction(async (tx) => {
+    // Row-lock the user so concurrent POSTs serialize on the same user.
+    await tx.$queryRaw`SELECT 1 FROM users WHERE id = ${user.id} FOR UPDATE`;
+    const active = await tx.snapshotBuild.findFirst({
+      select: { id: true },
+      where: {
+        status: { notIn: ["ready", "failed"] },
+        userId: user.id,
+      },
     });
-  } catch {
+    if (active) {
+      alreadyRunning = true;
+      return;
+    }
+    await tx.snapshotBuild.create({
+      data: { id: buildId, status: "pending", userId: user.id },
+    });
+  });
+
+  if (alreadyRunning) {
     return NextResponse.json(
       { error: "A snapshot build is already running." },
       { status: 409 }
