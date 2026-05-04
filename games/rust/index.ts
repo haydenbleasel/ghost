@@ -29,6 +29,12 @@ export const rust = {
       protocol: "tcp",
       to: 28_016,
     },
+    // Steam query port — required for clients to connect (handshake validation).
+    {
+      from: 28_017,
+      protocol: "udp",
+      to: 28_017,
+    },
   ],
   requirements: {
     cpu: 4,

@@ -31,6 +31,7 @@ export const buildRustCompose = (
     ports:
       - "28015:28015/udp"
       - "28016:28016/tcp"
+      - "28017:28017/udp"
     environment:
       TZ: "${timezone}"
     command:
@@ -48,6 +49,8 @@ export const buildRustCompose = (
       - "${settings.worldSize}"
       - "+server.seed"
       - "${settings.seed}"
+      - "+server.queryport"
+      - "28017"
       - "+rcon.ip"
       - "0.0.0.0"
       - "+rcon.port"
