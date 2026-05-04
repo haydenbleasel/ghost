@@ -34,7 +34,6 @@ export const buildMinecraftCompose = (
       VIEW_DISTANCE: "${settings.viewDistance}"
     volumes:
       - /var/lib/ghost/game/data:/data
-      - /var/lib/ghost/game/backups:/backups
     restart: unless-stopped
 `;
 };

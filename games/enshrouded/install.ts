@@ -9,10 +9,18 @@ export const buildEnshroudedCompose = (
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
   return `services:
+  init:
+    image: alpine:3
+    command: chown -R 10000:10000 /savegame
+    volumes:
+      - /var/lib/ghost/game/data:/savegame
   enshrouded:
     image: sknnr/enshrouded-dedicated-server:latest
     container_name: ghost-game
     restart: unless-stopped
+    depends_on:
+      init:
+        condition: service_completed_successfully
     ports:
       - "15636:15636/udp"
       - "27015:27015/udp"
@@ -25,6 +33,6 @@ export const buildEnshroudedCompose = (
       QUERY_PORT: "27015"
       TZ: "${timezone}"
     volumes:
-      - /var/lib/ghost/game/data:/home/steam/enshrouded
+      - /var/lib/ghost/game/data:/home/steam/enshrouded/savegame
 `;
 };

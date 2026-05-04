@@ -15,6 +15,8 @@ export const buildValheimCompose = (
     container_name: ghost-game
     cap_add:
       - sys_nice
+    security_opt:
+      - seccomp=unconfined
     ports:
       - "2456-2458:2456-2458/udp"
     environment:
@@ -27,6 +29,7 @@ export const buildValheimCompose = (
       TZ: "${timezone}"
     volumes:
       - /var/lib/ghost/game/data/config:/config
+      - /var/lib/ghost/game/data/server:/opt/valheim
       - /var/lib/ghost/game/backups:/config/backups
     restart: unless-stopped
 `;

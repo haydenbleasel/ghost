@@ -29,6 +29,6 @@ export const buildTerrariaCompose = (
       PASSWORD: "${escape(config.rconPassword)}"
       TZ: "${timezone}"
     volumes:
-      - /var/lib/ghost/game/data:/world
+      - /var/lib/ghost/game/data:/root/.local/share/Terraria/Worlds
 `;
 };
