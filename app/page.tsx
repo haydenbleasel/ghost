@@ -104,6 +104,12 @@ const Home = async () => {
             <span>Ghost</span>
           </Link>
           <nav className="flex items-center gap-6">
+            <Link
+              href="/how-it-works"
+              className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+            >
+              How it works
+            </Link>
             {isAuthenticated ? (
               <Button asChild size="sm">
                 <Link href="/dashboard">Dashboard</Link>
