@@ -103,7 +103,7 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
       initial="instant"
       resize="smooth"
     >
-      <StickToBottom.Content className="flex flex-col gap-1 font-mono text-xs">
+      <StickToBottom.Content className="flex flex-col gap-1 py-8 font-mono text-xs">
         {lines.length === 0 && (
           <span className="px-3 py-2 text-sm text-muted-foreground">
             Waiting for logs…
