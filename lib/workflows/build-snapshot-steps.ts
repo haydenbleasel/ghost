@@ -2,7 +2,7 @@ import "server-only";
 import crypto from "node:crypto";
 
 import type { SnapshotBuildStatus } from "@prisma/client";
-import { BlobNotFoundError, del as blobDel, head, put } from "@vercel/blob";
+import { del as blobDel, put } from "@vercel/blob";
 import { FatalError } from "workflow";
 
 import { mintSnapshotDownloadToken } from "@/lib/agent/snapshot-token";
@@ -58,24 +58,17 @@ export const stepCompileAgent = async (input: {
   });
 
   const { bytes, sha } = await compileAgentBinary();
-  const pathname = `agents/ghost-agent-${sha}.bin`;
-
-  let agentBlobUrl: string;
-  try {
-    const existing = await head(pathname);
-    agentBlobUrl = existing.url;
-  } catch (error) {
-    if (!(error instanceof BlobNotFoundError)) {
-      throw error;
-    }
-    const uploaded = await put(pathname, bytes, {
-      access: "private",
-      addRandomSuffix: false,
-      cacheControlMaxAge: 60 * 60,
-      contentType: "application/octet-stream",
-    });
-    agentBlobUrl = uploaded.url;
-  }
+  // Per-build pathname so we never reuse a stale (potentially broken) blob from
+  // an earlier failed run at the same git commit. The blob is deleted in the
+  // workflow's finalizer (`stepDeleteAgentBlob`) once the snapshot is ready.
+  const pathname = `agents/ghost-agent-${input.buildId}-${sha.slice(0, 12)}.bin`;
+  const uploaded = await put(pathname, bytes, {
+    access: "private",
+    addRandomSuffix: false,
+    cacheControlMaxAge: 60 * 60,
+    contentType: "application/octet-stream",
+  });
+  const agentBlobUrl = uploaded.url;
 
   await prisma.snapshotBuild.update({
     data: { agentBlobUrl, agentSha: sha },

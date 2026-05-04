@@ -99,6 +99,22 @@ export const compileAgentBinary = async (): Promise<{
     if (!bytes) {
       throw new Error("agent build produced no dist/ghost-agent file");
     }
+    // Sanity floor — a real bun-compiled agent is ~100 MB. Anything noticeably
+    // smaller means the bun build silently produced garbage (empty file, just
+    // the bun runtime header, etc.) and we should fail loudly rather than
+    // upload it to Blob and bake it into a snapshot.
+    if (bytes.length < 1_000_000) {
+      throw new Error(
+        `agent binary suspiciously small (${bytes.length} bytes); expected ~100 MB`
+      );
+    }
+    if (bytes[0] !== 0x7F || bytes[1] !== 0x45) {
+      throw new Error(
+        `agent binary is not an ELF (first bytes: ${[...bytes.subarray(0, 4)]
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join(" ")})`
+      );
+    }
 
     return { bytes, sha: sha256(bytes) };
   } finally {
