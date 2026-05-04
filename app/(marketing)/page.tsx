@@ -82,7 +82,7 @@ const Home = async () => {
               self-host. Spin one up in seconds — Docker, SSH, and firewall
               rules handled for you.
             </p>
-            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-row items-center gap-3">
               {isAuthenticated ? (
                 <>
                   <Button asChild size="lg">
@@ -214,7 +214,7 @@ const Home = async () => {
           <h2 className="max-w-[24ch] text-balance font-medium text-4xl tracking-tight sm:text-5xl">
             Ready to play?
           </h2>
-          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <div className="flex flex-row items-center gap-3">
             {isAuthenticated ? (
               <>
                 <Button asChild size="lg">
