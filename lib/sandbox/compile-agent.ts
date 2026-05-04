@@ -108,7 +108,7 @@ export const compileAgentBinary = async (): Promise<{
         `agent binary suspiciously small (${bytes.length} bytes); expected ~100 MB`
       );
     }
-    if (bytes[0] !== 0x7F || bytes[1] !== 0x45) {
+    if (bytes[0] !== 0x7f || bytes[1] !== 0x45) {
       throw new Error(
         `agent binary is not an ELF (first bytes: ${[...bytes.subarray(0, 4)]
           .map((b) => b.toString(16).padStart(2, "0"))

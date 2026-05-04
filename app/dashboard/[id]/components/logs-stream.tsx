@@ -14,26 +14,7 @@ interface LogItem {
 // Some upstream log producers emit ANSI in caret notation (`^[[0m`) rather than
 // the raw ESC byte. Convert it back so anser can parse it.
 const CARET_CSI = /\^\[\[([0-9;]*)([a-zA-Z])/g;
-const normalizeAnsi = (text: string) =>
-  text.replace(CARET_CSI, "\x1b[$1$2");
-
-const AnsiLine = ({ text }: { text: string }) => {
-  const parts = useMemo(
-    () =>
-      Anser.ansiToJson(normalizeAnsi(text), {
-        remove_empty: true,
-        json: true,
-      }),
-    [text]
-  );
-  return (
-    <span className="whitespace-pre-wrap">
-      {parts.map((part, i) => (
-        <AnsiPart key={i} part={part} />
-      ))}
-    </span>
-  );
-};
+const normalizeAnsi = (text: string) => text.replace(CARET_CSI, "\u001B[$1$2");
 
 const AnsiPart = ({ part }: { part: Anser.AnserJsonEntry }) => {
   const style: React.CSSProperties = {};
@@ -56,6 +37,24 @@ const AnsiPart = ({ part }: { part: Anser.AnserJsonEntry }) => {
     style.opacity = 0.7;
   }
   return <span style={style}>{part.content}</span>;
+};
+
+const AnsiLine = ({ text }: { text: string }) => {
+  const parts = useMemo(
+    () =>
+      Anser.ansiToJson(normalizeAnsi(text), {
+        json: true,
+        remove_empty: true,
+      }),
+    [text]
+  );
+  return (
+    <span className="whitespace-pre-wrap">
+      {parts.map((part, i) => (
+        <AnsiPart key={i} part={part} />
+      ))}
+    </span>
+  );
 };
 
 export const LogsStream = ({ serverId }: { serverId: string }) => {

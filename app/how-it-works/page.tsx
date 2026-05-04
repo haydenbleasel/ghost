@@ -165,11 +165,11 @@ const HowItWorks = async () => {
                 Dedicated game servers in under a minute.
               </h1>
               <p className="text-balance text-lg text-muted-foreground">
-                Ghost is a control plane on Vercel that orchestrates Docker
-                game servers on your own Hetzner Cloud account. This page
-                describes the architecture, how a new server is provisioned,
-                how the agent on each VM communicates with the control plane,
-                and how the golden image is built.
+                Ghost is a control plane on Vercel that orchestrates Docker game
+                servers on your own Hetzner Cloud account. This page describes
+                the architecture, how a new server is provisioned, how the agent
+                on each VM communicates with the control plane, and how the
+                golden image is built.
               </p>
             </div>
           </header>
@@ -184,12 +184,12 @@ const HowItWorks = async () => {
                   A control plane on Vercel, runtimes on Hetzner
                 </h2>
                 <p className="text-muted-foreground">
-                  The system has two halves. The control plane runs on
-                  Vercel and holds all coordination state. The runtime — the
-                  game container itself — runs on a Hetzner VM you own. The
-                  two communicate over a signed long-poll channel that the
-                  agent always initiates outbound, so VMs do not need to
-                  expose a management port.
+                  The system has two halves. The control plane runs on Vercel
+                  and holds all coordination state. The runtime — the game
+                  container itself — runs on a Hetzner VM you own. The two
+                  communicate over a signed long-poll channel that the agent
+                  always initiates outbound, so VMs do not need to expose a
+                  management port.
                 </p>
               </div>
 
@@ -230,16 +230,16 @@ const HowItWorks = async () => {
                 </h2>
                 <p className="text-muted-foreground">
                   New servers are ready in roughly 60 seconds because almost
-                  nothing happens on first boot. Docker, the ghost-agent
-                  binary, the UFW baseline, and every supported game's
-                  container image are already on disk. A new VM only needs to
-                  read its bootstrap token and start a container.
+                  nothing happens on first boot. Docker, the ghost-agent binary,
+                  the UFW baseline, and every supported game's container image
+                  are already on disk. A new VM only needs to read its bootstrap
+                  token and start a container.
                 </p>
                 <p className="text-muted-foreground">
-                  That pre-baked disk is the golden image — a Hetzner
-                  snapshot scoped to your account. Snapshots are
-                  per-project, so each user builds their own. The build is
-                  triggered from the dashboard rather than the CLI.
+                  That pre-baked disk is the golden image — a Hetzner snapshot
+                  scoped to your account. Snapshots are per-project, so each
+                  user builds their own. The build is triggered from the
+                  dashboard rather than the CLI.
                 </p>
               </div>
 
@@ -260,12 +260,12 @@ const HowItWorks = async () => {
               </ol>
 
               <p className="text-muted-foreground text-sm">
-                The whole run takes ~10–15 minutes. You can watch it live in
-                the panel itself, or with <code>bun workflow:ui</code> locally.
+                The whole run takes ~10–15 minutes. You can watch it live in the
+                panel itself, or with <code>bun workflow:ui</code> locally.
                 Concurrent builds for the same user are blocked at the database
                 level by a unique constraint on{" "}
-                <code>User.activeSnapshotBuildId</code>. Adding a new game is
-                a one-line change to the cloud-init in{" "}
+                <code>User.activeSnapshotBuildId</code>. Adding a new game is a
+                one-line change to the cloud-init in{" "}
                 <code>lib/workflows/build-snapshot-cloud-init.ts</code> plus a
                 rebuild.
               </p>
@@ -275,12 +275,11 @@ const HowItWorks = async () => {
                   Why the builder VM is throwaway
                 </p>
                 <p className="mt-2 text-muted-foreground leading-relaxed">
-                  Hetzner can only snapshot a real VM. The builder exists
-                  solely to pull everything onto disk and shut itself down so
-                  the snapshot captures it. Once the image is recorded on
-                  your row, the workflow deletes both the builder and the
-                  previous snapshot, so only one snapshot is billed at a
-                  time.
+                  Hetzner can only snapshot a real VM. The builder exists solely
+                  to pull everything onto disk and shut itself down so the
+                  snapshot captures it. Once the image is recorded on your row,
+                  the workflow deletes both the builder and the previous
+                  snapshot, so only one snapshot is billed at a time.
                 </p>
               </aside>
             </div>
@@ -296,10 +295,10 @@ const HowItWorks = async () => {
                   From server action to healthy container, in six steps
                 </h2>
                 <p className="text-muted-foreground">
-                  Provisioning is a durable workflow, not a single request.
-                  Each step is idempotent and resumable. Hetzner can take
-                  20–40 seconds to boot a VM, and a dropped connection
-                  should not be able to abandon a half-provisioned server.
+                  Provisioning is a durable workflow, not a single request. Each
+                  step is idempotent and resumable. Hetzner can take 20–40
+                  seconds to boot a VM, and a dropped connection should not be
+                  able to abandon a half-provisioned server.
                 </p>
               </div>
 
@@ -320,13 +319,13 @@ const HowItWorks = async () => {
               </ol>
 
               <p className="text-muted-foreground text-sm">
-                Start, stop, and restart follow the same pattern: a row is
-                added to the command queue, the agent picks it up on its
-                next long-poll, executes the corresponding Docker command,
-                and acks. Delete flips <code>desiredState=deleted</code> and
-                starts the <code>teardownServer</code> workflow, which sends
-                a final DELETE to the agent, destroys the Hetzner VM, and
-                marks the row deleted.
+                Start, stop, and restart follow the same pattern: a row is added
+                to the command queue, the agent picks it up on its next
+                long-poll, executes the corresponding Docker command, and acks.
+                Delete flips <code>desiredState=deleted</code> and starts the{" "}
+                <code>teardownServer</code> workflow, which sends a final DELETE
+                to the agent, destroys the Hetzner VM, and marks the row
+                deleted.
               </p>
             </div>
           </section>
@@ -342,9 +341,8 @@ const HowItWorks = async () => {
                 </h2>
                 <p className="text-muted-foreground">
                   The ghost-agent is the only process on a game VM that
-                  communicates with Ghost. It only opens connections
-                  outward, so the VM's public ports are limited to the
-                  game's own.
+                  communicates with Ghost. It only opens connections outward, so
+                  the VM's public ports are limited to the game's own.
                 </p>
               </div>
 
@@ -354,9 +352,9 @@ const HowItWorks = async () => {
                     Enrollment
                   </dt>
                   <dd className="text-muted-foreground text-sm leading-relaxed">
-                    <code>POST /api/agent/enroll</code> exchanges the
-                    one-shot bootstrap JWT for a persistent Ed25519 public
-                    key registration. After that, the JWT is dead.
+                    <code>POST /api/agent/enroll</code> exchanges the one-shot
+                    bootstrap JWT for a persistent Ed25519 public key
+                    registration. After that, the JWT is dead.
                   </dd>
                 </div>
                 <div className="flex flex-col gap-2 border-t border-foreground/10 py-6">
@@ -364,13 +362,12 @@ const HowItWorks = async () => {
                     Signing
                   </dt>
                   <dd className="text-muted-foreground text-sm leading-relaxed">
-                    Every subsequent request carries{" "}
-                    <code>X-Ghost-Agent</code>, <code>X-Ghost-Ts</code>,{" "}
-                    <code>X-Ghost-Nonce</code>, and <code>X-Ghost-Sig</code>.
-                    The signature is{" "}
+                    Every subsequent request carries <code>X-Ghost-Agent</code>,{" "}
+                    <code>X-Ghost-Ts</code>, <code>X-Ghost-Nonce</code>, and{" "}
+                    <code>X-Ghost-Sig</code>. The signature is{" "}
                     <code>ed25519(method || path || ts || nonce || body)</code>{" "}
-                    against a canonicalized body shared with the server via
-                    the <code>protocol/</code> package.
+                    against a canonicalized body shared with the server via the{" "}
+                    <code>protocol/</code> package.
                   </dd>
                 </div>
                 <div className="flex flex-col gap-2 border-t border-foreground/10 py-6">
@@ -378,9 +375,9 @@ const HowItWorks = async () => {
                     Replay protection
                   </dt>
                   <dd className="text-muted-foreground text-sm leading-relaxed">
-                    Timestamp skew tolerance is 60 seconds. Nonces are stored
-                    in Redis with a 5 minute TTL — long enough to cover the
-                    skew window, short enough to keep the set small.
+                    Timestamp skew tolerance is 60 seconds. Nonces are stored in
+                    Redis with a 5 minute TTL — long enough to cover the skew
+                    window, short enough to keep the set small.
                   </dd>
                 </div>
                 <div className="flex flex-col gap-2 border-t border-foreground/10 py-6">
@@ -388,11 +385,10 @@ const HowItWorks = async () => {
                     Long-poll for commands
                   </dt>
                   <dd className="text-muted-foreground text-sm leading-relaxed">
-                    <code>GET /api/agent/commands?wait=25</code> hangs for up
-                    to 25 seconds, polling Postgres every ~750ms, and
-                    returns either the next batch of commands or a 204. This
-                    is the path that turns a UI action into a Docker
-                    command on the VM.
+                    <code>GET /api/agent/commands?wait=25</code> hangs for up to
+                    25 seconds, polling Postgres every ~750ms, and returns
+                    either the next batch of commands or a 204. This is the path
+                    that turns a UI action into a Docker command on the VM.
                   </dd>
                 </div>
                 <div className="flex flex-col gap-2 border-t border-foreground/10 py-6">
@@ -400,12 +396,12 @@ const HowItWorks = async () => {
                     Events, logs, heartbeat
                   </dt>
                   <dd className="text-muted-foreground text-sm leading-relaxed">
-                    The agent batches activity events and console output,
-                    POSTs them to the API, and acks completed commands.
-                    Heartbeats are sent every ~30 seconds. The dashboard
-                    fans these back out to the browser over SSE, with a
-                    cursor on the monotonic sequence so reconnecting clients
-                    resume from where they left off.
+                    The agent batches activity events and console output, POSTs
+                    them to the API, and acks completed commands. Heartbeats are
+                    sent every ~30 seconds. The dashboard fans these back out to
+                    the browser over SSE, with a cursor on the monotonic
+                    sequence so reconnecting clients resume from where they left
+                    off.
                   </dd>
                 </div>
               </dl>
@@ -424,16 +420,15 @@ const HowItWorks = async () => {
                 <p className="text-muted-foreground">
                   Ghost does not hold the VMs. After signing in, you paste a
                   Hetzner Cloud API token on{" "}
-                  <code>/dashboard/account/backend</code>, which is encrypted
-                  at rest in Postgres. Every Hetzner call — snapshot build,
-                  server create, server delete — runs against your project
-                  with your token, and is billed to you.
+                  <code>/dashboard/account/backend</code>, which is encrypted at
+                  rest in Postgres. Every Hetzner call — snapshot build, server
+                  create, server delete — runs against your project with your
+                  token, and is billed to you.
                 </p>
                 <p className="text-muted-foreground">
-                  This means your snapshots and your servers continue to
-                  exist in your Hetzner account independently of Ghost. If
-                  you stop using Ghost, the resources remain under your
-                  control.
+                  This means your snapshots and your servers continue to exist
+                  in your Hetzner account independently of Ghost. If you stop
+                  using Ghost, the resources remain under your control.
                 </p>
               </div>
 
@@ -442,11 +437,10 @@ const HowItWorks = async () => {
                   Hetzner account limits
                 </p>
                 <p className="mt-2 text-muted-foreground leading-relaxed">
-                  New Hetzner Cloud accounts are capped at 5 servers per
-                  project until verified. Once the limit is reached,
-                  provisioning fails with{" "}
-                  <code>resource_limit_exceeded</code>. A limit increase can
-                  be requested from Hetzner support.
+                  New Hetzner Cloud accounts are capped at 5 servers per project
+                  until verified. Once the limit is reached, provisioning fails
+                  with <code>resource_limit_exceeded</code>. A limit increase
+                  can be requested from Hetzner support.
                 </p>
               </aside>
             </div>
