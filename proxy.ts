@@ -20,6 +20,7 @@ const PUBLIC_PATHS = [
   "/sign-up",
   "/api/auth",
   "/api/agent",
+  "/api/snapshot",
   "/monitoring",
   "/.well-known/workflow",
 ];
