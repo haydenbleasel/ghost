@@ -16,6 +16,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import type { SettingField, SettingsSchema } from "@/games";
 
+import { updateServerSettings } from "../actions/settings";
+
 export type FieldValue = string | number | boolean;
 export type SettingsValuesRecord = Record<string, FieldValue>;
 
@@ -188,18 +190,14 @@ export const GameSettingsForm = ({
   const save = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/servers/${serverId}/settings`, {
-        body: JSON.stringify(values),
-        headers: { "Content-Type": "application/json" },
-        method: "PATCH",
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Failed to save settings");
+      const result = await updateServerSettings({ serverId, values });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
       }
-      const json = (await res.json()) as { settings: SettingsValuesRecord };
-      setBaseline(json.settings);
-      setValues(json.settings);
+      const next = result.settings as SettingsValuesRecord;
+      setBaseline(next);
+      setValues(next);
       toast.success("Settings saved");
     } catch (error) {
       toast.error(

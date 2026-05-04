@@ -38,6 +38,8 @@ import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
 
 import { PageBody, PageHeader } from "../../components/page-header";
+import { runServerCommand } from "../actions/commands";
+import { deleteServer } from "../actions/delete";
 import { ProvisioningStatus } from "./provisioning-status";
 import { ServerProvider } from "./server-context";
 import type { ServerView } from "./server-context";
@@ -137,28 +139,23 @@ export const ServerShell = ({
 
   const sendCommand = async (type: "START" | "STOP" | "RESTART") => {
     setPending(type);
-    const res = await fetch(`/api/servers/${server.id}/commands`, {
-      body: JSON.stringify({ type }),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    });
+    const result = await runServerCommand({ serverId: server.id, type });
     setPending(null);
-    if (res.ok) {
+    if (result.ok) {
       toast.success(`${type} queued`);
     } else {
-      toast.error(`${type} failed`);
+      toast.error(result.error);
     }
   };
 
   const runDelete = async () => {
     setPending("DELETE");
-    const res = await fetch(`/api/servers/${server.id}`, { method: "DELETE" });
+    const result = await deleteServer({ serverId: server.id });
     setPending(null);
-    if (res.ok) {
+    if (result.ok) {
       router.push("/dashboard");
-      router.refresh();
     } else {
-      toast.error("Delete failed");
+      toast.error(result.error);
     }
   };
 

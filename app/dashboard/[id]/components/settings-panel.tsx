@@ -21,6 +21,8 @@ import {
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
 
+import { rescaleServer } from "../actions/rescale";
+
 interface Props {
   serverId: string;
   observedState: string;
@@ -58,17 +60,16 @@ export const SettingsPanel = ({
     }
     setRescalePending(true);
     try {
-      const res = await fetch(`/api/servers/${serverId}/rescale`, {
-        body: JSON.stringify({ serverType: selectedType }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
+      const result = await rescaleServer({
+        serverId,
+        serverType: selectedType,
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Rescale failed");
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
       }
-      onChange({ serverType: selectedType });
-      toast.success(`Rescaled to ${selectedType}`);
+      onChange({ serverType: result.serverType });
+      toast.success(`Rescaled to ${result.serverType}`);
       setRescaleOpen(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Rescale failed");
