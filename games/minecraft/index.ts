@@ -1,6 +1,5 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
 import { buildMinecraftCompose } from "./install";
 import { minecraftSettings } from "./settings";
 
@@ -14,7 +13,7 @@ export const minecraft = {
   enabled: true,
   gamedigId: "minecraft",
   id: "minecraft",
-  image,
+  image: "/games/minecraft.jpg",
   name: "Minecraft",
   ports: [
     // This is the default port for Minecraft Java Edition, used for game traffic.

@@ -10,6 +10,13 @@ const otelRegex = /@opentelemetry\/instrumentation/;
 let config: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      {
+        hostname: "shared.fastly.steamstatic.com",
+        pathname: "/store_item_assets/steam/apps/**",
+        protocol: "https",
+      },
+    ],
   },
 
   rewrites() {

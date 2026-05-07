@@ -248,8 +248,9 @@ export const ServerShell = ({
     <Image
       alt={game.name}
       className="size-10 rounded-lg object-cover"
-      placeholder="blur"
+      height={40}
       src={game.image}
+      width={40}
     />
   );
 

@@ -3,7 +3,6 @@ import type { Marker } from "cobe";
 import { humanId } from "human-id";
 import { ChevronDown, Cpu, HardDrive, MemoryStick, Server } from "lucide-react";
 import Image from "next/image";
-import type { StaticImageData } from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -95,7 +94,7 @@ export interface GameOption {
   id: string;
   name: string;
   description: string;
-  image: StaticImageData;
+  image: string;
   requirements: { cpu: number; memory: number };
   settings: SettingsSchema;
 }
@@ -385,8 +384,9 @@ const GameStep = ({ games, gameId, setGameId }: GameStepProps) => (
           <Image
             src={game.image}
             alt={game.name}
-            className="aspect-square w-full object-cover"
-            placeholder="blur"
+            width={460}
+            height={215}
+            className="aspect-[460/215] w-full object-cover"
           />
           <div className="p-2">
             <div className="font-medium text-sm">{game.name}</div>

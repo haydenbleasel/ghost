@@ -1,6 +1,6 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
+import { steamHeader } from "../steam";
 import { buildVrisingCompose } from "./install";
 import { vrisingSettings } from "./settings";
 
@@ -14,7 +14,7 @@ export const vrising = {
   enabled: true,
   gamedigId: "vrising",
   id: "vrising",
-  image,
+  image: steamHeader(1_604_030),
   name: "V Rising",
   ports: [
     // Game traffic.

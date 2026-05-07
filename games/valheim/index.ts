@@ -1,6 +1,6 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
+import { steamHeader } from "../steam";
 import { buildValheimCompose } from "./install";
 import { valheimSettings } from "./settings";
 
@@ -14,7 +14,7 @@ export const valheim = {
   enabled: true,
   gamedigId: "valheim",
   id: "valheim",
-  image,
+  image: steamHeader(892_970),
   name: "Valheim",
   ports: [
     // This is the default port for Valheim, used for game traffic.

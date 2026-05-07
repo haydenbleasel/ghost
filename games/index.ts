@@ -9,6 +9,8 @@ import { terraria } from "./terraria";
 import { valheim } from "./valheim";
 import { vrising } from "./vrising";
 
+export { steamHeader } from "./steam";
+
 export const games = [
   minecraft,
   valheim,

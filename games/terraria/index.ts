@@ -1,6 +1,6 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
+import { steamHeader } from "../steam";
 import { buildTerrariaCompose } from "./install";
 import { terrariaSettings } from "./settings";
 
@@ -14,7 +14,7 @@ export const terraria = {
   enabled: true,
   gamedigId: "terrariatshock",
   id: "terraria",
-  image,
+  image: steamHeader(105_600),
   name: "Terraria",
   ports: [
     // This is the default port for Terraria, used for game traffic.

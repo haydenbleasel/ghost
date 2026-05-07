@@ -1,6 +1,6 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
+import { steamHeader } from "../steam";
 import { buildCs2Compose } from "./install";
 import { cs2Settings } from "./settings";
 
@@ -14,7 +14,7 @@ export const cs2 = {
   enabled: true,
   gamedigId: "cs2",
   id: "cs2",
-  image,
+  image: steamHeader(730),
   name: "Counter-Strike 2",
   ports: [
     // Game traffic.

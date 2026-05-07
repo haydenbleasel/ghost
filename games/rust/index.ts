@@ -1,6 +1,6 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
+import { steamHeader } from "../steam";
 import { buildRustCompose } from "./install";
 import { rustSettings } from "./settings";
 
@@ -14,7 +14,7 @@ export const rust = {
   enabled: true,
   gamedigId: "rust",
   id: "rust",
-  image,
+  image: steamHeader(252_490),
   name: "Rust",
   ports: [
     // This is the default port for Rust, used for game traffic.

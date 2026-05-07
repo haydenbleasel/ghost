@@ -1,6 +1,6 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
+import { steamHeader } from "../steam";
 import { buildDontStarveTogetherCompose } from "./install";
 import { dontStarveTogetherSettings } from "./settings";
 
@@ -17,7 +17,7 @@ export const dontStarveTogether = {
   enabled: true,
   gamedigId: "dst",
   id: "dontstarvetogether",
-  image,
+  image: steamHeader(322_330),
   name: "Don't Starve Together",
   ports: [
     // Master shard — the only port DST clients connect to.

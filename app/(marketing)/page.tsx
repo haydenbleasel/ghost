@@ -141,14 +141,13 @@ const Home = async () => {
           >
             {supportedGames.map((game) => (
               <li key={game.id} className="flex flex-col gap-4">
-                <div className="relative aspect-square w-full overflow-hidden rounded-md">
+                <div className="relative aspect-[460/215] w-full overflow-hidden rounded-md">
                   <Image
                     src={game.image}
                     alt={`${game.name} dedicated game server`}
                     fill
                     sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
                     className="object-cover"
-                    placeholder="blur"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -166,7 +165,7 @@ const Home = async () => {
                 href="https://github.com/haydenbleasel/ghost/issues/new"
                 target="_blank"
                 rel="noreferrer"
-                className="group flex aspect-square w-full items-center justify-center gap-2 rounded-md border border-foreground/15 border-dashed text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+                className="group flex aspect-[460/215] w-full items-center justify-center gap-2 rounded-md border border-foreground/15 border-dashed text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
               >
                 <PlusIcon className="size-4" />
                 <span className="font-medium text-sm">Request a game</span>

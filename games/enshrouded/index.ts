@@ -1,6 +1,6 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
+import { steamHeader } from "../steam";
 import { buildEnshroudedCompose } from "./install";
 import { enshroudedSettings } from "./settings";
 
@@ -14,7 +14,7 @@ export const enshrouded = {
   enabled: true,
   gamedigId: "enshrouded",
   id: "enshrouded",
-  image,
+  image: steamHeader(1_203_620),
   name: "Enshrouded",
   ports: [
     // Enshrouded uses a single UDP port for both game traffic and Steam query.

@@ -1,6 +1,6 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
+import { steamHeader } from "../steam";
 import { buildSatisfactoryCompose } from "./install";
 import { satisfactorySettings } from "./settings";
 
@@ -14,7 +14,7 @@ export const satisfactory = {
   enabled: true,
   gamedigId: "satisfactory",
   id: "satisfactory",
-  image,
+  image: steamHeader(526_870),
   name: "Satisfactory",
   ports: [
     // Satisfactory 1.0+ uses a single port (7777) for both game traffic and queries.

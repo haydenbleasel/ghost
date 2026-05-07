@@ -65,7 +65,6 @@ const DashboardPage = async () => {
                     alt={game.name}
                     width={40}
                     height={40}
-                    placeholder="blur"
                     className={cn(
                       "size-10 rounded-md object-cover ring-2 ring-white transition-transform hover:-translate-y-1",
                       i % 2 === 0 ? "-rotate-3" : "rotate-3"
@@ -115,7 +114,6 @@ const DashboardPage = async () => {
                         fill
                         sizes="48px"
                         className="object-cover"
-                        placeholder="blur"
                       />
                     ) : (
                       <div className="flex size-full items-center justify-center bg-muted">

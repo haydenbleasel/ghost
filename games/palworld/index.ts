@@ -1,6 +1,6 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
+import { steamHeader } from "../steam";
 import { buildPalworldCompose } from "./install";
 import { palworldSettings } from "./settings";
 
@@ -14,7 +14,7 @@ export const palworld = {
   enabled: true,
   gamedigId: "palworld",
   id: "palworld",
-  image,
+  image: steamHeader(1_623_730),
   name: "Palworld",
   ports: [
     // This is the default port for Palworld, used for game traffic.
