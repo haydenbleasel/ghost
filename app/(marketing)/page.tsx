@@ -2,12 +2,12 @@ import { PlusIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { AnimatedLogo } from "@/components/animated-logo";
 import {
   FadeIn,
   FadeInListItem,
   FadeInOnScroll,
 } from "@/components/animations";
-import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { games } from "@/games";
 import { getSession } from "@/lib/session";
@@ -98,7 +98,7 @@ const Home = async () => {
       <header className="border-b border-foreground/10">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-24 sm:py-32">
           <FadeIn>
-            <Logo className="size-32" />
+            <AnimatedLogo className="size-32" />
           </FadeIn>
           <FadeIn delay={0.08}>
             <h1 className="mt-12 text-balance font-display font-medium text-5xl tracking-tight sm:text-6xl">
