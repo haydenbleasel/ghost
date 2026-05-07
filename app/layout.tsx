@@ -1,14 +1,17 @@
 import "./styles.css";
 import { Analytics } from "@vercel/analytics/next";
+import { GeistMono } from "geist/font/mono";
+import { GeistPixelSquare } from "geist/font/pixel";
+import { GeistSans } from "geist/font/sans";
 import type { ReactNode } from "react";
 import type { SoftwareApplication, WithContext } from "schema-dts";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SEO_URL } from "@/lib/env";
-import { fonts } from "@/lib/fonts";
 import { JsonLd } from "@/lib/seo/json-ld";
 import { createMetadata } from "@/lib/seo/metadata";
+import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/providers/theme";
 
 const homeDescription =
@@ -38,7 +41,16 @@ const softwareApplicationJsonLd: WithContext<SoftwareApplication> = {
 };
 
 const RootLayout = ({ children }: { children: ReactNode }) => (
-  <html lang="en" className={fonts} suppressHydrationWarning>
+  <html
+    lang="en"
+    className={cn(
+      GeistSans.variable,
+      GeistMono.variable,
+      GeistPixelSquare.variable,
+      "touch-manipulation font-sans antialiased"
+    )}
+    suppressHydrationWarning
+  >
     <body className="bg-background">
       <ThemeProvider>
         <TooltipProvider>{children}</TooltipProvider>

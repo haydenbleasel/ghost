@@ -95,7 +95,7 @@ const HowItWorks = async () => {
       <header className="border-b border-foreground/10">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-24 sm:py-32">
           <Logo className="size-32" />
-          <h1 className="mt-12 text-balance font-medium text-5xl tracking-tight sm:text-6xl">
+          <h1 className="mt-12 text-balance font-display font-medium text-5xl tracking-tight sm:text-6xl">
             Dedicated game servers in under a minute.
           </h1>
           <p className="text-balance text-lg text-muted-foreground">
@@ -114,7 +114,7 @@ const HowItWorks = async () => {
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               Architecture
             </span>
-            <h2 className="text-balance font-medium text-3xl tracking-tight sm:text-4xl">
+            <h2 className="text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
               A control plane on Vercel, runtimes on Hetzner
             </h2>
             <p className="text-muted-foreground">
@@ -176,7 +176,7 @@ const HowItWorks = async () => {
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               Golden image
             </span>
-            <h2 className="text-balance font-medium text-3xl tracking-tight sm:text-4xl">
+            <h2 className="text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
               A per-user Hetzner snapshot, baked from the dashboard
             </h2>
             <p className="text-muted-foreground">
@@ -201,7 +201,9 @@ const HowItWorks = async () => {
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <div className="flex flex-col gap-2">
-                  <h3 className="font-medium tracking-tight">{title}</h3>
+                  <h3 className="font-display font-medium tracking-tight">
+                    {title}
+                  </h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     {body}
                   </p>
@@ -242,7 +244,7 @@ const HowItWorks = async () => {
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               Provisioning
             </span>
-            <h2 className="text-balance font-medium text-3xl tracking-tight sm:text-4xl">
+            <h2 className="text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
               From server action to healthy container, in six steps
             </h2>
             <p className="text-muted-foreground">
@@ -260,7 +262,9 @@ const HowItWorks = async () => {
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <div className="flex flex-col gap-2">
-                  <h3 className="font-medium tracking-tight">{title}</h3>
+                  <h3 className="font-display font-medium tracking-tight">
+                    {title}
+                  </h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     {body}
                   </p>
@@ -286,7 +290,7 @@ const HowItWorks = async () => {
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               Agent protocol
             </span>
-            <h2 className="text-balance font-medium text-3xl tracking-tight sm:text-4xl">
+            <h2 className="text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
               Signed, outbound-only requests over long-poll
             </h2>
             <p className="text-muted-foreground">
@@ -359,7 +363,7 @@ const HowItWorks = async () => {
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               Infrastructure
             </span>
-            <h2 className="text-balance font-medium text-3xl tracking-tight sm:text-4xl">
+            <h2 className="text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
               Your Hetzner account, your token, your billing
             </h2>
             <p className="text-muted-foreground">
@@ -390,7 +394,7 @@ const HowItWorks = async () => {
 
       <section>
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-32 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="max-w-[24ch] text-balance font-medium text-3xl tracking-tight sm:text-4xl">
+          <h2 className="max-w-[24ch] text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
             Try it out
           </h2>
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">

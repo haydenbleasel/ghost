@@ -74,7 +74,7 @@ const Home = async () => {
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               Open source · Free forever
             </span>
-            <h1 className="max-w-[20ch] text-balance font-medium text-5xl tracking-tight sm:text-7xl">
+            <h1 className="max-w-[20ch] text-balance font-display font-medium text-5xl tracking-tight sm:text-7xl">
               Simple, beautiful game servers.
             </h1>
             <p className="max-w-[48ch] text-balance text-lg text-muted-foreground">
@@ -131,7 +131,7 @@ const Home = async () => {
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               Supported games
             </span>
-            <h2 className="max-w-[24ch] text-balance font-medium text-4xl tracking-tight sm:text-5xl">
+            <h2 className="max-w-[24ch] text-balance font-display font-medium text-4xl tracking-tight sm:text-5xl">
               Pick a game. Pick a region. Press play.
             </h2>
           </div>
@@ -189,7 +189,7 @@ const Home = async () => {
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               What you get
             </span>
-            <h2 className="max-w-[28ch] text-balance font-medium text-4xl tracking-tight sm:text-5xl">
+            <h2 className="max-w-[28ch] text-balance font-display font-medium text-4xl tracking-tight sm:text-5xl">
               Everything you need, nothing you don&apos;t.
             </h2>
           </div>
@@ -210,7 +210,7 @@ const Home = async () => {
 
       <section>
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-32 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="max-w-[24ch] text-balance font-medium text-4xl tracking-tight sm:text-5xl">
+          <h2 className="max-w-[24ch] text-balance font-display font-medium text-4xl tracking-tight sm:text-5xl">
             Ready to play?
           </h2>
           <div className="flex flex-row items-center gap-3">

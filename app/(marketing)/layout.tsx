@@ -20,7 +20,7 @@ const MarketingLayout = async ({ children }: { children: ReactNode }) => {
             className="inline-flex items-center gap-2 font-medium tracking-tight"
           >
             <Logo className="size-6" />
-            <span>Ghost</span>
+            <span className="font-display text-lg font-medium">Ghost</span>
           </Link>
           <nav className="flex items-center gap-6">
             <Link
