@@ -293,7 +293,9 @@ export const HetznerPanel = ({
                 : "No snapshot yet. Build one to start provisioning servers."}
             </p>
           </div>
-          {build ? <BuildStatus build={build} /> : null}
+          {build && (buildActive || build.status === "failed") ? (
+            <BuildStatus build={build} />
+          ) : null}
           <div className="flex justify-start">
             <Button
               disabled={building || buildActive}
