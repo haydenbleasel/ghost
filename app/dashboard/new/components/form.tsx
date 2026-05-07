@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { getDefaults, missingRequiredFields } from "@/games";
+import { getDefaults, hasRequiredFields, missingRequiredFields } from "@/games";
 import type { SettingsSchema } from "@/games";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
@@ -455,7 +455,10 @@ const NameStep = ({
         />
       </div>
       {selectedGame && (
-        <Collapsible>
+        <Collapsible
+          key={selectedGame.id}
+          defaultOpen={hasRequiredFields(selectedGame.settings)}
+        >
           <CollapsibleTrigger asChild>
             <Button
               type="button"

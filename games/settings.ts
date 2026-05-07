@@ -166,3 +166,8 @@ export const missingRequiredFields = <S extends SettingsSchema>(
   }
   return missing;
 };
+
+export const hasRequiredFields = (schema: SettingsSchema): boolean =>
+  Object.values(schema).some(
+    (field) => field.type === "string" && field.required === true
+  );

@@ -38,6 +38,7 @@ export {
 export {
   defineSettings,
   getDefaults,
+  hasRequiredFields,
   missingRequiredFields,
   resolveSettings,
   type SettingField,
