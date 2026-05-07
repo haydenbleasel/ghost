@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { GeistMono } from "geist/font/mono";
 import { GeistPixelSquare } from "geist/font/pixel";
 import { GeistSans } from "geist/font/sans";
+import Script from "next/script";
 import type { ReactNode } from "react";
 import type { SoftwareApplication, WithContext } from "schema-dts";
 
@@ -58,6 +59,7 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
       </ThemeProvider>
       <JsonLd code={softwareApplicationJsonLd} />
       <Analytics />
+      <Script src="https://ui.sh/ui-picker.js" />
     </body>
   </html>
 );
