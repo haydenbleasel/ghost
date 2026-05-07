@@ -21,7 +21,7 @@ export const env = createEnv({
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     BOOTSTRAP_JWT_SECRET: process.env.BOOTSTRAP_JWT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
-    DIRECT_URL: process.env.DIRECT_URL,
+    DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
     KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
     KV_REST_API_URL: process.env.KV_REST_API_URL,
     NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
@@ -44,7 +44,7 @@ export const env = createEnv({
     BOOTSTRAP_JWT_SECRET: z.string().min(32),
 
     DATABASE_URL: z.string().min(1).url(),
-    DIRECT_URL: z.string().min(1).url().optional(),
+    DATABASE_URL_UNPOOLED: z.string().min(1).url().optional(),
     KV_REST_API_TOKEN: z.string().min(1),
 
     KV_REST_API_URL: z.string().min(1).url(),
