@@ -25,7 +25,6 @@ export const buildSatisfactoryCompose = (
     ports:
       - "7777:7777/udp"
       - "7777:7777/tcp"
-      - "8888:8888/tcp"
     environment:
       PUID: "1000"
       PGID: "1000"
@@ -35,7 +34,7 @@ export const buildSatisfactoryCompose = (
       AUTOSAVEONDISCONNECT: "${settings.autoSaveOnDisconnect}"
       DISABLESEASONALEVENTS: "${settings.disableSeasonalEvents}"
       SERVERGAMEPORT: "7777"
-      SERVERMESSAGINGPORT: "8888"
+      SERVERMESSAGINGPORT: "7777"
       SERVERIP: "0.0.0.0"
       SKIPUPDATE: "false"
       STEAMBETA: "false"

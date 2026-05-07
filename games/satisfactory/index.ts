@@ -18,21 +18,17 @@ export const satisfactory = {
   image: steamHeader(526_870),
   name: "Satisfactory",
   ports: [
+    // Game traffic.
     {
       from: 7777,
       protocol: "udp",
       to: 7777,
     },
+    // HTTPS messaging API the client uses for handshake, encryption token, and admin.
     {
       from: 7777,
       protocol: "tcp",
       to: 7777,
-    },
-    // Messaging port for the HTTPS API the Satisfactory client uses for server admin.
-    {
-      from: 8888,
-      protocol: "tcp",
-      to: 8888,
     },
   ],
   requirements: {
