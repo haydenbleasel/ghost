@@ -46,12 +46,16 @@ if (env.VERCEL) {
   config = withSentryConfig(
     { ...config, transpilePackages: ["@sentry/nextjs"] },
     {
-      automaticVercelMonitors: true,
-      disableLogger: true,
       org: env.SENTRY_ORG,
       project: env.SENTRY_PROJECT,
       silent: !env.CI,
       tunnelRoute: "/monitoring",
+      webpack: {
+        automaticVercelMonitors: true,
+        treeshake: {
+          removeDebugLogging: true,
+        },
+      },
       widenClientFileUpload: true,
     }
   );
