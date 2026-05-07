@@ -91,10 +91,10 @@ docker pull thijsvanloef/palworld-server-docker:latest
 docker pull mornedhels/enshrouded-server:latest
 docker pull didstopia/rust-server:latest
 docker pull ryshe/terraria:latest
-docker pull jamesits/dst-server:latest
+docker pull webhippie/dst:latest
 docker pull wolveix/satisfactory-server:latest
 docker pull joedwards32/cs2:latest
-docker pull trueosx/vrising-dedicated:latest
+docker pull trueosiris/vrising:latest
 
 apt-get clean
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

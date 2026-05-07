@@ -2,14 +2,6 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { DontStarveTogetherSettings } from "./settings";
 
-const indentLines = (text: string, spaces: number): string => {
-  const pad = " ".repeat(spaces);
-  return text
-    .split("\n")
-    .map((line) => `${pad}${line}`)
-    .join("\n");
-};
-
 export const buildDontStarveTogetherCompose = (
   config: ComposeConfig,
   settings: DontStarveTogetherSettings
@@ -17,51 +9,13 @@ export const buildDontStarveTogetherCompose = (
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
   const description = `${config.name} - Powered by Ghost`;
-  const clusterIni = `[GAMEPLAY]
-game_mode = ${settings.gameMode}
-max_players = ${settings.maxPlayers}
-pvp = ${settings.pvp}
-pause_when_empty = true
-[NETWORK]
-cluster_name = ${config.name}
-cluster_description = ${description}
-cluster_password = ${config.joinPassword ?? ""}
-cluster_intention = ${settings.intention}
-[MISC]
-console_enabled = true
-[SHARD]
-shard_enabled = false`;
-  const masterServerIni = `[NETWORK]
-server_port = 10999
-[SHARD]
-is_master = true
-[STEAM]
-master_server_port = 27018
-authentication_port = 8768`;
   return `services:
-  init:
-    image: alpine:3
-    command:
-      - sh
-      - -c
-      - |
-        mkdir -p /data/Cluster_1/Master /data/Cluster_1/mods
-        cat > /data/Cluster_1/cluster.ini <<'CLUSTERINI'
-${indentLines(clusterIni, 8)}
-        CLUSTERINI
-        cat > /data/Cluster_1/Master/server.ini <<'SERVERINI'
-${indentLines(masterServerIni, 8)}
-        SERVERINI
-        touch /data/Cluster_1/mods/dedicated_server_mods_setup.lua
-    volumes:
-      - /var/lib/ghost/game/data:/data
   dst:
-    image: jamesits/dst-server:latest
+    image: webhippie/dst:latest
     container_name: ghost-game
+    hostname: ghost-game
     restart: unless-stopped
-    depends_on:
-      init:
-        condition: service_completed_successfully
+    stop_grace_period: 30s
     security_opt:
       - seccomp=unconfined
     sysctls:
@@ -69,10 +23,24 @@ ${indentLines(masterServerIni, 8)}
       - net.ipv6.conf.default.disable_ipv6=1
     ports:
       - "10999:10999/udp"
+      - "27017:27017/udp"
+      - "8767:8767/udp"
     environment:
-      DST_CLUSTER_TOKEN: "${escape(settings.clusterToken)}"
       TZ: "${timezone}"
+      DST_CLUSTER_TOKEN: "${escape(settings.clusterToken)}"
+      DST_NETWORK_CLUSTER_NAME: "${escape(config.name)}"
+      DST_NETWORK_CLUSTER_DESCRIPTION: "${escape(description)}"
+      DST_NETWORK_CLUSTER_PASSWORD: "${escape(config.joinPassword ?? "")}"
+      DST_NETWORK_CLUSTER_INTENTION: "${settings.intention}"
+      DST_GAMEPLAY_GAME_MODE: "${settings.gameMode}"
+      DST_GAMEPLAY_MAX_PLAYERS: "${settings.maxPlayers}"
+      DST_GAMEPLAY_PVP: "${settings.pvp}"
+      DST_GAMEPLAY_PAUSE_WHEN_EMPTY: "true"
+      DST_MISC_CONSOLE_ENABLED: "true"
+      DST_SHARD_IS_MASTER: "true"
+      DST_SHARD_ENABLED: "false"
+      DST_NETWORK_SERVER_PORT: "10999"
     volumes:
-      - /var/lib/ghost/game/data:/data
+      - /var/lib/ghost/game/data:/var/lib/game
 `;
 };

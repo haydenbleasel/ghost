@@ -17,7 +17,6 @@ export const satisfactory = {
   image: steamHeader(526_870),
   name: "Satisfactory",
   ports: [
-    // Satisfactory 1.0+ uses a single port (7777) for both game traffic and queries.
     {
       from: 7777,
       protocol: "udp",
@@ -27,6 +26,12 @@ export const satisfactory = {
       from: 7777,
       protocol: "tcp",
       to: 7777,
+    },
+    // Messaging port for the HTTPS API the Satisfactory client uses for server admin.
+    {
+      from: 8888,
+      protocol: "tcp",
+      to: 8888,
     },
   ],
   requirements: {

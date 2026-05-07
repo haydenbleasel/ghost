@@ -8,9 +8,10 @@ export const buildVrisingCompose = (
 ): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
+  const listed = settings.public ? "true" : "false";
   return `services:
   vrising:
-    image: trueosx/vrising-dedicated:latest
+    image: trueosiris/vrising:latest
     container_name: ghost-game
     hostname: ghost-game
     restart: unless-stopped
@@ -27,14 +28,15 @@ export const buildVrisingCompose = (
       TZ: "${timezone}"
       SERVERNAME: "${escape(config.name)}"
       WORLDNAME: "${escape(settings.saveName)}"
-      SERVERPASSWORD: "${escape(config.joinPassword ?? "")}"
-      RCON_ENABLED: "true"
-      RCON_PASSWORD: "${escape(config.rconPassword)}"
       GAMEPORT: "9876"
       QUERYPORT: "9877"
-      MAX_USERS: "${settings.maxPlayers}"
-      GAME_SETTINGS_PRESET: "${settings.gameSettingsPreset}"
-      BIND_PUBLIC: "${settings.public}"
+      HOST_SETTINGS_Password: "${escape(config.joinPassword ?? "")}"
+      HOST_SETTINGS_MaxConnectedUsers: "${settings.maxPlayers}"
+      HOST_SETTINGS_ListOnSteam: "${listed}"
+      HOST_SETTINGS_ListOnEOS: "${listed}"
+      HOST_SETTINGS_Rcon__Enabled: "true"
+      HOST_SETTINGS_Rcon__Password: "${escape(config.rconPassword)}"
+      GAME_SETTINGS_Preset: "${settings.gameSettingsPreset}"
     volumes:
       - /var/lib/ghost/game/data/server:/mnt/vrising/server
       - /var/lib/ghost/game/data/persistent:/mnt/vrising/persistentdata
