@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { resumeHook } from "workflow/api";
 
 import { AgentAuthError, verifyAgentRequest } from "@/lib/agent/signing";
 import { prisma } from "@/lib/db";
 import { emitActivity, emitLog } from "@/lib/events/emit";
-import { hookTokens } from "@/lib/workflows/hook-tokens";
 import { AGENT_HEADERS, eventBatchSchema } from "@/protocol";
 
 export const runtime = "nodejs";
@@ -43,12 +41,6 @@ export const POST = async (request: Request) => {
       serverId: verified.serverId,
       source: "agent",
     });
-
-    try {
-      await resumeHook(hookTokens.phase(verified.serverId), event.phase);
-    } catch {
-      // No workflow is waiting on this phase, or it has already moved on.
-    }
   }
 
   for (const logLine of parsed.data.logs) {

@@ -5,7 +5,6 @@ import {
   stepMarkDeleted,
   stepReadPhase,
   stepSendDeleteCommand,
-  stepSignalCancelProvision,
 } from "./steps";
 
 const MAX_DRAIN_SECONDS = 120;
@@ -15,8 +14,6 @@ export const teardownServer = async (input: { serverId: string }) => {
   "use workflow";
 
   const { serverId } = input;
-
-  await stepSignalCancelProvision(serverId);
 
   const { hadAgent } = await stepSendDeleteCommand(serverId);
 
