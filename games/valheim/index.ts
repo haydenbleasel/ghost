@@ -27,6 +27,7 @@ export const valheim = {
   ],
   requirements: {
     cpu: 2,
+    disk: 10,
     memory: 6,
   },
   settings: valheimSettings,

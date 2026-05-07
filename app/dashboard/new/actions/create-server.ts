@@ -72,7 +72,8 @@ export const createServer = async (
   }
   if (
     type.memory < game.requirements.memory ||
-    type.cores < game.requirements.cpu
+    type.cores < game.requirements.cpu ||
+    type.disk < game.requirements.disk
   ) {
     return { error: "Server type does not meet game requirements", ok: false };
   }

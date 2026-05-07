@@ -33,7 +33,11 @@ const NewServerPage = async () => {
       id: g.id,
       image: g.image,
       name: g.name,
-      requirements: { cpu: g.requirements.cpu, memory: g.requirements.memory },
+      requirements: {
+        cpu: g.requirements.cpu,
+        disk: g.requirements.disk,
+        memory: g.requirements.memory,
+      },
       settings: g.settings,
     }));
 

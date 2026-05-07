@@ -42,6 +42,7 @@ export const dontStarveTogether = {
   ],
   requirements: {
     cpu: 2,
+    disk: 10,
     memory: 2,
   },
   settings: dontStarveTogetherSettings,

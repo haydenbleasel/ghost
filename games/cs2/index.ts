@@ -39,6 +39,7 @@ export const cs2 = {
   ],
   requirements: {
     cpu: 2,
+    disk: 50,
     memory: 4,
   },
   settings: cs2Settings,

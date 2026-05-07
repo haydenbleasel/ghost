@@ -27,6 +27,7 @@ export const enshrouded = {
   ],
   requirements: {
     cpu: 2,
+    disk: 20,
     memory: 4,
   },
   settings: enshroudedSettings,

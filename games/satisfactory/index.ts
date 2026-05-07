@@ -37,6 +37,7 @@ export const satisfactory = {
   ],
   requirements: {
     cpu: 4,
+    disk: 20,
     memory: 12,
   },
   settings: satisfactorySettings,

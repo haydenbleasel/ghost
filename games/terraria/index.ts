@@ -33,6 +33,7 @@ export const terraria = {
   ],
   requirements: {
     cpu: 1,
+    disk: 5,
     memory: 2,
   },
   settings: terrariaSettings,

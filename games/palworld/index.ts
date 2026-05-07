@@ -39,6 +39,7 @@ export const palworld = {
   ],
   requirements: {
     cpu: 4,
+    disk: 15,
     memory: 16,
   },
   settings: palworldSettings,

@@ -33,6 +33,7 @@ export const vrising = {
   ],
   requirements: {
     cpu: 4,
+    disk: 15,
     memory: 8,
   },
   settings: vrisingSettings,

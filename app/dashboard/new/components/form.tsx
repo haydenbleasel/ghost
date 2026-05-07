@@ -95,7 +95,7 @@ export interface GameOption {
   name: string;
   description: string;
   image: string;
-  requirements: { cpu: number; memory: number };
+  requirements: { cpu: number; disk: number; memory: number };
   settings: SettingsSchema;
 }
 
@@ -115,6 +115,7 @@ const STEPS = [
 const typeFitsGame = (t: CatalogServerType, g: GameOption) =>
   t.memory >= g.requirements.memory &&
   t.cores >= g.requirements.cpu &&
+  t.disk >= g.requirements.disk &&
   t.locations.some((l) => l.available);
 
 const firstAvailableLocation = (t: CatalogServerType | undefined) =>
@@ -391,7 +392,8 @@ const GameStep = ({ games, gameId, setGameId }: GameStepProps) => (
           <div className="p-2">
             <div className="font-medium text-sm">{game.name}</div>
             <div className="text-muted-foreground text-xs">
-              {game.requirements.memory} GB · {game.requirements.cpu} vCPU
+              {game.requirements.memory} GB · {game.requirements.cpu} vCPU ·{" "}
+              {game.requirements.disk} GB disk
             </div>
           </div>
         </label>

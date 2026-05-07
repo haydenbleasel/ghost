@@ -39,6 +39,7 @@ export const rust = {
   ],
   requirements: {
     cpu: 4,
+    disk: 30,
     memory: 8,
   },
   settings: rustSettings,
