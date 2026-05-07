@@ -1,6 +1,5 @@
 import "./styles.css";
 import { Analytics } from "@vercel/analytics/next";
-import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import type { SoftwareApplication, WithContext } from "schema-dts";
 
@@ -10,11 +9,7 @@ import { SEO_URL } from "@/lib/env";
 import { fonts } from "@/lib/fonts";
 import { JsonLd } from "@/lib/seo/json-ld";
 import { createMetadata } from "@/lib/seo/metadata";
-import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/providers/theme";
-
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 const homeDescription =
   "Open-source dedicated game server platform. Spin up Minecraft, Valheim, Rust, Palworld, Enshrouded and Terraria on your own Hetzner Cloud account in seconds.";
@@ -43,11 +38,7 @@ const softwareApplicationJsonLd: WithContext<SoftwareApplication> = {
 };
 
 const RootLayout = ({ children }: { children: ReactNode }) => (
-  <html
-    lang="en"
-    className={cn(fonts, "font-sans", geist.variable, geistMono.variable)}
-    suppressHydrationWarning
-  >
+  <html lang="en" className={fonts} suppressHydrationWarning>
     <body className="bg-background">
       <ThemeProvider>
         <TooltipProvider>{children}</TooltipProvider>
