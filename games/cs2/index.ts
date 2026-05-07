@@ -14,6 +14,12 @@ export const cs2 = {
   dockerImage,
   enabled: true,
   gamedigId: "cs2",
+  howToConnect: [
+    "Open Counter-Strike 2 and go to Settings → Game.",
+    'Set "Enable Developer Console (~)" to Yes.',
+    "Press `~` in-game to open the console.",
+    "Run `connect {address}; password <your password>` using the password shown above.",
+  ],
   id: "cs2",
   image: steamHeader(730),
   name: "Counter-Strike 2",

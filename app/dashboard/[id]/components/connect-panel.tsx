@@ -1,6 +1,7 @@
 "use client";
 import { CheckIcon, CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
+import type { ReactNode } from "react";
 
 import { Panel, PanelCard } from "@/components/panel";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,28 @@ const formatPort = (port: { from: number; to: number; protocol: string }) => {
 const primaryPort = (
   ports: readonly { from: number; to: number; protocol: string }[]
 ) => ports[0];
+
+const renderStep = (
+  step: string,
+  vars: { address: string; host: string; port: string }
+): ReactNode[] => {
+  const substituted = step
+    .replaceAll("{address-host}", vars.host)
+    .replaceAll("{address-port}", vars.port)
+    .replaceAll("{address}", vars.address);
+  return substituted.split(/`([^`]+)`/g).map((part, i) =>
+    i % 2 === 0 ? (
+      <Fragment key={i}>{part}</Fragment>
+    ) : (
+      <code
+        key={i}
+        className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs"
+      >
+        {part}
+      </code>
+    )
+  );
+};
 
 interface CopyableProps {
   label: string;
@@ -85,6 +108,15 @@ export const ConnectPanel = ({ game: gameId, ipv4, joinPassword }: Props) => {
 
   const primary = game ? primaryPort(game.ports) : null;
   const address = ipv4 && primary ? `${ipv4}:${primary.from}` : ipv4;
+  const stepVars = {
+    address: address ?? "",
+    host: ipv4 ?? "",
+    port: primary ? String(primary.from) : "",
+  };
+  const howToConnect =
+    game && "howToConnect" in game
+      ? (game.howToConnect as readonly string[])
+      : null;
 
   if (!ipv4) {
     return (
@@ -124,13 +156,21 @@ export const ConnectPanel = ({ game: gameId, ipv4, joinPassword }: Props) => {
               <span className="text-xs font-medium text-muted-foreground">
                 How to connect
               </span>
-              <p className="text-sm">
-                Open {game.name}, go to the multiplayer menu, and connect to the
-                address above.
-                {game.usesJoinPassword &&
-                  joinPassword &&
-                  " Share the password above with anyone you want to let in."}
-              </p>
+              {howToConnect ? (
+                <ol className="ml-4 list-decimal space-y-1.5 text-sm">
+                  {howToConnect.map((step, i) => (
+                    <li key={i}>{renderStep(step, stepVars)}</li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-sm">
+                  Open {game.name}, go to the multiplayer menu, and connect to
+                  the address above.
+                  {game.usesJoinPassword &&
+                    joinPassword &&
+                    " Share the password above with anyone you want to let in."}
+                </p>
+              )}
             </div>
           </>
         )}

@@ -14,6 +14,11 @@ export const rust = {
   dockerImage,
   enabled: true,
   gamedigId: "rust",
+  howToConnect: [
+    'Launch Rust and click "Play Game" to load into the main menu.',
+    "Press `F1` to open the console.",
+    "Run `client.connect {address}` and press Enter.",
+  ],
   id: "rust",
   image: steamHeader(252_490),
   name: "Rust",

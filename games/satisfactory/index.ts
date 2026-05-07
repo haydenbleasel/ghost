@@ -14,6 +14,13 @@ export const satisfactory = {
   dockerImage,
   enabled: true,
   gamedigId: "satisfactory",
+  howToConnect: [
+    'Launch Satisfactory and open "Server Manager" from the main menu.',
+    'Click "Add Server" and enter `{address}`.',
+    "When prompted, accept the server's self-signed certificate fingerprint.",
+    "Claim the server using your admin password (shown in the Settings tab).",
+    "Pick or upload a save, set max players, then join from the server list.",
+  ],
   id: "satisfactory",
   image: steamHeader(526_870),
   name: "Satisfactory",
