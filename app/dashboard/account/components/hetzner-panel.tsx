@@ -1,4 +1,5 @@
 "use client";
+import { CheckIcon, CircleXIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -6,15 +7,16 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import {
   isTerminalSnapshotStatus,
   SNAPSHOT_BUILD_PROGRESSION,
-  SNAPSHOT_BUILD_STEP_LABELS,
 } from "@/lib/snapshot-build/types";
 import type {
   SnapshotBuildStatus,
   SnapshotBuildSummary,
 } from "@/lib/snapshot-build/types";
+import { cn } from "@/lib/utils";
 
 interface Props {
   configured: boolean;
@@ -28,14 +30,28 @@ const POLL_INTERVAL_MS = 2000;
 const isActiveStatus = (status: SnapshotBuildStatus): boolean =>
   !isTerminalSnapshotStatus(status);
 
-const dotClassFor = (done: boolean, active: boolean): string => {
-  if (done) {
-    return "bg-foreground";
+const STEPS: { key: SnapshotBuildStatus; label: string }[] = [
+  { key: "pending", label: "Queued" },
+  { key: "compiling_agent", label: "Compiling agent" },
+  { key: "creating_vm", label: "Creating VM" },
+  { key: "installing", label: "Installing" },
+  { key: "snapshotting", label: "Snapshotting" },
+  { key: "ready", label: "Ready" },
+];
+
+type StepStatus = "done" | "active" | "pending" | "error";
+
+const StepIcon = ({ status }: { status: StepStatus }) => {
+  if (status === "done") {
+    return <CheckIcon className="size-4 shrink-0 text-emerald-500" />;
   }
-  if (active) {
-    return "animate-pulse bg-foreground";
+  if (status === "active") {
+    return <Spinner className="size-4 shrink-0 text-muted-foreground" />;
   }
-  return "bg-muted";
+  if (status === "error") {
+    return <CircleXIcon className="size-4 shrink-0 text-destructive" />;
+  }
+  return <div className="size-4 shrink-0" />;
 };
 
 const buildButtonLabel = (input: {
@@ -53,36 +69,50 @@ const buildButtonLabel = (input: {
 };
 
 const BuildStatus = ({ build }: { build: SnapshotBuildSummary }) => {
-  if (build.status === "failed") {
-    return (
-      <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm">
-        Build failed: {build.errorReason ?? "Unknown error"}
-      </div>
-    );
-  }
-
+  const errored = build.status === "failed";
   const currentIndex = SNAPSHOT_BUILD_PROGRESSION.indexOf(build.status);
+  // When the build fails, status flips to "failed" and we lose the in-flight
+  // phase, so currentIndex is -1 — pin the error to the first step.
+  const errorIndex = errored && currentIndex === -1 ? 0 : currentIndex;
 
   return (
-    <ol className="grid gap-1 text-sm">
-      {SNAPSHOT_BUILD_PROGRESSION.map((status, index) => {
-        const done = currentIndex > index;
-        const active = currentIndex === index;
-        const labelClass =
-          done || active ? "text-foreground" : "text-muted-foreground";
+    <div className="grid gap-3">
+      {STEPS.map((step, index) => {
+        const isErrorStep = errored && errorIndex === index;
+        let status: StepStatus;
+        if (isErrorStep) {
+          status = "error";
+        } else if (currentIndex > index) {
+          status = "done";
+        } else if (currentIndex === index) {
+          status = "active";
+        } else {
+          status = "pending";
+        }
+
         return (
-          <li className="flex items-center gap-2" key={status}>
-            <span
-              aria-hidden="true"
-              className={`inline-block h-2 w-2 rounded-full ${dotClassFor(done, active)}`}
-            />
-            <span className={labelClass}>
-              {SNAPSHOT_BUILD_STEP_LABELS[status]}
-            </span>
-          </li>
+          <div className="flex flex-col gap-1" key={step.key}>
+            <div className="flex flex-row items-center gap-4">
+              <StepIcon status={status} />
+              <span
+                className={cn(
+                  "text-sm",
+                  status === "pending" && "text-muted-foreground",
+                  status === "error" && "text-destructive"
+                )}
+              >
+                {step.label}
+              </span>
+            </div>
+            {isErrorStep && build.errorReason ? (
+              <p className="pl-8 text-destructive text-xs">
+                {build.errorReason}
+              </p>
+            ) : null}
+          </div>
         );
       })}
-    </ol>
+    </div>
   );
 };
 
