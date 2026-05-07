@@ -2,6 +2,11 @@ import { PlusIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import {
+  FadeIn,
+  FadeInListItem,
+  FadeInOnScroll,
+} from "@/components/animations";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { games } from "@/games";
@@ -92,28 +97,38 @@ const Home = async () => {
     <article>
       <header className="border-b border-foreground/10">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-24 sm:py-32">
-          <Logo className="size-32" />
-          <h1 className="mt-12 text-balance font-display font-medium text-5xl tracking-tight sm:text-6xl">
-            Simple, beautiful game servers in under a minute.
-          </h1>
-          <p className="max-w-[60ch] text-balance text-lg text-muted-foreground">
-            Ghost is a dedicated game server platform you can read, fork, and
-            self-host. Spin one up in seconds — Docker, SSH, and firewall rules
-            handled for you.
-          </p>
-          <div className="flex flex-row items-center gap-3">
+          <FadeIn>
+            <Logo className="size-32" />
+          </FadeIn>
+          <FadeIn delay={0.08}>
+            <h1 className="mt-12 text-balance font-display font-medium text-5xl tracking-tight sm:text-6xl">
+              Simple, beautiful game servers in under a minute.
+            </h1>
+          </FadeIn>
+          <FadeIn delay={0.16}>
+            <p className="max-w-[60ch] text-balance text-lg text-muted-foreground">
+              Ghost is a dedicated game server platform you can read, fork, and
+              self-host. Spin one up in seconds — Docker, SSH, and firewall
+              rules handled for you.
+            </p>
+          </FadeIn>
+          <FadeIn className="flex flex-row items-center gap-3" delay={0.24}>
             <HeroCtas isAuthenticated={isAuthenticated} />
-          </div>
+          </FadeIn>
           <dl className="mt-4 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-foreground/10 pt-10 sm:grid-cols-4">
-            {stats.map(({ label, value }) => (
-              <div key={label} className="flex flex-col gap-2">
+            {stats.map(({ label, value }, index) => (
+              <FadeIn
+                className="flex flex-col gap-2"
+                delay={0.32 + index * 0.05}
+                key={label}
+              >
                 <dt className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
                   {label}
                 </dt>
                 <dd className="font-medium text-2xl tabular-nums tracking-tight">
                   {value}
                 </dd>
-              </div>
+              </FadeIn>
             ))}
           </dl>
         </div>
@@ -121,7 +136,7 @@ const Home = async () => {
 
       <section className="border-b border-foreground/10">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-20">
-          <div className="flex flex-col gap-4">
+          <FadeInOnScroll className="flex flex-col gap-4">
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               Supported games
             </span>
@@ -132,20 +147,24 @@ const Home = async () => {
               Every supported game lives behind the same one-click flow. Your
               VM, your token, your billing.
             </p>
-          </div>
+          </FadeInOnScroll>
           <ul
-            role="list"
             className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2"
+            role="list"
           >
-            {supportedGames.map((game) => (
-              <li key={game.id} className="flex flex-col gap-4">
+            {supportedGames.map((game, index) => (
+              <FadeInListItem
+                className="flex flex-col gap-4"
+                delay={index * 0.08}
+                key={game.id}
+              >
                 <div className="relative aspect-[460/215] w-full overflow-hidden rounded-md">
                   <Image
-                    src={game.image}
                     alt={`${game.name} dedicated game server`}
+                    className="object-cover"
                     fill
                     sizes="(min-width: 768px) 380px, 90vw"
-                    className="object-cover"
+                    src={game.image}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -156,14 +175,17 @@ const Home = async () => {
                     {game.description}
                   </p>
                 </div>
-              </li>
+              </FadeInListItem>
             ))}
-            <li className="flex flex-col gap-4">
+            <FadeInListItem
+              className="flex flex-col gap-4"
+              delay={supportedGames.length * 0.08}
+            >
               <Link
-                href="https://github.com/haydenbleasel/ghost/issues/new"
-                target="_blank"
-                rel="noreferrer"
                 className="group flex aspect-[460/215] w-full items-center justify-center gap-2 rounded-md border border-foreground/15 border-dashed text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+                href="https://github.com/haydenbleasel/ghost/issues/new"
+                rel="noreferrer"
+                target="_blank"
               >
                 <PlusIcon className="size-4" />
                 <span className="font-medium text-sm">Request a game</span>
@@ -176,14 +198,14 @@ const Home = async () => {
                   Open an issue on GitHub and we&apos;ll add it to the roadmap.
                 </p>
               </div>
-            </li>
+            </FadeInListItem>
           </ul>
         </div>
       </section>
 
       <section className="border-b border-foreground/10">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-20">
-          <div className="flex flex-col gap-4">
+          <FadeInOnScroll className="flex flex-col gap-4">
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               What you get
             </span>
@@ -194,10 +216,14 @@ const Home = async () => {
               A small list of opinionated defaults that take you from sign-up to
               a healthy game server in under a minute.
             </p>
-          </div>
+          </FadeInOnScroll>
           <ol className="flex flex-col gap-6">
             {features.map(({ description, title }, index) => (
-              <li key={title} className="flex gap-5">
+              <FadeInListItem
+                className="flex gap-5"
+                delay={index * 0.06}
+                key={title}
+              >
                 <span className="font-mono text-muted-foreground text-sm tabular-nums">
                   {String(index + 1).padStart(2, "0")}
                 </span>
@@ -209,21 +235,21 @@ const Home = async () => {
                     {description}
                   </p>
                 </div>
-              </li>
+              </FadeInListItem>
             ))}
           </ol>
         </div>
       </section>
 
       <section>
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-32 sm:flex-row sm:items-end sm:justify-between">
+        <FadeInOnScroll className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-32 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="max-w-[24ch] text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
             Ready to play?
           </h2>
           <div className="flex flex-row items-center gap-3">
             <FinalCtas isAuthenticated={isAuthenticated} />
           </div>
-        </div>
+        </FadeInOnScroll>
       </section>
     </article>
   );
