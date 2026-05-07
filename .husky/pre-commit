@@ -1,9 +1,12 @@
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+
 bunx --bun prisma format
 bunx --bun prisma generate
-git add prisma/schema.prisma
-
 bun fix
-git add .
+
+if [ -n "$STAGED" ]; then
+  echo "$STAGED" | xargs git add --
+fi
 
 bun run types
 bun run test
