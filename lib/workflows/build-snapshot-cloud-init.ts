@@ -92,6 +92,7 @@ docker pull mornedhels/enshrouded-server:latest
 docker pull didstopia/rust-server:latest
 docker pull ryshe/terraria:latest
 docker pull jamesits/dst-server:latest
+docker pull wolveix/satisfactory-server:latest
 docker pull joedwards32/cs2:latest
 
 apt-get clean
