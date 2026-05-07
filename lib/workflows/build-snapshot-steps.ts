@@ -22,7 +22,8 @@ const BUILDER_LOCATION = "nbg1";
 const BUILDER_SERVER_TYPE = "cx23";
 const BUILDER_BASE_IMAGE = "ubuntu-24.04";
 const SNAPSHOT_DESCRIPTION = "ghost-gold";
-// Covers cloud-init runtime (apt upgrade + 6 docker pulls) plus headroom
+// Covers cloud-init runtime (apt upgrade + Docker install) plus headroom.
+// Game images are pulled lazily at per-server provision time.
 const AGENT_DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60;
 
 export const stepUpdateBuildStatus = async (input: {
