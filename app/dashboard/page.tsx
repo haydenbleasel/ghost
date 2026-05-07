@@ -58,7 +58,7 @@ const DashboardPage = async () => {
           <Empty>
             <EmptyHeader>
               <EmptyMedia className="flex -space-x-2">
-                {games.map((game, i) => (
+                {games.slice(0, 6).map((game, i) => (
                   <Image
                     key={game.id}
                     src={game.image}

@@ -53,18 +53,18 @@ const features = [
   },
 ] as const;
 
-const stats = [
-  { label: "Provision time", value: "~60s" },
-  { label: "Games supported", value: "6" },
-  { label: "Powered by", value: "Hetzner" },
-  { label: "Vendor lock-in", value: "None" },
-] as const;
-
 const Home = async () => {
   const session = await getSession();
   const isAuthenticated = Boolean(session?.user);
 
   const supportedGames = games.filter((g) => g.enabled);
+
+  const stats = [
+    { label: "Provision time", value: "~60s" },
+    { label: "Games supported", value: String(supportedGames.length) },
+    { label: "Powered by", value: "Hetzner" },
+    { label: "Vendor lock-in", value: "None" },
+  ];
 
   return (
     <>
