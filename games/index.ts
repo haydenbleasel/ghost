@@ -7,12 +7,14 @@ import { rust } from "./rust";
 import { satisfactory } from "./satisfactory";
 import { terraria } from "./terraria";
 import { valheim } from "./valheim";
+import { vrising } from "./vrising";
 
 export const games = [
   minecraft,
   valheim,
   palworld,
   enshrouded,
+  vrising,
   rust,
   terraria,
   satisfactory,

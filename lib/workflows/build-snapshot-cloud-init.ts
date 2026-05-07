@@ -94,6 +94,7 @@ docker pull ryshe/terraria:latest
 docker pull jamesits/dst-server:latest
 docker pull wolveix/satisfactory-server:latest
 docker pull joedwards32/cs2:latest
+docker pull trueosx/vrising-dedicated:latest
 
 apt-get clean
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
