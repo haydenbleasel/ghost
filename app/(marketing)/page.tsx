@@ -85,7 +85,7 @@ const Home = async () => {
     { label: "Provision time", value: "~60s" },
     { label: "Games supported", value: String(supportedGames.length) },
     { label: "Powered by", value: "Hetzner" },
-    { label: "Vendor lock-in", value: "None" },
+    { label: "Regions", value: "6" },
   ];
 
   return (
@@ -128,7 +128,7 @@ const Home = async () => {
             <h2 className="max-w-[28ch] text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
               Pick a game. Pick a region. Press play.
             </h2>
-            <p className="max-w-[60ch] text-muted-foreground">
+            <p className="max-w-[60ch] text-balance text-muted-foreground">
               Every supported game lives behind the same one-click flow. Your
               VM, your token, your billing.
             </p>
@@ -152,7 +152,7 @@ const Home = async () => {
                   <span className="font-medium tracking-tight">
                     {game.name}
                   </span>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
+                  <p className="text-balance text-muted-foreground text-sm leading-relaxed">
                     {game.description}
                   </p>
                 </div>
@@ -172,7 +172,7 @@ const Home = async () => {
                 <span className="font-medium tracking-tight">
                   Don&apos;t see yours?
                 </span>
-                <p className="text-muted-foreground text-sm leading-relaxed">
+                <p className="text-balance text-muted-foreground text-sm leading-relaxed">
                   Open an issue on GitHub and we&apos;ll add it to the roadmap.
                 </p>
               </div>
@@ -190,7 +190,7 @@ const Home = async () => {
             <h2 className="max-w-[32ch] text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
               Everything you need, nothing you don&apos;t.
             </h2>
-            <p className="max-w-[60ch] text-muted-foreground">
+            <p className="max-w-[60ch] text-balance text-muted-foreground">
               A small list of opinionated defaults that take you from sign-up to
               a healthy game server in under a minute.
             </p>
@@ -205,7 +205,7 @@ const Home = async () => {
                   <h3 className="font-display font-medium tracking-tight">
                     {title}
                   </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
+                  <p className="text-balance text-muted-foreground text-sm leading-relaxed">
                     {description}
                   </p>
                 </div>
