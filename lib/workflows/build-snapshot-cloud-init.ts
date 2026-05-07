@@ -88,7 +88,7 @@ systemctl enable ghost-agent.service
 docker pull itzg/minecraft-server:latest
 docker pull lloesche/valheim-server:latest
 docker pull thijsvanloef/palworld-server-docker:latest
-docker pull sknnr/enshrouded-dedicated-server:latest
+docker pull mornedhels/enshrouded-server:latest
 docker pull didstopia/rust-server:latest
 docker pull ryshe/terraria:latest
 
