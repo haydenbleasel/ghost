@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { createMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/session";
@@ -93,10 +94,8 @@ const HowItWorks = async () => {
     <article>
       <header className="border-b border-foreground/10">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-24 sm:py-32">
-          <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
-            How it works
-          </span>
-          <h1 className="text-balance font-medium text-5xl tracking-tight sm:text-6xl">
+          <Logo className="size-32" />
+          <h1 className="mt-12 text-balance font-medium text-5xl tracking-tight sm:text-6xl">
             Dedicated game servers in under a minute.
           </h1>
           <p className="text-balance text-lg text-muted-foreground">
