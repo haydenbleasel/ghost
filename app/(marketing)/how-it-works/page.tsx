@@ -96,7 +96,7 @@ const HowItWorks = async () => {
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-24 sm:py-32">
           <Logo className="size-32" />
           <h1 className="mt-12 text-balance font-display font-medium text-5xl tracking-tight sm:text-6xl">
-            Dedicated game servers in under a minute.
+            How a click becomes a game server.
           </h1>
           <p className="text-balance text-lg text-muted-foreground">
             Ghost is a control plane on Vercel that orchestrates Docker game
