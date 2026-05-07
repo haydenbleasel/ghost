@@ -1,11 +1,16 @@
 import { describe, expect, test } from "bun:test";
 
-import { errors as joseErrors } from "jose";
+import { errors as joseErrors, SignJWT } from "jose";
 
 import {
   mintSnapshotDownloadToken,
   verifySnapshotDownloadToken,
 } from "@/lib/agent/snapshot-token";
+import { env } from "@/lib/env";
+
+const SNAPSHOT_AUDIENCE = "ghost-snapshot-download";
+const SNAPSHOT_ISSUER = "ghost";
+const snapshotSecret = new TextEncoder().encode(env.BOOTSTRAP_JWT_SECRET);
 
 describe("snapshot download token", () => {
   test("mint then verify returns the original buildId", async () => {
@@ -28,6 +33,22 @@ describe("snapshot download token", () => {
     });
     await expect(verifySnapshotDownloadToken(token)).rejects.toBeInstanceOf(
       joseErrors.JWTExpired
+    );
+  });
+
+  test("verify rejects a token missing the subject claim", async () => {
+    // Mint a structurally-valid token (correct issuer/audience/secret) but with
+    // no `sub`, so we exercise the explicit validation rather than jose's
+    // signature/claim checks.
+    const token = await new SignJWT({})
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuer(SNAPSHOT_ISSUER)
+      .setAudience(SNAPSHOT_AUDIENCE)
+      .setIssuedAt()
+      .setExpirationTime(Math.floor(Date.now() / 1000) + 60)
+      .sign(snapshotSecret);
+    await expect(verifySnapshotDownloadToken(token)).rejects.toThrow(
+      /Invalid snapshot download token/
     );
   });
 
