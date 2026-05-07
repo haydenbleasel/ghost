@@ -2,6 +2,8 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { VrisingSettings } from "./settings";
 
+export const dockerImage = "trueosiris/vrising:latest";
+
 export const buildVrisingCompose = (
   config: ComposeConfig,
   settings: VrisingSettings
@@ -11,7 +13,7 @@ export const buildVrisingCompose = (
   const listed = settings.public ? "true" : "false";
   return `services:
   vrising:
-    image: trueosiris/vrising:latest
+    image: ${dockerImage}
     container_name: ghost-game
     hostname: ghost-game
     restart: unless-stopped

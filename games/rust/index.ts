@@ -1,7 +1,7 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
 import { steamHeader } from "../steam";
-import { buildRustCompose } from "./install";
+import { buildRustCompose, dockerImage } from "./install";
 import { rustSettings } from "./settings";
 
 const buildCompose = (config: ComposeConfig, raw: unknown): string =>
@@ -11,6 +11,7 @@ export const rust = {
   buildCompose,
   description:
     "The only aim in Rust is to survive when everything on the island wants you to die.",
+  dockerImage,
   enabled: true,
   gamedigId: "rust",
   id: "rust",

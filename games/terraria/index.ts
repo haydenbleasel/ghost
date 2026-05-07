@@ -1,7 +1,7 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
 import { steamHeader } from "../steam";
-import { buildTerrariaCompose } from "./install";
+import { buildTerrariaCompose, dockerImage } from "./install";
 import { terrariaSettings } from "./settings";
 
 const buildCompose = (config: ComposeConfig, raw: unknown): string =>
@@ -11,6 +11,7 @@ export const terraria = {
   buildCompose,
   description:
     "Dig, fight, explore, build! Nothing is impossible in this 2D adventure game.",
+  dockerImage,
   enabled: true,
   gamedigId: "terrariatshock",
   id: "terraria",

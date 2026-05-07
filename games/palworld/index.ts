@@ -1,7 +1,7 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
 import { steamHeader } from "../steam";
-import { buildPalworldCompose } from "./install";
+import { buildPalworldCompose, dockerImage } from "./install";
 import { palworldSettings } from "./settings";
 
 const buildCompose = (config: ComposeConfig, raw: unknown): string =>
@@ -11,6 +11,7 @@ export const palworld = {
   buildCompose,
   description:
     'Fight, farm, build and work alongside mysterious creatures called "Pals".',
+  dockerImage,
   enabled: true,
   gamedigId: "palworld",
   id: "palworld",

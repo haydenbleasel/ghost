@@ -2,6 +2,8 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { TerrariaSettings } from "./settings";
 
+export const dockerImage = "ryshe/terraria:latest";
+
 export const buildTerrariaCompose = (
   config: ComposeConfig,
   settings: TerrariaSettings
@@ -14,7 +16,7 @@ export const buildTerrariaCompose = (
     : "";
   return `services:
   terraria:
-    image: ryshe/terraria:latest
+    image: ${dockerImage}
     container_name: ghost-game
     restart: unless-stopped
     stdin_open: true

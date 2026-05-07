@@ -2,6 +2,8 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { DontStarveTogetherSettings } from "./settings";
 
+export const dockerImage = "webhippie/dst:latest";
+
 export const buildDontStarveTogetherCompose = (
   config: ComposeConfig,
   settings: DontStarveTogetherSettings
@@ -11,7 +13,7 @@ export const buildDontStarveTogetherCompose = (
   const description = `${config.name} - Powered by Ghost`;
   return `services:
   dst:
-    image: webhippie/dst:latest
+    image: ${dockerImage}
     container_name: ghost-game
     hostname: ghost-game
     restart: unless-stopped

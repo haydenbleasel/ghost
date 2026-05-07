@@ -1,7 +1,7 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
 import { steamHeader } from "../steam";
-import { buildCs2Compose } from "./install";
+import { buildCs2Compose, dockerImage } from "./install";
 import { cs2Settings } from "./settings";
 
 const buildCompose = (config: ComposeConfig, raw: unknown): string =>
@@ -11,6 +11,7 @@ export const cs2 = {
   buildCompose,
   description:
     "The legendary tactical FPS. Plant the bomb, defuse it, or just frag your friends.",
+  dockerImage,
   enabled: true,
   gamedigId: "cs2",
   id: "cs2",

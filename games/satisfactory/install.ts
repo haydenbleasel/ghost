@@ -2,6 +2,8 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { SatisfactorySettings } from "./settings";
 
+export const dockerImage = "wolveix/satisfactory-server:latest";
+
 export const buildSatisfactoryCompose = (
   config: ComposeConfig,
   settings: SatisfactorySettings
@@ -10,7 +12,7 @@ export const buildSatisfactoryCompose = (
   const escape = escapeComposeValue;
   return `services:
   satisfactory:
-    image: wolveix/satisfactory-server:latest
+    image: ${dockerImage}
     container_name: ghost-game
     hostname: ghost-game
     restart: unless-stopped

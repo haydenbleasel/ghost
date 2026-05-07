@@ -2,6 +2,8 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { MinecraftSettings } from "./settings";
 
+export const dockerImage = "itzg/minecraft-server:latest";
+
 export const buildMinecraftCompose = (
   config: ComposeConfig,
   settings: MinecraftSettings
@@ -10,7 +12,7 @@ export const buildMinecraftCompose = (
   const escape = escapeComposeValue;
   return `services:
   minecraft:
-    image: itzg/minecraft-server:latest
+    image: ${dockerImage}
     container_name: ghost-game
     ports:
       - "25565:25565"

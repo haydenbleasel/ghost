@@ -2,6 +2,8 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { Cs2Settings } from "./settings";
 
+export const dockerImage = "joedwards32/cs2:latest";
+
 export const buildCs2Compose = (
   config: ComposeConfig,
   settings: Cs2Settings
@@ -16,7 +18,7 @@ export const buildCs2Compose = (
     volumes:
       - /var/lib/ghost/game/data:/home/steam/cs2-dedicated
   cs2:
-    image: joedwards32/cs2:latest
+    image: ${dockerImage}
     container_name: ghost-game
     restart: unless-stopped
     depends_on:

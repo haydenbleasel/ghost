@@ -1,7 +1,7 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
 import { steamHeader } from "../steam";
-import { buildSatisfactoryCompose } from "./install";
+import { buildSatisfactoryCompose, dockerImage } from "./install";
 import { satisfactorySettings } from "./settings";
 
 const buildCompose = (config: ComposeConfig, raw: unknown): string =>
@@ -11,6 +11,7 @@ export const satisfactory = {
   buildCompose,
   description:
     "Construct factories, automate production, and explore an alien planet with friends.",
+  dockerImage,
   enabled: true,
   gamedigId: "satisfactory",
   id: "satisfactory",

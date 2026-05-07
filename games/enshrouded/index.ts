@@ -1,7 +1,7 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
 import { steamHeader } from "../steam";
-import { buildEnshroudedCompose } from "./install";
+import { buildEnshroudedCompose, dockerImage } from "./install";
 import { enshroudedSettings } from "./settings";
 
 const buildCompose = (config: ComposeConfig, raw: unknown): string =>
@@ -11,6 +11,7 @@ export const enshrouded = {
   buildCompose,
   description:
     "A game of survival, crafting, and action on a sprawling voxel-based continent.",
+  dockerImage,
   enabled: true,
   gamedigId: "enshrouded",
   id: "enshrouded",

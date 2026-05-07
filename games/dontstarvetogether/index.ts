@@ -1,7 +1,7 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
 import { steamHeader } from "../steam";
-import { buildDontStarveTogetherCompose } from "./install";
+import { buildDontStarveTogetherCompose, dockerImage } from "./install";
 import { dontStarveTogetherSettings } from "./settings";
 
 const buildCompose = (config: ComposeConfig, raw: unknown): string =>
@@ -14,6 +14,7 @@ export const dontStarveTogether = {
   buildCompose,
   description:
     "A multiplayer survival sandbox where you brave hunger, monsters, and madness with friends.",
+  dockerImage,
   enabled: true,
   gamedigId: "dst",
   id: "dontstarvetogether",

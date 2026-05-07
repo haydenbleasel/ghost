@@ -1,4 +1,5 @@
 import "server-only";
+import { games } from "@/games";
 
 const SYSTEMD_UNIT = `[Unit]
 Description=Ghost Agent
@@ -33,6 +34,9 @@ const indent = (text: string, spaces: number): string => {
 };
 
 export const buildSnapshotCloudInit = (agentBinaryUrl: string): string => {
+  const dockerPulls = games
+    .map((game) => `docker pull ${game.dockerImage}`)
+    .join("\n");
   const buildScript = `#!/usr/bin/env bash
 set -euxo pipefail
 export DEBIAN_FRONTEND=noninteractive
@@ -85,16 +89,7 @@ chmod +x /usr/local/bin/ghost-agent
 systemctl daemon-reload
 systemctl enable ghost-agent.service
 
-docker pull itzg/minecraft-server:latest
-docker pull lloesche/valheim-server:latest
-docker pull thijsvanloef/palworld-server-docker:latest
-docker pull mornedhels/enshrouded-server:latest
-docker pull didstopia/rust-server:latest
-docker pull ryshe/terraria:latest
-docker pull webhippie/dst:latest
-docker pull wolveix/satisfactory-server:latest
-docker pull joedwards32/cs2:latest
-docker pull trueosiris/vrising:latest
+${dockerPulls}
 
 apt-get clean
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
