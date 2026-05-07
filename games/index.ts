@@ -1,4 +1,5 @@
 import { cs2 } from "./cs2";
+import { dontStarveTogether } from "./dontstarvetogether";
 import { enshrouded } from "./enshrouded";
 import { minecraft } from "./minecraft";
 import { palworld } from "./palworld";
@@ -14,6 +15,7 @@ export const games = [
   rust,
   terraria,
   cs2,
+  dontStarveTogether,
 ];
 
 export type Game = (typeof games)[number];
