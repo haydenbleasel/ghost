@@ -3,7 +3,6 @@ import type { Marker } from "cobe";
 import { humanId } from "human-id";
 import { ChevronDown, Cpu, HardDrive, MemoryStick, Server } from "lucide-react";
 import Image from "next/image";
-import type { StaticImageData } from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -19,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { getDefaults } from "@/games";
+import { getDefaults, hasRequiredFields, missingRequiredFields } from "@/games";
 import type { SettingsSchema } from "@/games";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
@@ -95,8 +94,8 @@ export interface GameOption {
   id: string;
   name: string;
   description: string;
-  image: StaticImageData;
-  requirements: { cpu: number; memory: number };
+  image: string;
+  requirements: { cpu: number; disk: number; memory: number };
   settings: SettingsSchema;
 }
 
@@ -116,6 +115,7 @@ const STEPS = [
 const typeFitsGame = (t: CatalogServerType, g: GameOption) =>
   t.memory >= g.requirements.memory &&
   t.cores >= g.requirements.cpu &&
+  t.disk >= g.requirements.disk &&
   t.locations.some((l) => l.available);
 
 const firstAvailableLocation = (t: CatalogServerType | undefined) =>
@@ -385,13 +385,15 @@ const GameStep = ({ games, gameId, setGameId }: GameStepProps) => (
           <Image
             src={game.image}
             alt={game.name}
-            className="aspect-square w-full object-cover"
-            placeholder="blur"
+            width={460}
+            height={215}
+            className="aspect-[460/215] w-full object-cover"
           />
           <div className="p-2">
             <div className="font-medium text-sm">{game.name}</div>
             <div className="text-muted-foreground text-xs">
-              {game.requirements.memory} GB · {game.requirements.cpu} vCPU
+              {game.requirements.memory} GB · {game.requirements.cpu} vCPU ·{" "}
+              {game.requirements.disk} GB disk
             </div>
           </div>
         </label>
@@ -453,7 +455,10 @@ const NameStep = ({
         />
       </div>
       {selectedGame && (
-        <Collapsible>
+        <Collapsible
+          key={selectedGame.id}
+          defaultOpen={hasRequiredFields(selectedGame.settings)}
+        >
           <CollapsibleTrigger asChild>
             <Button
               type="button"
@@ -554,8 +559,16 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
     nameValid,
   ];
 
+  const settingsValid = selectedGame
+    ? missingRequiredFields(selectedGame.settings, settings).length === 0
+    : true;
+
   const canSubmit =
-    nameValid && Boolean(gameId) && Boolean(typeName) && Boolean(locationName);
+    nameValid &&
+    Boolean(gameId) &&
+    Boolean(typeName) &&
+    Boolean(locationName) &&
+    settingsValid;
 
   const submit = async () => {
     if (!canSubmit) {

@@ -85,13 +85,6 @@ chmod +x /usr/local/bin/ghost-agent
 systemctl daemon-reload
 systemctl enable ghost-agent.service
 
-docker pull itzg/minecraft-server:latest
-docker pull lloesche/valheim-server:latest
-docker pull thijsvanloef/palworld-server-docker:latest
-docker pull mornedhels/enshrouded-server:latest
-docker pull didstopia/rust-server:latest
-docker pull ryshe/terraria:latest
-
 apt-get clean
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 truncate -s 0 /var/log/*log /var/log/**/*log || true

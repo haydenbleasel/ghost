@@ -15,7 +15,6 @@ model User {
   emailVerified  Boolean         @default(false)
   image          String?
   hetznerToken   String?
-  hetznerImageId String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   sessions       Session[]
@@ -23,8 +22,27 @@ model User {
   passkeys       Passkey[]
   servers        Server[]
   snapshotBuilds SnapshotBuild[]
+  snapshots      UserSnapshot[]
 
   @@map("users")
+}
+
+// Per-user golden image, scoped by deployment environment so a snapshot built
+// on a preview deployment can't clobber the prod snapshot. `environment` is
+// "production", "preview:<branch>", or "development" (see SNAPSHOT_ENVIRONMENT
+// in lib/env.ts).
+model UserSnapshot {
+  id             String   @id
+  userId         String
+  environment    String
+  hetznerImageId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, environment])
+  @@index([userId])
+  @@map("user_snapshots")
 }
 
 model Session {

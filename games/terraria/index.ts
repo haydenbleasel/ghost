@@ -1,7 +1,7 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
-import { buildTerrariaCompose } from "./install";
+import { steamHeader } from "../steam";
+import { buildTerrariaCompose, dockerImage } from "./install";
 import { terrariaSettings } from "./settings";
 
 const buildCompose = (config: ComposeConfig, raw: unknown): string =>
@@ -11,10 +11,11 @@ export const terraria = {
   buildCompose,
   description:
     "Dig, fight, explore, build! Nothing is impossible in this 2D adventure game.",
+  dockerImage,
   enabled: true,
   gamedigId: "terrariatshock",
   id: "terraria",
-  image,
+  image: steamHeader(105_600),
   name: "Terraria",
   ports: [
     // This is the default port for Terraria, used for game traffic.
@@ -32,6 +33,7 @@ export const terraria = {
   ],
   requirements: {
     cpu: 1,
+    disk: 5,
     memory: 2,
   },
   settings: terrariaSettings,

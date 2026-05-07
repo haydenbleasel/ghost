@@ -7,6 +7,9 @@ const bootstrapSchema = z.object({
   apiBaseUrl: z.string().url(),
   bootstrapToken: z.string().min(1),
   serverId: z.string().min(1),
+  // Set on Vercel preview deployments so callbacks can pass through Vercel's
+  // deployment protection. Null on production (no auth wall) and local dev.
+  vercelProtectionBypass: z.string().nullable(),
 });
 
 const stateSchema = z.object({
@@ -17,6 +20,10 @@ const stateSchema = z.object({
   privateKey: z.string().min(1),
   publicKey: z.string().min(1),
   serverId: z.string().min(1),
+  // Carried forward from bootstrap so the agent keeps punching through preview
+  // deployment protection across restarts. Optional for backwards-compat with
+  // state files written before this field existed.
+  vercelProtectionBypass: z.string().nullable().optional(),
 });
 
 export type Bootstrap = z.infer<typeof bootstrapSchema>;

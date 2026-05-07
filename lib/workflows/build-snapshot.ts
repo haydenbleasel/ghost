@@ -15,8 +15,9 @@ import {
   stepUpdateBuildStatus,
 } from "./build-snapshot-steps";
 
-// 45 min: covers apt upgrade + 6 docker pulls on a fresh Ubuntu 24.04 VM,
-// with headroom for slow apt mirrors / docker hub pulls.
+// 45 min: covers apt upgrade + Docker install on a fresh Ubuntu 24.04 VM,
+// with headroom for slow apt mirrors. Game images are pulled lazily at
+// per-server provision time, not baked into the snapshot.
 const MAX_BUILD_WAIT_SECONDS = 45 * 60;
 const BUILD_POLL_SECONDS = 15;
 const MAX_SNAPSHOT_WAIT_SECONDS = 15 * 60;

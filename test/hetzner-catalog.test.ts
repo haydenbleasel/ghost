@@ -107,6 +107,44 @@ describe("getHetznerCatalog", () => {
     expect(type.locations[1]).toMatchObject({ available: false, name: "nbg1" });
   });
 
+  test("falls back to alphabetical name sort when locations share availability", async () => {
+    // All datacenters here mark id=100 as both supported AND available, so the
+    // available!==available branch never fires and the localeCompare tiebreaker
+    // determines the order.
+    const ashDc = {
+      location: {
+        city: "Ashburn",
+        country: "US",
+        latitude: 39.04,
+        longitude: -77.49,
+        name: "ash",
+      },
+      server_types: { available: [100], supported: [100] },
+    };
+    const hilDc = {
+      location: {
+        city: "Hillsboro",
+        country: "US",
+        latitude: 45.52,
+        longitude: -122.99,
+        name: "hil",
+      },
+      server_types: { available: [100], supported: [100] },
+    };
+    const client = makeClient({
+      datacenters: [hilDc, ashDc, fsnDc],
+      image: baseImage,
+      pricing: { currency: "EUR" },
+      serverTypes: [baseServerType()],
+    });
+    const catalog = await getHetznerCatalog(client, "1");
+    expect(catalog.serverTypes[0].locations.map((l) => l.name)).toEqual([
+      "ash",
+      "fsn1",
+      "hil",
+    ]);
+  });
+
   test("uses minimum monthly price across supported locations", async () => {
     const client = makeClient({
       datacenters: [fsnDc, nbgDc],

@@ -28,6 +28,7 @@ export const signedFetch = async (input: {
   privateKey: string;
   body?: unknown;
   extraHeaders?: Record<string, string>;
+  protectionBypass?: string | null;
   signal?: AbortSignal;
 }): Promise<Response> => {
   const timestamp = String(Date.now());
@@ -60,6 +61,10 @@ export const signedFetch = async (input: {
 
   if (input.method === "POST") {
     headers["Content-Type"] = "application/json";
+  }
+
+  if (input.protectionBypass) {
+    headers["x-vercel-protection-bypass"] = input.protectionBypass;
   }
 
   return fetch(input.url, {

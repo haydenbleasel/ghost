@@ -7,7 +7,7 @@ import { FatalError } from "workflow";
 
 import { mintSnapshotDownloadToken } from "@/lib/agent/snapshot-token";
 import { prisma } from "@/lib/db";
-import { env } from "@/lib/env";
+import { API_URL, env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import {
   HetznerApiError,
   MissingHetznerCredentialsError,
@@ -22,7 +22,8 @@ const BUILDER_LOCATION = "nbg1";
 const BUILDER_SERVER_TYPE = "cx23";
 const BUILDER_BASE_IMAGE = "ubuntu-24.04";
 const SNAPSHOT_DESCRIPTION = "ghost-gold";
-// Covers cloud-init runtime (apt upgrade + 6 docker pulls) plus headroom
+// Covers cloud-init runtime (apt upgrade + Docker install) plus headroom.
+// Game images are pulled lazily at per-server provision time.
 const AGENT_DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60;
 
 export const stepUpdateBuildStatus = async (input: {
@@ -79,11 +80,14 @@ export const stepCompileAgent = async (input: {
     buildId: input.buildId,
     ttlSeconds: AGENT_DOWNLOAD_TOKEN_TTL_SECONDS,
   });
-  const params = new URLSearchParams({
-    t: downloadToken,
-    "x-vercel-protection-bypass": env.VERCEL_AUTOMATION_BYPASS_SECRET,
-  });
-  const agentDownloadUrl = `${env.NEXT_PUBLIC_APP_URL}/api/snapshot/agent-binary?${params.toString()}`;
+  const params = new URLSearchParams({ t: downloadToken });
+  if (env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+    params.set(
+      "x-vercel-protection-bypass",
+      env.VERCEL_AUTOMATION_BYPASS_SECRET
+    );
+  }
+  const agentDownloadUrl = `${API_URL}/api/snapshot/agent-binary?${params.toString()}`;
 
   return { agentBlobUrl, agentDownloadUrl, agentSha: sha };
 };
@@ -221,15 +225,22 @@ export const stepSaveImageId = async (input: {
 }): Promise<{ previousSnapshotId: string | null }> => {
   "use step";
   const newId = String(input.snapshotImageId);
+  const environment = SNAPSHOT_ENVIRONMENT;
   const result = await prisma.$transaction(async (tx) => {
-    const user = await tx.user.findUnique({
+    const existing = await tx.userSnapshot.findUnique({
       select: { hetznerImageId: true },
-      where: { id: input.userId },
+      where: { userId_environment: { environment, userId: input.userId } },
     });
-    const previousSnapshotId = user?.hetznerImageId ?? null;
-    await tx.user.update({
-      data: { hetznerImageId: newId },
-      where: { id: input.userId },
+    const previousSnapshotId = existing?.hetznerImageId ?? null;
+    await tx.userSnapshot.upsert({
+      create: {
+        environment,
+        hetznerImageId: newId,
+        id: input.buildId,
+        userId: input.userId,
+      },
+      update: { hetznerImageId: newId },
+      where: { userId_environment: { environment, userId: input.userId } },
     });
     await tx.snapshotBuild.update({
       data: {

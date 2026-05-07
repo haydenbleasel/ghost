@@ -1,8 +1,8 @@
 # Ghost
 
-Open-source control plane for dedicated game servers. Next.js on Vercel, game VMs on Hetzner Cloud, coordinated by a small `ghost-agent` that runs on each VM.
+![Ghost — control plane for dedicated game servers](app/opengraph-image.png)
 
-For an overview of the architecture, the golden image, the agent protocol, and the provisioning lifecycle, see the **How it works** page (`/how-it-works`).
+Simple, beautiful game servers. Ghost is a dedicated game server platform you can read, fork, and self-host. Spin one up in seconds — Docker, SSH, and firewall rules handled for you.
 
 ## Layout
 
@@ -15,65 +15,71 @@ prisma/               schema + migrations
 games/                per-game compose generators
 ```
 
-## Environment variables
-
-```bash
-# Postgres (Neon)
-DATABASE_URL=
-DIRECT_URL=               # pooled vs direct for Prisma migrate
-
-# Vercel KV / Upstash Redis
-KV_REST_API_URL=
-KV_REST_API_TOKEN=
-
-# Vercel Blob (snapshot agent binary)
-BLOB_READ_WRITE_TOKEN=
-
-# Vercel Deployment Protection bypass (auto-injected when you enable
-# "Protection Bypass for Automation" in project settings). Required so
-# the snapshot-builder VM can fetch the agent binary past the auth wall.
-VERCEL_AUTOMATION_BYPASS_SECRET=
-
-# Secrets (32+ char random strings)
-BOOTSTRAP_JWT_SECRET=
-BETTER_AUTH_SECRET=
-
-# URLs
-BETTER_AUTH_URL=https://your-app.vercel.app
-NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
-
-# Optional
-NEXT_PUBLIC_SENTRY_DSN=
-SENTRY_ORG=
-SENTRY_PROJECT=
-```
-
-Hetzner Cloud tokens are stored per-user, encrypted in Postgres, via `/dashboard/account/backend`.
-
 ## Setup
 
-1. Provision Neon (Postgres), Vercel KV / Upstash (Redis), and Vercel Blob; populate the env vars above.
-2. In Vercel project settings, enable **Deployment Protection → Protection Bypass for Automation**. The generated value is auto-injected as `VERCEL_AUTOMATION_BYPASS_SECRET`.
-3. Run `bun migrate` (formats schema, generates client, pushes).
-4. Deploy to Vercel.
+1. **Clone the repo**
 
-Each user then signs in, saves a Hetzner Cloud token on `/dashboard/account/backend`, and clicks **Build snapshot** to bake their golden image (~10–15 min).
+   ```bash
+   git clone https://github.com/haydenbleasel/ghost.git
+   cd ghost
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   bun install
+   ```
+
+3. **Provision the backing services**
+   - **Postgres** via [Neon](https://neon.tech) — grab both the pooled and direct connection strings.
+   - **Redis** via [Vercel KV](https://vercel.com/docs/storage/vercel-kv) or [Upstash](https://upstash.com).
+   - **Blob storage** via [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) — used to host the agent binary.
+
+4. **Configure environment variables**
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Fill in the values from step 3. Generate `BOOTSTRAP_JWT_SECRET` and `BETTER_AUTH_SECRET` with `openssl rand -hex 32`.
+
+5. **Run database migrations**
+
+   ```bash
+   bun migrate
+   ```
+
+6. **Enable Vercel Deployment Protection bypass** (preview deploys only)
+
+   In your Vercel project settings, enable **Deployment Protection → Protection Bypass for Automation**. The generated value is auto-injected as `VERCEL_AUTOMATION_BYPASS_SECRET` so Hetzner agents can punch through the auth wall on callbacks.
+
+7. **Deploy to Vercel**
+
+   ```bash
+   vercel deploy
+   ```
+
+8. **Sign in and bake your golden image**
+
+   Open the deployed app, sign in, save a Hetzner Cloud token on `/dashboard/account/backend`, and click **Build snapshot**. Baking takes ~10–15 min.
 
 > [!NOTE]
 > New Hetzner Cloud accounts are capped at 5 servers per project until the account is verified. Provisioning fails with `resource_limit_exceeded` once you hit it — request a limit increase from Hetzner support.
 
 ### Adding a new game
 
-Add `docker pull <image>` lines to `lib/workflows/build-snapshot-cloud-init.ts`, redeploy, and click **Build snapshot** again.
+Each game lives in its own folder under `games/`. To add one:
+
+1. **Create a folder** — `games/<your-game>/` with three files:
+   - `install.ts` — exports `dockerImage` (the upstream image tag) and `build<Game>Compose(config, settings)` (returns the compose YAML string).
+   - `settings.ts` — exports a settings schema via `defineSettings(...)` describing the per-server options.
+   - `index.ts` — exports the game definition (`id`, `name`, `description`, `image`, `dockerImage`, `ports`, `requirements`, `settings`, `buildCompose`, etc.). Use an existing folder like `games/minecraft/` as a template.
+
+2. **Register it in `games/index.ts`** — import your game and add it to the `games` array.
+
+3. **Redeploy and rebuild the snapshot** — the snapshot's `docker pull` list is derived from `games[].dockerImage`, so once you redeploy, click **Build snapshot** again to bake the new image into the golden image.
 
 ## Scripts
 
 - `bun dev` — Next dev server (turbopack)
 - `bun run build` — prisma generate + next build
-- `bun db:push` / `db:migrate` / `db:studio`
-- `bun agent:dev` — run agent locally with Bun
-- `bun agent:build` — cross-compile Linux binary to `dist/ghost-agent`
-
-## License
-
-MIT — see `license.md`.

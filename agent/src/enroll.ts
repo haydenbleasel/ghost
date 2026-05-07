@@ -6,6 +6,13 @@ import { generateKeypair } from "./signing";
 export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
   const keypair = await generateKeypair();
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (bootstrap.vercelProtectionBypass) {
+    headers["x-vercel-protection-bypass"] = bootstrap.vercelProtectionBypass;
+  }
+
   const response = await fetch(
     new URL("/api/agent/enroll", bootstrap.apiBaseUrl),
     {
@@ -13,7 +20,7 @@ export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
         bootstrapToken: bootstrap.bootstrapToken,
         publicKey: keypair.publicKey,
       }),
-      headers: { "Content-Type": "application/json" },
+      headers,
       method: "POST",
     }
   );
@@ -33,6 +40,7 @@ export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
     privateKey: keypair.privateKey,
     publicKey: keypair.publicKey,
     serverId: parsed.serverId,
+    vercelProtectionBypass: bootstrap.vercelProtectionBypass,
   };
 
   await saveState(state);

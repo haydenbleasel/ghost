@@ -139,8 +139,9 @@ export const AppSidebar = ({
                             <Image
                               src={game.image}
                               alt={game.name}
+                              width={16}
+                              height={16}
                               className="size-4 shrink-0 rounded-xs object-cover"
-                              placeholder="blur"
                             />
                           ) : (
                             <Server />

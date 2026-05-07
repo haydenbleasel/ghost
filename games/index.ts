@@ -1,11 +1,28 @@
+import { cs2 } from "./cs2";
+import { dontStarveTogether } from "./dontstarvetogether";
 import { enshrouded } from "./enshrouded";
 import { minecraft } from "./minecraft";
 import { palworld } from "./palworld";
 import { rust } from "./rust";
+import { satisfactory } from "./satisfactory";
 import { terraria } from "./terraria";
 import { valheim } from "./valheim";
+import { vrising } from "./vrising";
 
-export const games = [minecraft, valheim, palworld, enshrouded, rust, terraria];
+export { steamHeader } from "./steam";
+
+export const games = [
+  minecraft,
+  valheim,
+  palworld,
+  enshrouded,
+  vrising,
+  rust,
+  terraria,
+  satisfactory,
+  cs2,
+  dontStarveTogether,
+];
 
 export type Game = (typeof games)[number];
 
@@ -21,6 +38,8 @@ export {
 export {
   defineSettings,
   getDefaults,
+  hasRequiredFields,
+  missingRequiredFields,
   resolveSettings,
   type SettingField,
   type SettingsSchema,

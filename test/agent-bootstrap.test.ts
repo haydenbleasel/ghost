@@ -1,8 +1,28 @@
 import { describe, expect, test } from "bun:test";
 
-import { errors as joseErrors } from "jose";
+import { errors as joseErrors, SignJWT } from "jose";
 
 import { mintBootstrapJwt, verifyBootstrapJwt } from "@/lib/agent/bootstrap";
+import { env } from "@/lib/env";
+
+const BOOTSTRAP_AUDIENCE = "ghost-agent";
+const BOOTSTRAP_ISSUER = "ghost";
+const bootstrapSecret = new TextEncoder().encode(env.BOOTSTRAP_JWT_SECRET);
+
+const signWithoutClaim = (claim: "sub" | "jti") => {
+  const jwt = new SignJWT({})
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuer(BOOTSTRAP_ISSUER)
+    .setAudience(BOOTSTRAP_AUDIENCE)
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(Date.now() / 1000) + 60);
+  if (claim === "jti") {
+    jwt.setSubject("srv_x");
+  } else {
+    jwt.setJti("jti_x");
+  }
+  return jwt.sign(bootstrapSecret);
+};
 
 describe("bootstrap JWT", () => {
   test("mint then verify round-trips serverId and jti", async () => {
@@ -25,6 +45,20 @@ describe("bootstrap JWT", () => {
     expect(jti).toBe("fixed-id");
     const verified = await verifyBootstrapJwt(token);
     expect(verified.jti).toBe("fixed-id");
+  });
+
+  test("rejects a token missing the subject claim", async () => {
+    const token = await signWithoutClaim("sub");
+    await expect(verifyBootstrapJwt(token)).rejects.toThrow(
+      /Invalid bootstrap token/
+    );
+  });
+
+  test("rejects a token missing the jti claim", async () => {
+    const token = await signWithoutClaim("jti");
+    await expect(verifyBootstrapJwt(token)).rejects.toThrow(
+      /Invalid bootstrap token/
+    );
   });
 
   test("rejects a token with the wrong audience/issuer", async () => {

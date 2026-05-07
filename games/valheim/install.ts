@@ -2,6 +2,8 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { ValheimSettings } from "./settings";
 
+export const dockerImage = "lloesche/valheim-server:latest";
+
 export const buildValheimCompose = (
   config: ComposeConfig,
   settings: ValheimSettings
@@ -11,7 +13,7 @@ export const buildValheimCompose = (
   const serverArgs = settings.crossplay ? "-crossplay" : "";
   return `services:
   valheim:
-    image: lloesche/valheim-server:latest
+    image: ${dockerImage}
     container_name: ghost-game
     cap_add:
       - sys_nice

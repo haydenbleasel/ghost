@@ -2,6 +2,8 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { RustSettings } from "./settings";
 
+export const dockerImage = "pfeiffermax/rust-game-server:latest";
+
 export const buildRustCompose = (
   config: ComposeConfig,
   settings: RustSettings
@@ -17,7 +19,7 @@ export const buildRustCompose = (
     volumes:
       - /var/lib/ghost/game/data:/srv/rust/server/ghost
   rust:
-    image: pfeiffermax/rust-game-server:latest
+    image: ${dockerImage}
     container_name: ghost-game
     restart: unless-stopped
     security_opt:

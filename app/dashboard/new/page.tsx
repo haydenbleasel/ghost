@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 
 import { games } from "@/games";
+import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { MissingHetznerCredentialsError } from "@/lib/hetzner";
 import { getHetznerCatalog } from "@/lib/hetzner/catalog";
-import { getUserHetznerContext } from "@/lib/hetzner/credentials";
+import { getUserHetznerImageContext } from "@/lib/hetzner/credentials";
 import { requireUser } from "@/lib/session";
 
 import { NewServerForm } from "./components/form";
@@ -13,7 +14,10 @@ const NewServerPage = async () => {
   const user = await requireUser();
   let catalog: Awaited<ReturnType<typeof getHetznerCatalog>>;
   try {
-    const { client, imageId } = await getUserHetznerContext(user.id);
+    const { client, imageId } = await getUserHetznerImageContext(
+      user.id,
+      SNAPSHOT_ENVIRONMENT
+    );
     catalog = await getHetznerCatalog(client, imageId);
   } catch (error) {
     if (error instanceof MissingHetznerCredentialsError) {
@@ -29,7 +33,11 @@ const NewServerPage = async () => {
       id: g.id,
       image: g.image,
       name: g.name,
-      requirements: { cpu: g.requirements.cpu, memory: g.requirements.memory },
+      requirements: {
+        cpu: g.requirements.cpu,
+        disk: g.requirements.disk,
+        memory: g.requirements.memory,
+      },
       settings: g.settings,
     }));
 

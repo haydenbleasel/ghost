@@ -18,7 +18,7 @@ Ghost runs on Bun. You'll need accounts for Neon (Postgres), Upstash/Vercel KV (
 ```bash
 bun install
 cp .env.example .env.local   # then fill in values
-bun migrate                  # prisma format + generate + push
+bun migrate                  # prisma migrate dev + generate
 bun dev                      # Next dev server on :3000
 ```
 

@@ -2,6 +2,8 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { EnshroudedSettings } from "./settings";
 
+export const dockerImage = "mornedhels/enshrouded-server:latest";
+
 export const buildEnshroudedCompose = (
   config: ComposeConfig,
   settings: EnshroudedSettings
@@ -10,7 +12,7 @@ export const buildEnshroudedCompose = (
   const escape = escapeComposeValue;
   return `services:
   enshrouded:
-    image: mornedhels/enshrouded-server:latest
+    image: ${dockerImage}
     container_name: ghost-game
     hostname: ghost-game
     restart: unless-stopped

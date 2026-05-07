@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
 
-import { env } from "@/lib/env";
+import { SEO_URL } from "@/lib/env";
 
 const sitemap = (): MetadataRoute.Sitemap => {
-  const base = env.NEXT_PUBLIC_APP_URL;
+  const base = SEO_URL;
   const lastModified = new Date();
 
   return [

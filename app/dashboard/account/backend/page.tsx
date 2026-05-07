@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { requireUser } from "@/lib/session";
 import type { SnapshotBuildSummary } from "@/lib/snapshot-build/types";
 
@@ -7,10 +8,19 @@ import { HetznerPanel } from "../components/hetzner-panel";
 
 const BackendPage = async () => {
   const user = await requireUser();
-  const [creds, latestBuildRow] = await Promise.all([
+  const [creds, snapshot, latestBuildRow] = await Promise.all([
     prisma.user.findUnique({
-      select: { hetznerImageId: true, hetznerToken: true },
+      select: { hetznerToken: true },
       where: { id: user.id },
+    }),
+    prisma.userSnapshot.findUnique({
+      select: { hetznerImageId: true },
+      where: {
+        userId_environment: {
+          environment: SNAPSHOT_ENVIRONMENT,
+          userId: user.id,
+        },
+      },
     }),
     prisma.snapshotBuild.findFirst({
       orderBy: { createdAt: "desc" },
@@ -27,7 +37,7 @@ const BackendPage = async () => {
     }),
   ]);
   const hetznerConfigured = Boolean(
-    creds?.hetznerToken && creds?.hetznerImageId
+    creds?.hetznerToken && snapshot?.hetznerImageId
   );
   const tokenSaved = Boolean(creds?.hetznerToken);
   const latestBuild: SnapshotBuildSummary | null = latestBuildRow
@@ -53,7 +63,7 @@ const BackendPage = async () => {
         )}
         <HetznerPanel
           configured={hetznerConfigured}
-          imageId={creds?.hetznerImageId ?? null}
+          imageId={snapshot?.hetznerImageId ?? null}
           latestBuild={latestBuild}
           tokenSaved={tokenSaved}
         />

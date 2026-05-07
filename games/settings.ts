@@ -8,6 +8,7 @@ export interface StringField extends BaseField<string> {
   type: "string";
   maxLength?: number;
   placeholder?: string;
+  required?: boolean;
 }
 
 export interface NumberField extends BaseField<number> {
@@ -139,5 +140,34 @@ export const validateSettings = <S extends SettingsSchema>(
     }
     out[key] = value;
   }
+  for (const [key, field] of Object.entries(schema)) {
+    if (field.type === "string" && field.required) {
+      const value = out[key] ?? field.default;
+      if (typeof value !== "string" || value.length === 0) {
+        return { error: `${field.label} is required`, ok: false };
+      }
+    }
+  }
   return { data: out as Partial<SettingsValues<S>>, ok: true };
 };
+
+export const missingRequiredFields = <S extends SettingsSchema>(
+  schema: S,
+  values: Record<string, unknown>
+): string[] => {
+  const missing: string[] = [];
+  for (const [key, field] of Object.entries(schema)) {
+    if (field.type === "string" && field.required) {
+      const value = values[key];
+      if (typeof value !== "string" || value.length === 0) {
+        missing.push(key);
+      }
+    }
+  }
+  return missing;
+};
+
+export const hasRequiredFields = (schema: SettingsSchema): boolean =>
+  Object.values(schema).some(
+    (field) => field.type === "string" && field.required === true
+  );

@@ -1,3 +1,9 @@
-bun run check
+bunx --bun prisma format
+bunx --bun prisma generate
+git add prisma/schema.prisma
+
+bun fix
+git add .
+
 bun run types
 bun run test

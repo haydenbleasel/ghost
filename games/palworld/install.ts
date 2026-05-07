@@ -2,6 +2,8 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { PalworldSettings } from "./settings";
 
+export const dockerImage = "thijsvanloef/palworld-server-docker:latest";
+
 export const buildPalworldCompose = (
   config: ComposeConfig,
   settings: PalworldSettings
@@ -12,7 +14,7 @@ export const buildPalworldCompose = (
     settings.description || `${config.name} - Powered by Ghost`;
   return `services:
   palworld:
-    image: thijsvanloef/palworld-server-docker:latest
+    image: ${dockerImage}
     container_name: ghost-game
     restart: unless-stopped
     security_opt:

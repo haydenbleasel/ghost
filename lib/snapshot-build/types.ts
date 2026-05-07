@@ -17,16 +17,6 @@ export interface SnapshotBuildSummary {
   finishedAt: string | null;
 }
 
-export const SNAPSHOT_BUILD_STEP_LABELS: Record<SnapshotBuildStatus, string> = {
-  compiling_agent: "Compiling agent",
-  creating_vm: "Creating VM",
-  failed: "Failed",
-  installing: "Installing",
-  pending: "Queued",
-  ready: "Ready",
-  snapshotting: "Snapshotting",
-};
-
 export const SNAPSHOT_BUILD_PROGRESSION: SnapshotBuildStatus[] = [
   "pending",
   "compiling_agent",

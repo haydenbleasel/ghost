@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { encryptSecret } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
+import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { createHetznerClient } from "@/lib/hetzner";
 import { requireUser } from "@/lib/session";
 
@@ -14,13 +15,24 @@ const postSchema = z.object({
 
 export const GET = async () => {
   const user = await requireUser();
-  const row = await prisma.user.findUnique({
-    select: { hetznerImageId: true, hetznerToken: true },
-    where: { id: user.id },
-  });
+  const [row, snapshot] = await Promise.all([
+    prisma.user.findUnique({
+      select: { hetznerToken: true },
+      where: { id: user.id },
+    }),
+    prisma.userSnapshot.findUnique({
+      select: { hetznerImageId: true },
+      where: {
+        userId_environment: {
+          environment: SNAPSHOT_ENVIRONMENT,
+          userId: user.id,
+        },
+      },
+    }),
+  ]);
   return NextResponse.json({
-    configured: Boolean(row?.hetznerToken && row?.hetznerImageId),
-    imageId: row?.hetznerImageId ?? null,
+    configured: Boolean(row?.hetznerToken && snapshot?.hetznerImageId),
+    imageId: snapshot?.hetznerImageId ?? null,
   });
 };
 
@@ -64,9 +76,12 @@ export const POST = async (request: Request) => {
 
 export const DELETE = async () => {
   const user = await requireUser();
-  await prisma.user.update({
-    data: { hetznerImageId: null, hetznerToken: null },
-    where: { id: user.id },
-  });
+  await prisma.$transaction([
+    prisma.user.update({
+      data: { hetznerToken: null },
+      where: { id: user.id },
+    }),
+    prisma.userSnapshot.deleteMany({ where: { userId: user.id } }),
+  ]);
   return NextResponse.json({ configured: false });
 };

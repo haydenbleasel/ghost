@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { setTimeout as delay } from "node:timers/promises";
 
 import { createSseResponse } from "@/lib/sse/stream";
 
@@ -80,6 +81,40 @@ describe("createSseResponse", () => {
     expect(text).toContain("event: error\n");
     expect(text).toContain('"message":"boom"');
     await reader.cancel();
+  });
+
+  test("drops queued writes after the consumer cancels mid-poll", async () => {
+    // fetchSince hangs until we resolve it. We cancel while it's pending so
+    // that, by the time the loop tries to write the queued events, the abort
+    // signal is already firing and the early-return guard in write() runs.
+    const { promise: fetchPromise, resolve: resolveFetch } =
+      Promise.withResolvers<{ event: unknown; seq: number }[]>();
+    let fetchCalls = 0;
+    const res = createSseResponse({
+      fetchSince: () => {
+        fetchCalls += 1;
+        return fetchPromise;
+      },
+      initialCursor: 0,
+      pollMs: 5,
+    });
+
+    const reader = getReader(res);
+    // Kick off the start() body by starting a read. We don't await it here.
+    const firstRead = reader.read();
+    // Give the loop a tick to enter fetchSince.
+    await delay(10);
+    // Cancelling triggers the stream's cancel() callback, which aborts the
+    // controller. The pending fetch then resolves with events and the writer
+    // hits the aborted-signal early return.
+    await reader.cancel();
+    resolveFetch([
+      { event: { ignored: true }, seq: 1 },
+      { event: { ignored: true }, seq: 2 },
+    ]);
+    await firstRead;
+
+    expect(fetchCalls).toBe(1);
   });
 
   test("defaults to 'message' event name when none is provided", async () => {

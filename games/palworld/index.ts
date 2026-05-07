@@ -1,7 +1,7 @@
 import type { ComposeConfig } from "../compose";
 import { resolveSettings } from "../settings";
-import image from "./image.jpg";
-import { buildPalworldCompose } from "./install";
+import { steamHeader } from "../steam";
+import { buildPalworldCompose, dockerImage } from "./install";
 import { palworldSettings } from "./settings";
 
 const buildCompose = (config: ComposeConfig, raw: unknown): string =>
@@ -11,10 +11,11 @@ export const palworld = {
   buildCompose,
   description:
     'Fight, farm, build and work alongside mysterious creatures called "Pals".',
+  dockerImage,
   enabled: true,
   gamedigId: "palworld",
   id: "palworld",
-  image,
+  image: steamHeader(1_623_730),
   name: "Palworld",
   ports: [
     // This is the default port for Palworld, used for game traffic.
@@ -38,6 +39,7 @@ export const palworld = {
   ],
   requirements: {
     cpu: 4,
+    disk: 15,
     memory: 16,
   },
   settings: palworldSettings,

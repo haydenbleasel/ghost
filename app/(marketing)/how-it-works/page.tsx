@@ -80,7 +80,7 @@ const buildSteps = [
     title: "Spin up a builder VM",
   },
   {
-    body: "Once the VM is off, the workflow calls create_image, polls until the image is available, writes the new ID onto User.hetznerImageId, then deletes both the builder VM and the previous snapshot.",
+    body: "Once the VM is off, the workflow calls create_image, polls until the image is available, writes the new ID onto a UserSnapshot row scoped to the current deployment environment, then deletes both the builder VM and the previous snapshot.",
     title: "Snapshot and swap",
   },
 ] as const;
@@ -127,13 +127,33 @@ const HowItWorks = async () => {
             </p>
           </div>
 
-          <pre className="overflow-x-auto rounded-md border border-foreground/10 bg-muted/40 p-6 font-mono text-muted-foreground text-xs leading-relaxed">
-            {`Browser ──SSE──▶ Next.js (Vercel) ──long-poll──▶ ghost-agent (Hetzner VM)
-                     │                                 │
-                     ├── Prisma → Neon Postgres        └── Docker → game container
-                     ├── Upstash Redis (event seq)
-                     └── Workflow SDK (durable steps)`}
-          </pre>
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-3 rounded-md border border-foreground/10 bg-muted/40 p-5">
+                <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
+                  Control plane · Vercel
+                </span>
+                <p className="font-medium tracking-tight">Next.js</p>
+                <ul className="flex flex-col gap-1 text-muted-foreground text-sm">
+                  <li>Prisma → Neon Postgres</li>
+                  <li>Upstash Redis (event seq)</li>
+                  <li>Workflow SDK (durable steps)</li>
+                </ul>
+              </div>
+              <div className="flex flex-col gap-3 rounded-md border border-foreground/10 bg-muted/40 p-5">
+                <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
+                  Runtime · Hetzner VM
+                </span>
+                <p className="font-medium tracking-tight">ghost-agent</p>
+                <ul className="flex flex-col gap-1 text-muted-foreground text-sm">
+                  <li>Docker → game container</li>
+                </ul>
+              </div>
+            </div>
+            <p className="text-center font-mono text-muted-foreground text-xs">
+              Browser ←SSE→ Vercel ←long-poll→ Hetzner VM
+            </p>
+          </div>
 
           <dl className="flex flex-col">
             {stack.map(({ description, label }) => (

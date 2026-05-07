@@ -107,6 +107,7 @@ export class EventBuffer {
         extraHeaders: { [AGENT_HEADERS.BATCH]: batchId },
         method: "POST",
         privateKey: this.state.privateKey,
+        protectionBypass: this.state.vercelProtectionBypass,
         url: new URL("/api/agent/events", this.state.apiBaseUrl).toString(),
       });
       if (res.ok) {

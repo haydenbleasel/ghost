@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { env } from "@/lib/env";
+import { SEO_URL } from "@/lib/env";
 
 const robots = (): MetadataRoute.Robots => ({
   rules: [
@@ -10,7 +10,7 @@ const robots = (): MetadataRoute.Robots => ({
       userAgent: "*",
     },
   ],
-  sitemap: `${env.NEXT_PUBLIC_APP_URL}/sitemap.xml`,
+  sitemap: `${SEO_URL}/sitemap.xml`,
 });
 
 export default robots;
