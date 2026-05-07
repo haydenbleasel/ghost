@@ -2,7 +2,7 @@ import type { ComposeConfig } from "../compose";
 import { escapeComposeValue } from "../compose";
 import type { SatisfactorySettings } from "./settings";
 
-export const dockerImage = "wolveix/satisfactory-server:latest";
+export const dockerImage = "wolveix/satisfactory-server:v1.9.10";
 
 export const buildSatisfactoryCompose = (
   config: ComposeConfig,
@@ -37,6 +37,7 @@ export const buildSatisfactoryCompose = (
       SERVERGAMEPORT: "7777"
       SERVERMESSAGINGPORT: "8888"
       SERVERIP: "0.0.0.0"
+      MULTIHOME: "0.0.0.0"
       SKIPUPDATE: "false"
       STEAMBETA: "false"
       ADMINPASSWORD: "${escape(config.rconPassword)}"
