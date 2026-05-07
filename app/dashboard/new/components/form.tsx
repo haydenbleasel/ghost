@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { getDefaults } from "@/games";
+import { getDefaults, missingRequiredFields } from "@/games";
 import type { SettingsSchema } from "@/games";
 import type { CatalogServerType } from "@/lib/hetzner/catalog";
 import { cn } from "@/lib/utils";
@@ -556,8 +556,16 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
     nameValid,
   ];
 
+  const settingsValid = selectedGame
+    ? missingRequiredFields(selectedGame.settings, settings).length === 0
+    : true;
+
   const canSubmit =
-    nameValid && Boolean(gameId) && Boolean(typeName) && Boolean(locationName);
+    nameValid &&
+    Boolean(gameId) &&
+    Boolean(typeName) &&
+    Boolean(locationName) &&
+    settingsValid;
 
   const submit = async () => {
     if (!canSubmit) {

@@ -7,6 +7,7 @@ export const dontStarveTogetherSettings = defineSettings({
     help: "Klei cluster token. Generate one at accounts.klei.com → Game Servers → Add New Server.",
     label: "Klei cluster token",
     maxLength: 256,
+    required: true,
     type: "string",
   },
   gameMode: {

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { missingRequiredFields } from "@/games";
 import type { SettingField, SettingsSchema } from "@/games";
 
 import { updateServerSettings } from "../actions/settings";
@@ -100,6 +101,9 @@ interface RowProps {
   onChange: (value: FieldValue) => void;
 }
 
+const isRequired = (field: SettingField) =>
+  field.type === "string" && field.required === true;
+
 const SettingRow = ({ fieldKey, field, value, onChange }: RowProps) => {
   const inputId = `setting-${fieldKey}`;
   return (
@@ -107,6 +111,11 @@ const SettingRow = ({ fieldKey, field, value, onChange }: RowProps) => {
       <div className="flex min-w-0 flex-col gap-0.5">
         <Label htmlFor={inputId} className="text-sm font-medium">
           {field.label}
+          {isRequired(field) && (
+            <span className="ml-1 text-destructive" aria-hidden>
+              *
+            </span>
+          )}
         </Label>
         {field.help && (
           <span className="text-muted-foreground text-xs">{field.help}</span>
@@ -180,6 +189,7 @@ export const GameSettingsForm = ({
   const [saving, setSaving] = useState(false);
 
   const dirty = !valuesEqual(values, baseline);
+  const valid = missingRequiredFields(schema, values).length === 0;
 
   const setField = (key: string, value: FieldValue) => {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -228,7 +238,7 @@ export const GameSettingsForm = ({
             type="button"
             size="sm"
             onClick={save}
-            disabled={!dirty || saving}
+            disabled={!dirty || saving || !valid}
           >
             {saving ? "Saving…" : "Save"}
           </Button>
