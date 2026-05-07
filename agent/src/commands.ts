@@ -40,6 +40,7 @@ const ackCommand = async (
     body: { durationMs, error, result, status },
     method: "POST",
     privateKey: state.privateKey,
+    protectionBypass: state.vercelProtectionBypass,
     url: new URL(
       `/api/agent/commands/${commandId}/ack`,
       state.apiBaseUrl
@@ -176,6 +177,7 @@ export const pollCommands = async (
         agentId: state.agentId,
         method: "GET",
         privateKey: state.privateKey,
+        protectionBypass: state.vercelProtectionBypass,
         signal,
         url: new URL(
           "/api/agent/commands?wait=25",

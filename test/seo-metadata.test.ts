@@ -47,7 +47,7 @@ describe("createMetadata", () => {
     expect(meta.openGraph?.images).toBeUndefined();
   });
 
-  test("metadataBase is built from NEXT_PUBLIC_APP_URL", () => {
+  test("metadataBase falls back to localhost outside Vercel", () => {
     const meta = createMetadata({ description: "d", title: "Page" });
     expect(meta.metadataBase).toBeInstanceOf(URL);
     expect((meta.metadataBase as URL).origin).toBe("http://localhost:3000");

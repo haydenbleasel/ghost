@@ -8,11 +8,14 @@ import type { GamePort } from "@/games";
 import { mintBootstrapJwt } from "@/lib/agent/bootstrap";
 import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
-import { env } from "@/lib/env";
+import { API_URL, env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { emitActivity } from "@/lib/events/emit";
 import { HetznerApiError, throwIfHetznerError } from "@/lib/hetzner";
 import type { HetznerClient } from "@/lib/hetzner";
-import { getUserHetznerContext } from "@/lib/hetzner/credentials";
+import {
+  getUserHetznerContext,
+  getUserHetznerImageContext,
+} from "@/lib/hetzner/credentials";
 import type { Phase } from "@/protocol";
 
 import { hookTokens } from "./hook-tokens";
@@ -71,11 +74,16 @@ const buildCloudInit = (input: {
   bootstrapToken: string;
   apiBaseUrl: string;
   ports: readonly GamePort[];
+  vercelProtectionBypass: string | null;
 }): string => {
   const bootstrap = {
     apiBaseUrl: input.apiBaseUrl,
     bootstrapToken: input.bootstrapToken,
     serverId: input.serverId,
+    // Set on preview deployments so the agent can punch through Vercel's
+    // deployment protection on every callback. Null on prod (no auth wall) and
+    // local dev (no protection layer in front).
+    vercelProtectionBypass: input.vercelProtectionBypass,
   };
   const ufwRules = buildUfwRules(input.ports)
     .map((rule) => `  - ${rule}`)
@@ -124,7 +132,10 @@ export const stepCreateHetznerServer = async (serverId: string) => {
   let hetzner: HetznerClient;
   let imageId: string;
   try {
-    const ctx = await getUserHetznerContext(server.userId);
+    const ctx = await getUserHetznerImageContext(
+      server.userId,
+      SNAPSHOT_ENVIRONMENT
+    );
     hetzner = ctx.client;
     ({ imageId } = ctx);
   } catch {
@@ -138,10 +149,14 @@ export const stepCreateHetznerServer = async (serverId: string) => {
   });
 
   const userData = buildCloudInit({
-    apiBaseUrl: env.NEXT_PUBLIC_APP_URL,
+    apiBaseUrl: API_URL,
     bootstrapToken: token,
     ports: game.ports,
     serverId,
+    vercelProtectionBypass:
+      env.VERCEL_ENV === "production"
+        ? null
+        : (env.VERCEL_AUTOMATION_BYPASS_SECRET ?? null),
   });
 
   const hetznerName = `ghost-${serverId.toLowerCase().slice(-12)}-${crypto

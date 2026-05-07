@@ -6,7 +6,7 @@ import type { SoftwareApplication, WithContext } from "schema-dts";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { env } from "@/lib/env";
+import { SEO_URL } from "@/lib/env";
 import { fonts } from "@/lib/fonts";
 import { JsonLd } from "@/lib/seo/json-ld";
 import { createMetadata } from "@/lib/seo/metadata";
@@ -39,7 +39,7 @@ const softwareApplicationJsonLd: WithContext<SoftwareApplication> = {
   },
   operatingSystem: "Linux",
   sameAs: ["https://github.com/haydenbleasel/ghost"],
-  url: env.NEXT_PUBLIC_APP_URL,
+  url: SEO_URL,
 };
 
 const RootLayout = ({ children }: { children: ReactNode }) => (

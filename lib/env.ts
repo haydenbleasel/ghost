@@ -4,7 +4,6 @@ import { z } from "zod";
 
 export const env = createEnv({
   client: {
-    NEXT_PUBLIC_APP_URL: z.string().min(1).url(),
     NEXT_PUBLIC_GA_MEASUREMENT_ID: z
       .string()
       .min(1)
@@ -25,7 +24,6 @@ export const env = createEnv({
     DIRECT_URL: process.env.DIRECT_URL,
     KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
     KV_REST_API_URL: process.env.KV_REST_API_URL,
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
@@ -56,6 +54,42 @@ export const env = createEnv({
 
     SENTRY_PROJECT: z.string().min(1).optional(),
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
-    VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1),
+    VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
   },
 });
+
+const LOCAL_URL = "http://localhost:3000";
+
+const productionUrl = env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : null;
+const branchUrl = env.VERCEL_BRANCH_URL
+  ? `https://${env.VERCEL_BRANCH_URL}`
+  : null;
+
+// Always points at the production deployment. Used for canonical SEO surfaces
+// (sitemap, robots, metadataBase, Schema.org url) so previews don't leak their
+// .vercel.app hostname into search indexes.
+export const SEO_URL = productionUrl ?? LOCAL_URL;
+
+// Points at the current deployment so Hetzner agents call back to whichever
+// deployment provisioned them. Production deployments use the project's prod
+// URL; previews use the branch-stable URL (so callbacks survive redeploys of
+// the same branch); dev falls back to localhost.
+export const API_URL =
+  env.VERCEL_ENV === "production"
+    ? (productionUrl ?? LOCAL_URL)
+    : (branchUrl ?? LOCAL_URL);
+
+// Identity used to scope per-user snapshot images so a build on one deployment
+// can't clobber another deployment's golden image. Production shares one
+// snapshot; preview branches each get their own; local dev is its own bucket.
+export const SNAPSHOT_ENVIRONMENT: string = (() => {
+  if (env.VERCEL_ENV === "production") {
+    return "production";
+  }
+  if (env.VERCEL_ENV === "preview") {
+    return `preview:${env.VERCEL_GIT_COMMIT_REF ?? "unknown"}`;
+  }
+  return "development";
+})();

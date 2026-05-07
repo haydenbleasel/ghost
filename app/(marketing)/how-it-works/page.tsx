@@ -80,7 +80,7 @@ const buildSteps = [
     title: "Spin up a builder VM",
   },
   {
-    body: "Once the VM is off, the workflow calls create_image, polls until the image is available, writes the new ID onto User.hetznerImageId, then deletes both the builder VM and the previous snapshot.",
+    body: "Once the VM is off, the workflow calls create_image, polls until the image is available, writes the new ID onto a UserSnapshot row scoped to the current deployment environment, then deletes both the builder VM and the previous snapshot.",
     title: "Snapshot and swap",
   },
 ] as const;

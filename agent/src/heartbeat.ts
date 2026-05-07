@@ -37,6 +37,7 @@ export const runHeartbeat = async (
         body,
         method: "POST",
         privateKey: state.privateKey,
+        protectionBypass: state.vercelProtectionBypass,
         url: new URL("/api/agent/heartbeat", state.apiBaseUrl).toString(),
       });
     } catch (error) {

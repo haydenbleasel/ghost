@@ -1,7 +1,7 @@
 import merge from "lodash.merge";
 import type { Metadata } from "next";
 
-import { env } from "@/lib/env";
+import { SEO_URL } from "@/lib/env";
 
 type MetadataGenerator = Omit<Metadata, "description" | "title"> & {
   title: string;
@@ -43,7 +43,7 @@ export const createMetadata = ({
     formatDetection: {
       telephone: false,
     },
-    metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
+    metadataBase: new URL(SEO_URL),
     openGraph: {
       description,
       locale: "en_US",
