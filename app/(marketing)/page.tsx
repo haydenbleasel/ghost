@@ -1,4 +1,4 @@
-import { PlusIcon } from "lucide-react";
+import { ArrowUpRightIcon, PlusIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -55,10 +55,11 @@ const HeroCtas = ({ isAuthenticated }: { isAuthenticated: boolean }) => (
     <Button asChild size="lg" variant="ghost">
       <Link
         href="https://github.com/haydenbleasel/ghost"
-        target="_blank"
         rel="noreferrer"
+        target="_blank"
       >
         Read the source
+        <ArrowUpRightIcon />
       </Link>
     </Button>
   </>
@@ -107,9 +108,9 @@ const Home = async () => {
           </FadeIn>
           <FadeIn delay={0.16}>
             <p className="max-w-[60ch] text-balance text-lg text-muted-foreground">
-              Ghost is a dedicated game server platform you can read, fork, and
-              self-host. Spin one up in seconds — Docker, SSH, and firewall
-              rules handled for you.
+              Pick a game, pick a region, click start. Drop the IP in your group
+              chat — no terminals, no toggles, no surprises. Oh and it&apos;s
+              open source.
             </p>
           </FadeIn>
           <FadeIn className="flex flex-row items-center gap-3" delay={0.24}>
