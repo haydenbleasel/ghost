@@ -54,7 +54,7 @@ Hetzner Cloud tokens are stored per-user, encrypted in Postgres, via `/dashboard
 
 1. Provision Neon (Postgres), Vercel KV / Upstash (Redis), and Vercel Blob; populate the env vars above.
 2. In Vercel project settings, enable **Deployment Protection → Protection Bypass for Automation**. The generated value is auto-injected as `VERCEL_AUTOMATION_BYPASS_SECRET`.
-3. Run `bun migrate` (formats schema, generates client, pushes).
+3. Run `bun migrate` (creates a new migration in `prisma/migrations/` and applies it).
 4. Deploy to Vercel.
 
 Each user then signs in, saves a Hetzner Cloud token on `/dashboard/account/backend`, and clicks **Build snapshot** to bake their golden image (~10–15 min).
@@ -70,7 +70,7 @@ Add `docker pull <image>` lines to `lib/workflows/build-snapshot-cloud-init.ts`,
 
 - `bun dev` — Next dev server (turbopack)
 - `bun run build` — prisma generate + next build
-- `bun db:push` / `db:migrate` / `db:studio`
+- `bun migrate` / `bun db:studio`
 - `bun agent:dev` — run agent locally with Bun
 - `bun agent:build` — cross-compile Linux binary to `dist/ghost-agent`
 
