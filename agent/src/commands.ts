@@ -57,10 +57,14 @@ export const executeCommand = async (
   buffer: EventBuffer
 ): Promise<void> => {
   if (state.lastExecutedCommandId === command.id) {
+    console.log(
+      `[cmd] ${command.type} ${command.id} already executed; ack-only`
+    );
     await ackCommand(state, command.id, "succeeded", 0);
     return;
   }
 
+  console.log(`[cmd] ${command.type} ${command.id} starting`);
   const started = Date.now();
   let result: Record<string, unknown> | undefined;
   try {
@@ -87,11 +91,15 @@ export const executeCommand = async (
         await composeUp();
         startLogTail(GAME_CONTAINER, buffer);
         buffer.enqueueActivity({ message: "Starting game", phase: "starting" });
+        buffer.enqueueActivity({
+          message: "Game is healthy",
+          phase: "healthy",
+        });
         break;
       }
       case "STOP": {
-        stopLogTail();
         await composeStop();
+        stopLogTail();
         buffer.enqueueActivity({ message: "Game stopped", phase: "stopped" });
         break;
       }
@@ -142,27 +150,29 @@ export const executeCommand = async (
 
     state.lastExecutedCommandId = command.id;
     await saveState(state);
+    const durationMs = Date.now() - started;
+    console.log(
+      `[cmd] ${command.type} ${command.id} succeeded in ${durationMs}ms`
+    );
     await ackCommand(
       state,
       command.id,
       "succeeded",
-      Date.now() - started,
+      durationMs,
       undefined,
       result
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
+    const durationMs = Date.now() - started;
+    console.error(
+      `[cmd] ${command.type} ${command.id} failed after ${durationMs}ms: ${message}`
+    );
     buffer.enqueueActivity({
       message: `Command ${command.type} failed: ${message}`,
       phase: "errored",
     });
-    await ackCommand(
-      state,
-      command.id,
-      "failed",
-      Date.now() - started,
-      message
-    );
+    await ackCommand(state, command.id, "failed", durationMs, message);
   }
 };
 
