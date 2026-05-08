@@ -1,5 +1,17 @@
 # ghost
 
+## 1.1.1
+
+### Patch Changes
+
+- [#48](https://github.com/haydenbleasel/ghost/pull/48) [`e12b9e0`](https://github.com/haydenbleasel/ghost/commit/e12b9e0ff7d1b0a56f61f7739f8bd16ce0507b3e) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Fix `Server.observedState` not transitioning when the agent runs a `STOP` or `START`. Previously the agent emitted a `phase: "stopped"` activity event after `docker compose stop`, but nothing reconciled `Server.observedState` from the activity stream — so the badge stayed on `"running"` and users saw "the server does not stop" even though it had. `emitActivity` now updates `Server.observedState` for the agent-driven steady-state phases (`stopped` → `"stopped"`, `healthy` → `"running"`); the provisioning workflow continues to own its own transitions. The `START` handler now also enqueues a `healthy` event after `composeUp()` so the badge flips back to `"running"`, the agent's `STOP` handler kills the log tail _after_ `composeStop()` so container shutdown messages reach the Console tab, and `executeCommand` logs start/success/failure so the agent's process console is no longer silent. Also disables the Delete menu item once `desiredState` is `"deleted"` so users can't re-trigger teardown on a server that's already being deleted.
+
+- [#48](https://github.com/haydenbleasel/ghost/pull/48) [`e12b9e0`](https://github.com/haydenbleasel/ghost/commit/e12b9e0ff7d1b0a56f61f7739f8bd16ce0507b3e) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Refresh marketing branding: new logo, Geist Pixel display font, redesigned homepage, and updated favicon and Open Graph image.
+
+- [#48](https://github.com/haydenbleasel/ghost/pull/48) [`e12b9e0`](https://github.com/haydenbleasel/ghost/commit/e12b9e0ff7d1b0a56f61f7739f8bd16ce0507b3e) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Scope the Hetzner builder snapshot's `description` field by `SNAPSHOT_ENVIRONMENT` (`ghost-gold-production`, `ghost-gold-preview-<branch>`, `ghost-gold-development`) instead of a shared `ghost-gold` literal. The labels already scoped which snapshot a deployment uses for provisioning; this aligns the human-readable description so production / preview / local images are easy to tell apart in the Hetzner dashboard and won't be confused for one another during cleanup.
+
+- [#48](https://github.com/haydenbleasel/ghost/pull/48) [`e12b9e0`](https://github.com/haydenbleasel/ghost/commit/e12b9e0ff7d1b0a56f61f7739f8bd16ce0507b3e) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Replace `Promise.race(hook, sleep, ...)` blocks in `provisionServer` with polling loops that read state from the database. Eliminates the `Workflow run completed with N uncommitted operation(s): sleep` warnings emitted when hooks won the race and left orphan timers ticking on the backend. Cancellation now propagates through `desiredState` polling (worst-case latency: one poll interval — 6s during boot/enroll, 10s during install) instead of a hook, and the install wait reads the latest agent-reported phase from `activity_events` instead of subscribing to the phase hook.
+
 ## 1.1.0
 
 ### Minor Changes
