@@ -49,7 +49,7 @@ export const FloatingNav = ({
           <Link
             href="/sign-in"
             aria-current={isActive("/sign-in")}
-            className={cn(linkClass, "ml-2")}
+            className={cn(linkClass, "ml-2 hidden sm:inline-block")}
           >
             Sign in
           </Link>
