@@ -31,7 +31,7 @@ const renderStep = (
     .replaceAll("{address-host}", vars.host)
     .replaceAll("{address-port}", vars.port)
     .replaceAll("{address}", vars.address);
-  return substituted.split(/`([^`]+)`/g).map((part, i) =>
+  return substituted.split(/`([^`]+)`/gu).map((part, i) =>
     i % 2 === 0 ? (
       <Fragment key={i}>{part}</Fragment>
     ) : (

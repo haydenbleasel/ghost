@@ -23,7 +23,7 @@ export const toBase64Url = (bytes: Uint8Array): string => {
   return btoa(binary)
     .replaceAll("+", "-")
     .replaceAll("/", "_")
-    .replace(/=+$/, "");
+    .replace(/=+$/u, "");
 };
 
 export const fromBase64Url = (s: string): Uint8Array => {

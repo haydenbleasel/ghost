@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 
 import { FatalError, getStepMetadata } from "workflow";
-import { resumeHook } from "workflow/api";
 
 import { buildUfwRules, getGame } from "@/games";
 import type { GamePort } from "@/games";
@@ -17,20 +16,6 @@ import {
   getUserHetznerImageContext,
 } from "@/lib/hetzner/credentials";
 import type { Phase } from "@/protocol";
-
-import { hookTokens } from "./hook-tokens";
-
-const safeResumeHook = async (
-  token: string,
-  payload?: unknown
-): Promise<void> => {
-  try {
-    await resumeHook(token, payload);
-  } catch {
-    // Hook not found: the target workflow either hasn't registered it yet
-    // or has already exited. Either way, the signal is a no-op.
-  }
-};
 
 const postCreateHetznerServer = async (input: {
   client: HetznerClient;
@@ -441,11 +426,6 @@ export const stepMarkDeleted = async (serverId: string) => {
   });
 };
 
-export const stepSignalCancelProvision = async (serverId: string) => {
-  "use step";
-  await safeResumeHook(hookTokens.cancel(serverId));
-};
-
 export const stepReadPhase = async (
   serverId: string
 ): Promise<Phase | null> => {
@@ -455,6 +435,18 @@ export const stepReadPhase = async (
     where: { id: serverId },
   });
   return (server?.phase as Phase | undefined) ?? null;
+};
+
+export const stepReadAgentPhase = async (
+  serverId: string
+): Promise<Phase | null> => {
+  "use step";
+  const event = await prisma.activityEvent.findFirst({
+    orderBy: { seq: "desc" },
+    select: { phase: true },
+    where: { serverId, source: "agent" },
+  });
+  return (event?.phase as Phase | undefined) ?? null;
 };
 
 export const stepReadDesiredState = async (serverId: string) => {

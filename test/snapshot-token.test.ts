@@ -48,7 +48,7 @@ describe("snapshot download token", () => {
       .setExpirationTime(Math.floor(Date.now() / 1000) + 60)
       .sign(snapshotSecret);
     await expect(verifySnapshotDownloadToken(token)).rejects.toThrow(
-      /Invalid snapshot download token/
+      /Invalid snapshot download token/u
     );
   });
 

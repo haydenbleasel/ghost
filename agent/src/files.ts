@@ -14,7 +14,7 @@ const DATA_ROOT = process.env.GHOST_DATA_ROOT ?? "/var/lib/ghost/game/data";
 const MAX_DOWNLOAD_BYTES = 500 * 1024 * 1024;
 
 const resolveInRoot = (relative: string): string => {
-  const cleaned = normalize(`/${relative}`).replace(/^\/+/, "");
+  const cleaned = normalize(`/${relative}`).replace(/^\/+/u, "");
   const resolved = resolve(DATA_ROOT, cleaned);
   if (resolved !== DATA_ROOT && !resolved.startsWith(DATA_ROOT + sep)) {
     throw new Error("path escapes data root");
@@ -48,7 +48,7 @@ export const listFiles = async (
     }
     return a.name.localeCompare(b.name);
   });
-  const normalized = normalize(`/${relativePath}`).replace(/^\/+/, "");
+  const normalized = normalize(`/${relativePath}`).replace(/^\/+/u, "");
   return { entries, path: normalized };
 };
 

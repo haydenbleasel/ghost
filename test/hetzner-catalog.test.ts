@@ -231,7 +231,7 @@ describe("getHetznerCatalog", () => {
       serverTypes: [baseServerType()],
     });
     await expect(getHetznerCatalog(client, "1")).rejects.toThrow(
-      /image not found/i
+      /image not found/iu
     );
   });
 
@@ -254,7 +254,7 @@ describe("getHetznerCatalog", () => {
       },
     } as unknown as HetznerClient;
     await expect(getHetznerCatalog(client, "1")).rejects.toThrow(
-      /Hetzner API internal: boom/
+      /Hetzner API internal: boom/u
     );
   });
 

@@ -1,11 +1,9 @@
 import crypto from "node:crypto";
 
 import { NextResponse } from "next/server";
-import { resumeHook } from "workflow/api";
 
 import { verifyBootstrapJwt } from "@/lib/agent/bootstrap";
 import { prisma } from "@/lib/db";
-import { hookTokens } from "@/lib/workflows/hook-tokens";
 import { enrollRequestSchema, enrollResponseSchema } from "@/protocol";
 
 export const runtime = "nodejs";
@@ -83,16 +81,6 @@ export const POST = async (request: Request) => {
     serverId: agent.serverId,
     sessionVersion: agent.sessionVersion,
   });
-
-  try {
-    // oxlint-disable-next-line unicorn/no-useless-undefined -- resumeHook requires an explicit payload
-    await resumeHook(hookTokens.enrolled(agent.serverId), undefined);
-  } catch (error) {
-    console.error("[enroll] resumeHook failed", {
-      error,
-      serverId: agent.serverId,
-    });
-  }
 
   return NextResponse.json(response);
 };

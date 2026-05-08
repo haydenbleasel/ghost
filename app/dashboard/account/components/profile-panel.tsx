@@ -20,7 +20,7 @@ interface Props {
 
 const getInitials = (name: string, email: string): string => {
   const source = name.trim() || email;
-  const parts = source.split(/\s+/).filter(Boolean);
+  const parts = source.split(/\s+/u).filter(Boolean);
   if (parts.length >= 2) {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
@@ -120,11 +120,15 @@ export const ProfilePanel = ({ user }: Props) => {
       <div className="space-y-2">
         <Label>Photo</Label>
         <div className="flex items-center gap-4">
-          <Avatar className="size-16" size="lg">
+          <Avatar className="size-16 rounded-lg after:rounded-lg" size="lg">
             {imageSrc ? (
-              <AvatarImage alt={name || user.email} src={imageSrc} />
+              <AvatarImage
+                alt={name || user.email}
+                className="rounded-lg"
+                src={imageSrc}
+              />
             ) : null}
-            <AvatarFallback className="text-base">
+            <AvatarFallback className="rounded-lg text-base">
               {getInitials(name, user.email)}
             </AvatarFallback>
           </Avatar>

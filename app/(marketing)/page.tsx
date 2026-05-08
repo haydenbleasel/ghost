@@ -1,15 +1,13 @@
-import {
-  CodeIcon,
-  PlusIcon,
-  ScrollTextIcon,
-  SparklesIcon,
-  TerminalIcon,
-  WrenchIcon,
-  ZapIcon,
-} from "lucide-react";
+import { ArrowUpRightIcon, PlusIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { AnimatedLogo } from "@/components/animated-logo";
+import {
+  FadeIn,
+  FadeInListItem,
+  FadeInOnScroll,
+} from "@/components/animations";
 import { Button } from "@/components/ui/button";
 import { games } from "@/games";
 import { getSession } from "@/lib/session";
@@ -18,40 +16,70 @@ const features = [
   {
     description:
       "The whole stack lives on GitHub. Read it, fork it, self-host it — there's no black box.",
-    icon: CodeIcon,
     title: "Open source, end to end",
   },
   {
     description:
       "A dedicated server in under a minute. Docker, SSH, and firewalls — handled for you.",
-    icon: ZapIcon,
     title: "Up in seconds",
   },
   {
     description:
       "A dashboard you'll actually want to look at. Sensible defaults instead of a hundred toggles.",
-    icon: SparklesIcon,
     title: "Beautiful by default",
   },
   {
     description:
       "Stream stdout straight from the container and run commands without leaving the page.",
-    icon: TerminalIcon,
     title: "Live console",
   },
   {
     description:
       "Every start, stop, restart, and config change in a clean, filterable timeline.",
-    icon: ScrollTextIcon,
     title: "Honest activity log",
   },
   {
     description:
       "Bring your own Hetzner key. Your infrastructure, your billing, your data — we just wire it up.",
-    icon: WrenchIcon,
     title: "Your infra, your rules",
   },
 ] as const;
+
+const HeroCtas = ({ isAuthenticated }: { isAuthenticated: boolean }) => (
+  <>
+    <Button asChild size="lg">
+      <Link href={isAuthenticated ? "/dashboard/new" : "/sign-up"}>
+        Start a game server
+      </Link>
+    </Button>
+    <Button asChild size="lg" variant="ghost">
+      <Link
+        href="https://github.com/haydenbleasel/ghost"
+        rel="noreferrer"
+        target="_blank"
+      >
+        Read the source
+        <ArrowUpRightIcon />
+      </Link>
+    </Button>
+  </>
+);
+
+const FinalCtas = ({ isAuthenticated }: { isAuthenticated: boolean }) =>
+  isAuthenticated ? (
+    <Button asChild size="lg">
+      <Link href="/dashboard/new">Start a game server</Link>
+    </Button>
+  ) : (
+    <>
+      <Button asChild size="lg">
+        <Link href="/sign-up">Get started</Link>
+      </Button>
+      <Button asChild size="lg" variant="ghost">
+        <Link href="/sign-in">Sign in</Link>
+      </Button>
+    </>
+  );
 
 const Home = async () => {
   const session = await getSession();
@@ -63,109 +91,102 @@ const Home = async () => {
     { label: "Provision time", value: "~60s" },
     { label: "Games supported", value: String(supportedGames.length) },
     { label: "Powered by", value: "Hetzner" },
-    { label: "Vendor lock-in", value: "None" },
+    { label: "Regions", value: "6" },
   ];
 
   return (
-    <>
-      <section className="border-b border-foreground/10">
-        <div className="mx-auto grid w-full max-w-6xl gap-16 px-6 py-24 sm:py-32 lg:grid-cols-[3fr_2fr] lg:items-end lg:gap-24">
-          <div className="flex flex-col gap-8">
-            <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
-              Open source · Free forever
-            </span>
-            <h1 className="max-w-[20ch] text-balance font-medium text-5xl tracking-tight sm:text-7xl">
-              Simple, beautiful game servers.
+    <article>
+      <header className="border-b border-foreground/10">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-24 sm:py-32">
+          <FadeIn>
+            <AnimatedLogo className="size-32" />
+          </FadeIn>
+          <FadeIn delay={0.08}>
+            <h1 className="mt-12 text-balance font-display font-medium text-5xl tracking-tight sm:text-6xl">
+              Simple, beautiful game servers in under a minute.
             </h1>
-            <p className="max-w-[48ch] text-balance text-lg text-muted-foreground">
-              Ghost is a dedicated game server platform you can read, fork, and
-              self-host. Spin one up in seconds — Docker, SSH, and firewall
-              rules handled for you.
+          </FadeIn>
+          <FadeIn delay={0.16}>
+            <p className="max-w-[60ch] text-balance text-lg text-muted-foreground">
+              Pick a game, pick a region, click start. Drop the IP in your group
+              chat — no terminals, no toggles, no surprises. Oh and it&apos;s
+              open source.
             </p>
-            <div className="flex flex-row items-center gap-3">
-              {isAuthenticated ? (
-                <>
-                  <Button asChild size="lg">
-                    <Link href="/dashboard">Dashboard</Link>
-                  </Button>
-                  <Button asChild size="lg" variant="ghost">
-                    <Link href="/dashboard/new">Create a game</Link>
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button asChild size="lg">
-                    <Link href="/sign-up">Get started</Link>
-                  </Button>
-                  <Button asChild size="lg" variant="ghost">
-                    <Link
-                      href="https://github.com/haydenbleasel/ghost"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Read the source
-                    </Link>
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-          <dl className="grid grid-cols-2 gap-x-8 gap-y-10 border-t border-foreground/10 pt-10 lg:border-t-0 lg:pt-0">
-            {stats.map(({ label, value }) => (
-              <div key={label} className="flex flex-col gap-2">
+          </FadeIn>
+          <FadeIn className="flex flex-row items-center gap-3" delay={0.24}>
+            <HeroCtas isAuthenticated={isAuthenticated} />
+          </FadeIn>
+          <dl className="mt-4 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-foreground/10 pt-10 sm:grid-cols-4">
+            {stats.map(({ label, value }, index) => (
+              <FadeIn
+                className="flex flex-col gap-2"
+                delay={0.32 + index * 0.05}
+                key={label}
+              >
                 <dt className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
                   {label}
                 </dt>
-                <dd className="font-medium text-3xl tabular-nums tracking-tight">
+                <dd className="font-medium text-2xl tabular-nums tracking-tight">
                   {value}
                 </dd>
-              </div>
+              </FadeIn>
             ))}
           </dl>
         </div>
-      </section>
+      </header>
 
       <section className="border-b border-foreground/10">
-        <div className="mx-auto w-full max-w-6xl px-6 py-24">
-          <div className="flex flex-col gap-4 pb-12">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-20">
+          <FadeInOnScroll className="flex flex-col gap-4">
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               Supported games
             </span>
-            <h2 className="max-w-[24ch] text-balance font-medium text-4xl tracking-tight sm:text-5xl">
+            <h2 className="max-w-[28ch] text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
               Pick a game. Pick a region. Press play.
             </h2>
-          </div>
+            <p className="max-w-[60ch] text-balance text-muted-foreground">
+              Every supported game lives behind the same one-click flow. Your
+              VM, your token, your billing.
+            </p>
+          </FadeInOnScroll>
           <ul
+            className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2"
             role="list"
-            className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4"
           >
-            {supportedGames.map((game) => (
-              <li key={game.id} className="flex flex-col gap-4">
+            {supportedGames.map((game, index) => (
+              <FadeInListItem
+                className="flex flex-col gap-4"
+                delay={index * 0.08}
+                key={game.id}
+              >
                 <div className="relative aspect-[460/215] w-full overflow-hidden rounded-md">
                   <Image
-                    src={game.image}
                     alt={`${game.name} dedicated game server`}
-                    fill
-                    sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
                     className="object-cover"
+                    fill
+                    sizes="(min-width: 768px) 380px, 90vw"
+                    src={game.image}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="font-medium tracking-tight">
                     {game.name}
                   </span>
-                  <p className="line-clamp-2 text-muted-foreground text-sm">
+                  <p className="text-balance text-muted-foreground text-sm leading-relaxed">
                     {game.description}
                   </p>
                 </div>
-              </li>
+              </FadeInListItem>
             ))}
-            <li className="flex flex-col gap-4">
+            <FadeInListItem
+              className="flex flex-col gap-4"
+              delay={supportedGames.length * 0.08}
+            >
               <Link
-                href="https://github.com/haydenbleasel/ghost/issues/new"
-                target="_blank"
-                rel="noreferrer"
                 className="group flex aspect-[460/215] w-full items-center justify-center gap-2 rounded-md border border-foreground/15 border-dashed text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+                href="https://github.com/haydenbleasel/ghost/issues/new"
+                rel="noreferrer"
+                target="_blank"
               >
                 <PlusIcon className="size-4" />
                 <span className="font-medium text-sm">Request a game</span>
@@ -174,69 +195,64 @@ const Home = async () => {
                 <span className="font-medium tracking-tight">
                   Don&apos;t see yours?
                 </span>
-                <p className="line-clamp-2 text-muted-foreground text-sm">
+                <p className="text-balance text-muted-foreground text-sm leading-relaxed">
                   Open an issue on GitHub and we&apos;ll add it to the roadmap.
                 </p>
               </div>
-            </li>
+            </FadeInListItem>
           </ul>
         </div>
       </section>
 
       <section className="border-b border-foreground/10">
-        <div className="mx-auto w-full max-w-6xl px-6 py-24">
-          <div className="flex flex-col gap-4 pb-12">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-20">
+          <FadeInOnScroll className="flex flex-col gap-4">
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
               What you get
             </span>
-            <h2 className="max-w-[28ch] text-balance font-medium text-4xl tracking-tight sm:text-5xl">
+            <h2 className="max-w-[32ch] text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
               Everything you need, nothing you don&apos;t.
             </h2>
-          </div>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map(({ description, icon: Icon, title }) => (
-              <div
+            <p className="max-w-[60ch] text-balance text-muted-foreground">
+              A small list of opinionated defaults that take you from sign-up to
+              a healthy game server in under a minute.
+            </p>
+          </FadeInOnScroll>
+          <ol className="flex flex-col gap-6">
+            {features.map(({ description, title }, index) => (
+              <FadeInListItem
+                className="flex gap-5"
+                delay={index * 0.06}
                 key={title}
-                className="flex flex-col gap-3 border-t border-foreground/10 py-8 pr-6"
               >
-                <Icon className="size-5 text-foreground" />
-                <dt className="font-medium tracking-tight">{title}</dt>
-                <dd className="text-muted-foreground text-sm">{description}</dd>
-              </div>
+                <span className="font-mono text-muted-foreground text-sm tabular-nums">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div className="flex flex-col gap-2">
+                  <h3 className="font-display font-medium tracking-tight">
+                    {title}
+                  </h3>
+                  <p className="text-balance text-muted-foreground text-sm leading-relaxed">
+                    {description}
+                  </p>
+                </div>
+              </FadeInListItem>
             ))}
-          </dl>
+          </ol>
         </div>
       </section>
 
       <section>
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-32 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="max-w-[24ch] text-balance font-medium text-4xl tracking-tight sm:text-5xl">
+        <FadeInOnScroll className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-32 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="max-w-[24ch] text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
             Ready to play?
           </h2>
           <div className="flex flex-row items-center gap-3">
-            {isAuthenticated ? (
-              <>
-                <Button asChild size="lg">
-                  <Link href="/dashboard">Dashboard</Link>
-                </Button>
-                <Button asChild size="lg" variant="ghost">
-                  <Link href="/dashboard/new">Create a game</Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button asChild size="lg">
-                  <Link href="/sign-up">Get started</Link>
-                </Button>
-                <Button asChild size="lg" variant="ghost">
-                  <Link href="/sign-in">Sign in</Link>
-                </Button>
-              </>
-            )}
+            <FinalCtas isAuthenticated={isAuthenticated} />
           </div>
-        </div>
+        </FadeInOnScroll>
       </section>
-    </>
+    </article>
   );
 };
 

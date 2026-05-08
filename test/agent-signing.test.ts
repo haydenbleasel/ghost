@@ -166,7 +166,7 @@ describe("verifyAgentRequest", () => {
       caught = error as never;
     }
     expect(caught).toBeInstanceOf(AgentAuthError);
-    expect(caught?.message).toMatch(/skew/);
+    expect(caught?.message).toMatch(/skew/u);
   });
 
   test("returns 409 when the nonce has already been used", async () => {

@@ -5,7 +5,7 @@ import { withWorkflow } from "workflow/next";
 
 import { env } from "@/lib/env";
 
-const otelRegex = /@opentelemetry\/instrumentation/;
+const otelRegex = /@opentelemetry\/instrumentation/u;
 
 let config: NextConfig = {
   images: {

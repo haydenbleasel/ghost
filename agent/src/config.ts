@@ -32,7 +32,7 @@ export type State = z.infer<typeof stateSchema>;
 const BOOTSTRAP_PATH =
   process.env.GHOST_BOOTSTRAP_PATH ?? "/etc/ghost/bootstrap.json";
 const STATE_PATH = process.env.GHOST_STATE_PATH ?? "/var/lib/ghost/state.json";
-const STATE_DIR = STATE_PATH.replace(/\/[^/]+$/, "");
+const STATE_DIR = STATE_PATH.replace(/\/[^/]+$/u, "");
 
 export const loadBootstrap = async (): Promise<Bootstrap | null> => {
   if (!existsSync(BOOTSTRAP_PATH)) {

@@ -23,7 +23,7 @@ describe("encryptSecret/decryptSecret", () => {
 
   test("rejects payloads shorter than IV+tag", () => {
     const tooShort = Buffer.alloc(10).toString("base64");
-    expect(() => decryptSecret(tooShort)).toThrow(/malformed/i);
+    expect(() => decryptSecret(tooShort)).toThrow(/malformed/iu);
   });
 
   test("rejects ciphertext whose auth tag has been tampered", () => {
