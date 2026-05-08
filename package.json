@@ -25,7 +25,7 @@
     "release": "changeset tag",
     "prepare": "husky",
     "postinstall": "prisma generate",
-    "bump-deps": "npx npm-check-updates -u && bun install"
+    "bump-deps": "npx npm-check-updates -u -x zod && bun install"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.6.9",
@@ -76,7 +76,7 @@
     "use-stick-to-bottom": "^1.1.4",
     "vaul": "^1.1.2",
     "workflow": "^4.2.4",
-    "zod": "4.4.3"
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.7.0",
@@ -101,7 +101,7 @@
     "tailwindcss": "^4.2.4",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^6.0.3",
-    "ultracite": "^7.6.3"
+    "ultracite": "^7.6.4"
   },
   "packageManager": "bun@1.3.13",
   "patchedDependencies": {
