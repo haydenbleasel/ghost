@@ -109,7 +109,7 @@ describe("enqueueCommand", () => {
       serverId: "srv_1",
       type: "START",
     });
-    expect(cmd.id).toMatch(/^cmd_/);
+    expect(cmd.id).toMatch(/^cmd_/u);
     expect(cmd.type).toBe("START");
     expect(cmd.payload).toEqual({});
     expect(typeof cmd.issuedAt).toBe("string");

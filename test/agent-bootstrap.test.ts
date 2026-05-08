@@ -28,7 +28,7 @@ describe("bootstrap JWT", () => {
   test("mint then verify round-trips serverId and jti", async () => {
     const minted = await mintBootstrapJwt({ serverId: "srv_1" });
     expect(typeof minted.token).toBe("string");
-    expect(minted.jti).toMatch(/^[0-9a-f-]{36}$/);
+    expect(minted.jti).toMatch(/^[0-9a-f-]{36}$/u);
     expect(minted.expiresAt).toBeInstanceOf(Date);
     expect(minted.expiresAt.getTime()).toBeGreaterThan(Date.now());
 
@@ -50,14 +50,14 @@ describe("bootstrap JWT", () => {
   test("rejects a token missing the subject claim", async () => {
     const token = await signWithoutClaim("sub");
     await expect(verifyBootstrapJwt(token)).rejects.toThrow(
-      /Invalid bootstrap token/
+      /Invalid bootstrap token/u
     );
   });
 
   test("rejects a token missing the jti claim", async () => {
     const token = await signWithoutClaim("jti");
     await expect(verifyBootstrapJwt(token)).rejects.toThrow(
-      /Invalid bootstrap token/
+      /Invalid bootstrap token/u
     );
   });
 

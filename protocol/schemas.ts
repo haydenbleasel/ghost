@@ -120,7 +120,7 @@ const filesInstallFromUrlCommand = z.object({
     destPath: z.string().min(1),
     sha256: z
       .string()
-      .regex(/^[0-9a-f]{64}$/i)
+      .regex(/^[0-9a-f]{64}$/iu)
       .optional(),
     url: z.string().url(),
   }),

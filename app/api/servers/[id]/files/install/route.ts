@@ -11,7 +11,7 @@ const bodySchema = z.object({
   destPath: z.string().min(1).max(512),
   sha256: z
     .string()
-    .regex(/^[0-9a-f]{64}$/i)
+    .regex(/^[0-9a-f]{64}$/iu)
     .optional(),
   url: z.string().url(),
 });
