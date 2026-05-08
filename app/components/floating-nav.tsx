@@ -36,7 +36,7 @@ export const FloatingNav = ({
         href="https://github.com/haydenbleasel/ghost"
         target="_blank"
         rel="noreferrer"
-        className={cn(linkClass, "after:hidden")}
+        className={cn(linkClass, "after:hidden hidden sm:inline-block")}
       >
         Source
       </Link>
