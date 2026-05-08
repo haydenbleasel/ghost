@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const linkClass =
-  "relative rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground after:pointer-events-none after:absolute after:-bottom-[5px] after:inset-x-3 after:h-px after:bg-foreground after:opacity-0 aria-[current=page]:text-foreground aria-[current=page]:after:opacity-100";
+  "relative whitespace-nowrap rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground after:pointer-events-none after:absolute after:-bottom-[5px] after:inset-x-3 after:h-px after:bg-foreground after:opacity-0 aria-[current=page]:text-foreground aria-[current=page]:after:opacity-100";
 
 export const FloatingNav = ({
   isAuthenticated,
