@@ -215,7 +215,7 @@ export const ServerShell = ({
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          disabled={pending !== null}
+          disabled={pending !== null || deleting}
           onSelect={() => setDeleteOpen(true)}
           variant="destructive"
         >
