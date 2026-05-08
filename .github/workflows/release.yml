@@ -39,6 +39,7 @@ jobs:
           DATABASE_URL: postgresql://user:pass@localhost:5432/db
 
       - name: Create Release Pull Request or Tag Release
+        id: changesets
         uses: changesets/action@v1
         with:
           version: bun run version
