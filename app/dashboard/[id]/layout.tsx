@@ -82,6 +82,7 @@ const ServerLayout = async ({
       server={{
         backupsEnabled: server.backupsEnabled,
         desiredState: server.desiredState,
+        dockerImage: game?.dockerImage ?? null,
         errorReason: server.errorReason,
         game: server.game,
         id: server.id,

@@ -95,6 +95,7 @@ export interface GameOption {
   name: string;
   description: string;
   image: string;
+  dockerImage: string;
   requirements: { cpu: number; disk: number; memory: number };
   settings: SettingsSchema;
 }
@@ -497,6 +498,13 @@ const NameStep = ({
           <SummaryRow label="Price">
             <span className="tabular-nums">
               {formatPrice(selectedType.pricePerMonth, currency)}/mo
+            </span>
+          </SummaryRow>
+        )}
+        {selectedGame && (
+          <SummaryRow label="Image">
+            <span className="break-all font-mono text-xs">
+              {selectedGame.dockerImage}
             </span>
           </SummaryRow>
         )}

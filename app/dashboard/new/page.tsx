@@ -30,6 +30,7 @@ const NewServerPage = async () => {
     .filter((g) => g.enabled)
     .map((g) => ({
       description: g.description,
+      dockerImage: g.dockerImage,
       id: g.id,
       image: g.image,
       name: g.name,
