@@ -36,12 +36,6 @@ export const l4d2 = {
       protocol: "tcp",
       to: 27_015,
     },
-    // SourceTV.
-    {
-      from: 27_020,
-      protocol: "udp",
-      to: 27_020,
-    },
   ],
   requirements: {
     cpu: 2,
