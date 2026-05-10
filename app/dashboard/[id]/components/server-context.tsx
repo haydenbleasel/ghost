@@ -23,6 +23,7 @@ export interface ServerView {
   id: string;
   name: string;
   game: string;
+  dockerImage: string | null;
   ipv4: string | null;
   joinPassword: string | null;
   phase: string;

@@ -4,7 +4,13 @@ import { useServer } from "../components/server-context";
 
 const DetailsTab = () => {
   const { server } = useServer();
-  return <DetailsPanel location={server.location} specs={server.specs} />;
+  return (
+    <DetailsPanel
+      dockerImage={server.dockerImage}
+      location={server.location}
+      specs={server.specs}
+    />
+  );
 };
 
 export default DetailsTab;

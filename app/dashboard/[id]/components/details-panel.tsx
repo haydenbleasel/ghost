@@ -18,6 +18,7 @@ interface Location {
 interface Props {
   specs: Specs | null;
   location: Location | null;
+  dockerImage: string | null;
 }
 
 const Row = ({ label, value }: { label: string; value: string }) => (
@@ -37,7 +38,7 @@ const formatLocation = (location: Location | null): string | null => {
   return location.name;
 };
 
-export const DetailsPanel = ({ specs, location }: Props) => {
+export const DetailsPanel = ({ specs, location, dockerImage }: Props) => {
   const locationLabel = formatLocation(location);
 
   return (
@@ -58,6 +59,14 @@ export const DetailsPanel = ({ specs, location }: Props) => {
               value={specs.architecture.toUpperCase()}
             />
             {locationLabel && <Row label="Location" value={locationLabel} />}
+            {dockerImage && (
+              <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-2 text-sm">
+                <span className="text-muted-foreground">Docker image</span>
+                <span className="break-all text-right font-mono text-xs">
+                  {dockerImage}
+                </span>
+              </div>
+            )}
           </>
         ) : (
           <div className="px-3 py-2 text-sm text-muted-foreground">
