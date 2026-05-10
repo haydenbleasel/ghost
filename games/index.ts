@@ -1,6 +1,7 @@
 import { cs2 } from "./cs2";
 import { dontStarveTogether } from "./dontstarvetogether";
 import { enshrouded } from "./enshrouded";
+import { factorio } from "./factorio";
 import { l4d2 } from "./l4d2";
 import { minecraft } from "./minecraft";
 import { palworld } from "./palworld";
@@ -24,6 +25,7 @@ export const games = [
   cs2,
   l4d2,
   dontStarveTogether,
+  factorio,
 ];
 
 export type Game = (typeof games)[number];
