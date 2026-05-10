@@ -23,7 +23,9 @@ export const buildL4d2Compose = (
   if (settings.steamToken.length > 0) {
     extraArgs.push(`+sv_setsteamaccount "${escape(settings.steamToken)}"`);
   }
-  const lan = settings.steamToken.length === 0 ? "true" : "false";
+  // Intentionally omit the LAN env var: the image's entrypoint enables
+  // `+sv_lan 1` for any non-empty value (including "false"), which makes the
+  // server silently drop public clients after the Steam handshake.
   return `services:
   l4d2:
     image: ${dockerImage}
@@ -39,7 +41,6 @@ export const buildL4d2Compose = (
       PORT: "27015"
       DEFAULT_MAP: "${settings.startMap}"
       DEFAULT_MODE: "${settings.gameMode}"
-      LAN: "${lan}"
       EXTRA_ARGS: "${escape(extraArgs.join(" "))}"
 `;
 };
