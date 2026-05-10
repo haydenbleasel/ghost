@@ -11,15 +11,20 @@ export const buildL4d2Compose = (
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
   const serverPassword = config.joinPassword ?? "";
-  // The image's env-var contract covers hostname, rcon, map, mode, port, lan.
-  // Max players, join password, difficulty, and the GSLT are passed as srcds
-  // cvars via EXTRA_ARGS. Ghost-generated passwords are slug/hex strings
-  // without shell metacharacters.
-  const extraArgs: string[] = [
-    `+maxplayers ${settings.maxPlayers}`,
-    `+sv_password "${escape(serverPassword)}"`,
-    `+z_difficulty ${settings.difficulty}`,
+  // L4D2's coop/lobby logic wipes cvars set on the command line after the
+  // first map load (sv_password is the obvious one). Anything that needs to
+  // survive map changes lives in server.cfg, which srcds_run executes on
+  // every spawn. The image symlinks /cfg into left4dead2/cfg.
+  const serverCfgLines = [
+    `sv_password "${serverPassword}"`,
+    `z_difficulty ${settings.difficulty}`,
+    // Allow direct `connect <ip>` instead of forcing the matchmaking lobby.
+    "sv_allow_lobby_connect_only 0",
   ];
+  const serverCfg = serverCfgLines.map((line) => `      ${line}`).join("\n");
+  // EXTRA_ARGS only carries cvars that must be set at boot (before the Steam
+  // Game Server connection is established).
+  const extraArgs: string[] = [`+maxplayers ${settings.maxPlayers}`];
   if (settings.steamToken.length > 0) {
     extraArgs.push(`+sv_setsteamaccount "${escape(settings.steamToken)}"`);
   }
@@ -42,5 +47,13 @@ export const buildL4d2Compose = (
       DEFAULT_MAP: "${settings.startMap}"
       DEFAULT_MODE: "${settings.gameMode}"
       EXTRA_ARGS: "${escape(extraArgs.join(" "))}"
+    configs:
+      - source: ghost_l4d2_server_cfg
+        target: /cfg/server.cfg
+
+configs:
+  ghost_l4d2_server_cfg:
+    content: |
+${serverCfg}
 `;
 };
