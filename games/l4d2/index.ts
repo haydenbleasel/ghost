@@ -18,7 +18,7 @@ export const l4d2 = {
     "Open Left 4 Dead 2 and go to Options → Keyboard/Mouse.",
     'Set "Allow Developer Console" to Enabled.',
     "Press `~` from the main menu to open the console.",
-    "Run `connect {address}; password <your password>` using the password shown above.",
+    "Run `connect {address}`.",
   ],
   id: "l4d2",
   image: steamHeader(550),
@@ -43,5 +43,9 @@ export const l4d2 = {
     memory: 2,
   },
   settings: l4d2Settings,
-  usesJoinPassword: true,
+  // L4D2's coop lobby flow rejects clients after sv_password verification on
+  // direct connect — leaving the server effectively unreachable when a
+  // password is set. Disable join passwords; servers stay private via
+  // unlisted IP/port.
+  usesJoinPassword: false,
 } as const;

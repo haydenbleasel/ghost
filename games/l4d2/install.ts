@@ -10,13 +10,11 @@ export const buildL4d2Compose = (
 ): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
-  const serverPassword = config.joinPassword ?? "";
   // L4D2's coop/lobby logic wipes cvars set on the command line after the
-  // first map load (sv_password is the obvious one). Anything that needs to
-  // survive map changes lives in server.cfg, which srcds_run executes on
-  // every spawn. The image symlinks /cfg into left4dead2/cfg.
+  // first map load. Anything that needs to survive map changes lives in
+  // server.cfg, which srcds_run executes on every spawn. The image symlinks
+  // /cfg into left4dead2/cfg.
   const serverCfgLines = [
-    `sv_password "${serverPassword}"`,
     `z_difficulty ${settings.difficulty}`,
     // Allow direct `connect <ip>` instead of forcing the matchmaking lobby.
     "sv_allow_lobby_connect_only 0",
