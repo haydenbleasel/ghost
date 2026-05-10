@@ -10,11 +10,11 @@ const BackendPage = async () => {
   const user = await requireUser();
   const [creds, snapshot, latestBuildRow] = await Promise.all([
     prisma.user.findUnique({
-      select: { hetznerToken: true },
+      select: { providerToken: true },
       where: { id: user.id },
     }),
     prisma.userSnapshot.findUnique({
-      select: { hetznerImageId: true },
+      select: { providerImageId: true },
       where: {
         userId_environment: {
           environment: SNAPSHOT_ENVIRONMENT,
@@ -37,9 +37,9 @@ const BackendPage = async () => {
     }),
   ]);
   const hetznerConfigured = Boolean(
-    creds?.hetznerToken && snapshot?.hetznerImageId
+    creds?.providerToken && snapshot?.providerImageId
   );
-  const tokenSaved = Boolean(creds?.hetznerToken);
+  const tokenSaved = Boolean(creds?.providerToken);
   const latestBuild: SnapshotBuildSummary | null = latestBuildRow
     ? {
         createdAt: latestBuildRow.createdAt.toISOString(),
@@ -63,7 +63,7 @@ const BackendPage = async () => {
         )}
         <HetznerPanel
           configured={hetznerConfigured}
-          imageId={snapshot?.hetznerImageId ?? null}
+          imageId={snapshot?.providerImageId ?? null}
           latestBuild={latestBuild}
           tokenSaved={tokenSaved}
         />

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { encryptSecret } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
 import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
-import { createHetznerClient } from "@/lib/hetzner";
+import { createHetznerProvider } from "@/lib/providers/hetzner";
 import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -17,11 +17,11 @@ export const GET = async () => {
   const user = await requireUser();
   const [row, snapshot] = await Promise.all([
     prisma.user.findUnique({
-      select: { hetznerToken: true },
+      select: { providerToken: true },
       where: { id: user.id },
     }),
     prisma.userSnapshot.findUnique({
-      select: { hetznerImageId: true },
+      select: { providerImageId: true },
       where: {
         userId_environment: {
           environment: SNAPSHOT_ENVIRONMENT,
@@ -31,8 +31,8 @@ export const GET = async () => {
     }),
   ]);
   return NextResponse.json({
-    configured: Boolean(row?.hetznerToken && snapshot?.hetznerImageId),
-    imageId: snapshot?.hetznerImageId ?? null,
+    configured: Boolean(row?.providerToken && snapshot?.providerImageId),
+    imageId: snapshot?.providerImageId ?? null,
   });
 };
 
@@ -48,18 +48,15 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const client = createHetznerClient(parsed.data.token);
-
-  const tokenCheck = await client.GET("/locations", {
-    params: { query: { per_page: 1 } },
-  });
-  if (tokenCheck.response.status === 401) {
-    return NextResponse.json(
-      { error: "Hetzner rejected this token." },
-      { status: 400 }
-    );
-  }
-  if (!tokenCheck.response.ok) {
+  const provider = createHetznerProvider(parsed.data.token);
+  const validation = await provider.validateCredentials();
+  if (!validation.ok) {
+    if (validation.reason === "unauthorized") {
+      return NextResponse.json(
+        { error: "Hetzner rejected this token." },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: "Could not reach Hetzner to verify the token." },
       { status: 502 }
@@ -67,7 +64,7 @@ export const POST = async (request: Request) => {
   }
 
   await prisma.user.update({
-    data: { hetznerToken: encryptSecret(parsed.data.token) },
+    data: { providerToken: encryptSecret(parsed.data.token) },
     where: { id: user.id },
   });
 
@@ -78,7 +75,7 @@ export const DELETE = async () => {
   const user = await requireUser();
   await prisma.$transaction([
     prisma.user.update({
-      data: { hetznerToken: null },
+      data: { providerToken: null },
       where: { id: user.id },
     }),
     prisma.userSnapshot.deleteMany({ where: { userId: user.id } }),

@@ -1,7 +1,7 @@
 import { sleep } from "workflow";
 
 import {
-  stepDeleteHetzner,
+  stepDeleteProviderServer,
   stepMarkDeleted,
   stepReadPhase,
   stepSendDeleteCommand,
@@ -28,6 +28,6 @@ export const teardownServer = async (input: { serverId: string }) => {
     }
   }
 
-  await stepDeleteHetzner(serverId);
+  await stepDeleteProviderServer(serverId);
   await stepMarkDeleted(serverId);
 };

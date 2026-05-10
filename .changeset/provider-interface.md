@@ -1,0 +1,5 @@
+---
+"ghost": patch
+---
+
+Refactor the Hetzner integration behind a provider-agnostic `Provider` interface so a future AWS or GCP backend can be added by writing a new implementation rather than rewriting call sites. `lib/hetzner/` is replaced by `lib/providers/` (interface + types + per-user factory) with `lib/providers/hetzner/` as the only implementation today; all 23 call sites (workflow steps, route handlers, server actions, page loaders) now consume the interface and pass string IDs end-to-end (no more `Number()` round-trips). Workflow steps are renamed to drop the `Hetzner` prefix (`stepCreateHetznerServer` → `stepCreateProviderServer`, etc.). The Prisma schema renames `hetznerToken` / `hetznerImageId` / `hetznerServerId` / `hetznerBuilderId` to `provider*` and adds a `provider String @default("hetzner")` column to `User`, `Server`, `UserSnapshot`, and `SnapshotBuild`; the migration uses `ALTER TABLE … RENAME COLUMN` so existing data is preserved. UI copy and the `/api/account/hetzner` route path remain Hetzner-named — those are deferred until a second provider lands.

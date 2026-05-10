@@ -1,9 +1,8 @@
 import "server-only";
 import createClient from "openapi-fetch";
 
+import { ProviderApiError } from "../errors";
 import type { paths } from "./schema";
-
-export { MissingHetznerCredentialsError } from "./errors";
 
 export type HetznerClient = ReturnType<typeof createClient<paths>>;
 
@@ -14,22 +13,6 @@ export const createHetznerClient = (token: string): HetznerClient =>
       Authorization: `Bearer ${token}`,
     },
   });
-
-export class HetznerApiError extends Error {
-  readonly status: number;
-  readonly code: string;
-
-  constructor(status: number, code: string, message: string) {
-    super(`Hetzner API ${code}: ${message}`);
-    this.name = "HetznerApiError";
-    this.status = status;
-    this.code = code;
-  }
-
-  get isClientError(): boolean {
-    return this.status >= 400 && this.status < 500;
-  }
-}
 
 export const throwIfHetznerError = (
   error: unknown,
@@ -43,5 +26,5 @@ export const throwIfHetznerError = (
     | undefined;
   const code = body?.error?.code ?? String(response.status);
   const message = body?.error?.message ?? response.statusText;
-  throw new HetznerApiError(response.status, code, message);
+  throw new ProviderApiError(response.status, code, message);
 };

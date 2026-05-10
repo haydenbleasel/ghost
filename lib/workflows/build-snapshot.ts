@@ -36,7 +36,7 @@ export const buildSnapshot = async (input: {
       buildId,
     });
 
-    const { hetznerBuilderId } = await stepCreateBuilderVm({
+    const { providerBuilderId } = await stepCreateBuilderVm({
       agentDownloadUrl,
       buildId,
       userId,
@@ -47,7 +47,7 @@ export const buildSnapshot = async (input: {
     let buildFinished = false;
     while (Date.now() < buildDeadline) {
       const { status } = await stepGetBuilderStatus({
-        hetznerBuilderId,
+        providerBuilderId,
         userId,
       });
       if (status === "off") {
@@ -72,7 +72,7 @@ export const buildSnapshot = async (input: {
     await stepUpdateBuildStatus({ buildId, status: "snapshotting" });
 
     const { snapshotImageId } = await stepCreateSnapshot({
-      hetznerBuilderId,
+      providerBuilderId,
       userId,
     });
 
@@ -102,10 +102,10 @@ export const buildSnapshot = async (input: {
       userId,
     });
 
-    await stepDeleteBuilder({ hetznerBuilderId, userId });
+    await stepDeleteBuilder({ providerBuilderId, userId });
 
     await stepDeletePreviousSnapshot({
-      newSnapshotId: String(snapshotImageId),
+      newSnapshotId: snapshotImageId,
       previousSnapshotId,
       userId,
     });
@@ -116,10 +116,10 @@ export const buildSnapshot = async (input: {
     const state = await stepReadBuildState({ buildId });
 
     // Leave the builder VM up on failure so the user can SSH in / use the
-    // Hetzner web console to read cloud-init logs. Surface the VM id in the
-    // error reason so they know what to delete once they're done debugging.
-    const reason = state?.hetznerBuilderId
-      ? `${baseReason} (builder VM left for inspection — delete with \`hcloud server delete ${state.hetznerBuilderId}\`)`
+    // provider's web console to read cloud-init logs. Surface the VM id in
+    // the error reason so they know what to delete once they're done.
+    const reason = state?.providerBuilderId
+      ? `${baseReason} (builder VM left for inspection — id: ${state.providerBuilderId})`
       : baseReason;
 
     await stepMarkFailed({ buildId, reason });

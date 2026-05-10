@@ -20,7 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { getDefaults, hasRequiredFields, missingRequiredFields } from "@/games";
 import type { SettingsSchema } from "@/games";
-import type { CatalogServerType } from "@/lib/hetzner/catalog";
+import type { CatalogServerType } from "@/lib/providers/types";
 import { cn } from "@/lib/utils";
 
 import { SettingsFields } from "../../[id]/components/game-settings-form";

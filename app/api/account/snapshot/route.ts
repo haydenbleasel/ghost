@@ -30,10 +30,10 @@ export const POST = async () => {
   const user = await requireUser();
 
   const row = await prisma.user.findUnique({
-    select: { hetznerToken: true },
+    select: { providerToken: true },
     where: { id: user.id },
   });
-  if (!row?.hetznerToken) {
+  if (!row?.providerToken) {
     return NextResponse.json(
       { error: "Save a Hetzner token before building a snapshot." },
       { status: 412 }

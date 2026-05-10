@@ -1,34 +1,7 @@
 import "server-only";
-import { throwIfHetznerError } from "./index";
-import type { HetznerClient } from "./index";
-
-export interface CatalogLocation {
-  name: string;
-  city: string;
-  country: string;
-  latitude: number;
-  longitude: number;
-  available: boolean;
-  supported: boolean;
-}
-
-export interface CatalogServerType {
-  name: string;
-  description: string;
-  cores: number;
-  memory: number;
-  disk: number;
-  cpuType: "shared" | "dedicated";
-  architecture: "x86" | "arm";
-  pricePerMonth: number;
-  locations: CatalogLocation[];
-}
-
-export interface Catalog {
-  serverTypes: CatalogServerType[];
-  imageArchitecture: "x86" | "arm";
-  currency: string;
-}
+import type { Catalog, CatalogLocation, CatalogServerType } from "../types";
+import { throwIfHetznerError } from "./client";
+import type { HetznerClient } from "./client";
 
 export const getHetznerCatalog = async (
   client: HetznerClient,
@@ -59,7 +32,7 @@ export const getHetznerCatalog = async (
   const currency = pricingRes.data?.pricing.currency ?? "EUR";
 
   if (!image) {
-    throw new Error("Hetzner image not found");
+    throw new Error("Provider image not found");
   }
 
   const perLocation = new Map<

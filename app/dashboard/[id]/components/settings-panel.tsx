@@ -18,7 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { CatalogServerType } from "@/lib/hetzner/catalog";
+import type { CatalogServerType } from "@/lib/providers/types";
 import { cn } from "@/lib/utils";
 
 import { rescaleServer } from "../actions/rescale";

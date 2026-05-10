@@ -4,8 +4,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { MissingHetznerCredentialsError } from "@/lib/hetzner";
-import { getUserHetznerContext } from "@/lib/hetzner/credentials";
+import { getProviderForUser } from "@/lib/providers";
+import {
+  MissingProviderCredentialsError,
+  ProviderApiError,
+} from "@/lib/providers/errors";
 import { requireUser } from "@/lib/session";
 
 const inputSchema = z.object({
@@ -36,7 +39,7 @@ export const rescaleServer = async (
     return { error: "Not found", ok: false };
   }
 
-  if (!server.hetznerServerId) {
+  if (!server.providerServerId) {
     return { error: "Server is not provisioned yet", ok: false };
   }
 
@@ -48,11 +51,11 @@ export const rescaleServer = async (
     return { error: "Already on this server type", ok: false };
   }
 
-  let client: Awaited<ReturnType<typeof getUserHetznerContext>>["client"];
+  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
   try {
-    ({ client } = await getUserHetznerContext(user.id));
+    provider = await getProviderForUser(user.id);
   } catch (error) {
-    if (error instanceof MissingHetznerCredentialsError) {
+    if (error instanceof MissingProviderCredentialsError) {
       return {
         error: "Configure your Hetzner credentials in account settings.",
         ok: false,
@@ -61,19 +64,16 @@ export const rescaleServer = async (
     throw error;
   }
 
-  const { error: apiError, response } = await client.POST(
-    "/servers/{id}/actions/change_type",
-    {
-      body: { server_type: parsed.data.serverType, upgrade_disk: false },
-      params: { path: { id: Number(server.hetznerServerId) } },
+  try {
+    await provider.rescaleServer(
+      server.providerServerId,
+      parsed.data.serverType
+    );
+  } catch (error) {
+    if (error instanceof ProviderApiError) {
+      return { error: error.message, ok: false };
     }
-  );
-  if (!response.ok) {
-    const errorBody = apiError as { error?: { message?: string } } | undefined;
-    return {
-      error: errorBody?.error?.message ?? response.statusText,
-      ok: false,
-    };
+    throw error;
   }
 
   await prisma.server.update({

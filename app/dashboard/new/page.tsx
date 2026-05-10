@@ -2,9 +2,9 @@ import { redirect } from "next/navigation";
 
 import { games } from "@/games";
 import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
-import { MissingHetznerCredentialsError } from "@/lib/hetzner";
-import { getHetznerCatalog } from "@/lib/hetzner/catalog";
-import { getUserHetznerImageContext } from "@/lib/hetzner/credentials";
+import { getProviderForUserWithImage } from "@/lib/providers";
+import { MissingProviderCredentialsError } from "@/lib/providers/errors";
+import type { Catalog } from "@/lib/providers/types";
 import { requireUser } from "@/lib/session";
 
 import { NewServerForm } from "./components/form";
@@ -12,15 +12,15 @@ import type { GameOption } from "./components/form";
 
 const NewServerPage = async () => {
   const user = await requireUser();
-  let catalog: Awaited<ReturnType<typeof getHetznerCatalog>>;
+  let catalog: Catalog;
   try {
-    const { client, imageId } = await getUserHetznerImageContext(
+    const { provider, imageId } = await getProviderForUserWithImage(
       user.id,
       SNAPSHOT_ENVIRONMENT
     );
-    catalog = await getHetznerCatalog(client, imageId);
+    catalog = await provider.getCatalog(imageId);
   } catch (error) {
-    if (error instanceof MissingHetznerCredentialsError) {
+    if (error instanceof MissingProviderCredentialsError) {
       redirect("/dashboard/account/backend");
     }
     throw error;

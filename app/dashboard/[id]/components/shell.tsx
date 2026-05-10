@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { games } from "@/games";
-import type { CatalogServerType } from "@/lib/hetzner/catalog";
+import type { CatalogServerType } from "@/lib/providers/types";
 import { cn } from "@/lib/utils";
 
 import { PageBody, PageHeader } from "../../components/page-header";

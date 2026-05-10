@@ -2,7 +2,7 @@
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 
-import type { CatalogServerType } from "@/lib/hetzner/catalog";
+import type { CatalogServerType } from "@/lib/providers/types";
 
 export interface Specs {
   typeName: string;

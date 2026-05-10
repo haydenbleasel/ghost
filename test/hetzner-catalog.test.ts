@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import type { HetznerClient } from "@/lib/hetzner";
-import { getHetznerCatalog } from "@/lib/hetzner/catalog";
+import { getHetznerCatalog } from "@/lib/providers/hetzner/catalog";
+import type { HetznerClient } from "@/lib/providers/hetzner/client";
 
 const ok = <T>(data: T) => ({
   data,
@@ -235,7 +235,7 @@ describe("getHetznerCatalog", () => {
     );
   });
 
-  test("propagates Hetzner API errors", async () => {
+  test("propagates provider API errors", async () => {
     const client = {
       GET: (path: string) => {
         if (path === "/server_types") {
@@ -254,7 +254,7 @@ describe("getHetznerCatalog", () => {
       },
     } as unknown as HetznerClient;
     await expect(getHetznerCatalog(client, "1")).rejects.toThrow(
-      /Hetzner API internal: boom/u
+      /Provider API internal: boom/u
     );
   });
 

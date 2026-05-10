@@ -9,7 +9,7 @@ export default defineConfig({
     "components/ai-elements",
     "components/kibo-ui",
     "lib/utils.ts",
-    "lib/hetzner/schema.ts",
+    "lib/providers/hetzner/schema.ts",
     "hooks/use-mobile.ts",
   ],
 });
