@@ -21,7 +21,14 @@ export const POST = async (request: Request) => {
     throw error;
   }
 
-  const parsed = heartbeatSchema.safeParse(JSON.parse(body));
+  let json: unknown;
+  try {
+    json = JSON.parse(body);
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = heartbeatSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }

@@ -24,7 +24,14 @@ export const POST = async (request: Request) => {
 
   const batchId = request.headers.get(AGENT_HEADERS.BATCH);
 
-  const parsed = eventBatchSchema.safeParse(JSON.parse(body));
+  let json: unknown;
+  try {
+    json = JSON.parse(body);
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = eventBatchSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
       { details: parsed.error.flatten(), error: "Invalid body" },
