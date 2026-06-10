@@ -38,11 +38,12 @@ const waitForServerRunning = async (input: {
     if (status.status === "running") {
       return { type: "ready", value: { ipv4: status.ip } };
     }
-    if (status.status === "unknown") {
-      throw new FatalError("Provider server not found after create");
-    }
     if (await isCancelled(input.serverId)) {
       return { type: "cancelled" };
+    }
+    if (status.status === "unknown") {
+      // Not cancelled (checked above), so the VM genuinely vanished.
+      throw new FatalError("Provider server not found after create");
     }
     await sleep(`${PROVIDER_POLL_SECONDS}s`);
   }
