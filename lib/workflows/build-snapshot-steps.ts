@@ -1,6 +1,4 @@
 import "server-only";
-import crypto from "node:crypto";
-
 import type { SnapshotBuildStatus } from "@prisma/client";
 import { del as blobDel, put } from "@vercel/blob";
 import { FatalError } from "workflow";
@@ -96,6 +94,17 @@ export const stepCreateBuilderVm = async (input: {
 }): Promise<{ providerBuilderId: string }> => {
   "use step";
 
+  const build = await prisma.snapshotBuild.findUnique({
+    select: { providerBuilderId: true },
+    where: { id: input.buildId },
+  });
+  if (!build) {
+    throw new FatalError(`SnapshotBuild ${input.buildId} not found`);
+  }
+  if (build.providerBuilderId) {
+    return { providerBuilderId: build.providerBuilderId };
+  }
+
   let provider: Awaited<ReturnType<typeof getProviderForUser>>;
   try {
     provider = await getProviderForUser(input.userId);
@@ -107,9 +116,10 @@ export const stepCreateBuilderVm = async (input: {
   }
 
   const userData = buildSnapshotCloudInit(input.agentDownloadUrl);
-  const name = `ghost-builder-${input.buildId.toLowerCase().slice(-12)}-${crypto
-    .randomBytes(2)
-    .toString("hex")}`;
+  // Deterministic name: if a retry races a create whose response was lost,
+  // the provider's unique-name constraint rejects the duplicate instead of
+  // silently billing a second VM.
+  const name = `ghost-builder-${input.buildId.toLowerCase().slice(-12)}`;
 
   let created: Awaited<ReturnType<typeof provider.createServer>>;
   try {
