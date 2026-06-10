@@ -48,6 +48,7 @@ export const createServerOps = (client: HetznerClient) => ({
     return {
       id: String(data.server.id),
       ipv4: data.server.public_net.ipv4?.ip ?? null,
+      memoryGb: data.server.server_type?.memory ?? null,
       status: toServerStatus(data.server.status),
     };
   },
@@ -104,6 +105,7 @@ export const createServerOps = (client: HetznerClient) => ({
     return {
       id: String(data.server.id),
       ipv4: data.server.public_net.ipv4?.ip ?? null,
+      memoryGb: data.server.server_type?.memory ?? null,
       status: toServerStatus(data.server.status),
     };
   },

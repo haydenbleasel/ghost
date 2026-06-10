@@ -261,9 +261,21 @@ export const stepSendInstallConfig = async (serverId: string) => {
     throw new FatalError(`Unknown game: ${server.game}`);
   }
 
+  let memoryGb: number | null = null;
+  if (server.providerServerId) {
+    try {
+      const provider = await getProviderForUser(server.userId);
+      const providerServer = await provider.getServer(server.providerServerId);
+      memoryGb = providerServer?.memoryGb ?? null;
+    } catch {
+      // Non-fatal: games fall back to a conservative default sizing.
+    }
+  }
+
   const compose = game.buildCompose(
     {
       joinPassword: server.joinPassword,
+      memoryGb,
       name: server.name,
       rconPassword: server.rconPassword,
     },

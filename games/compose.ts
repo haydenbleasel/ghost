@@ -3,6 +3,8 @@ export interface ComposeConfig {
   rconPassword: string;
   joinPassword: string | null;
   timezone?: string;
+  /** Machine memory in GB, when known; games can size heaps/caches from it. */
+  memoryGb?: number | null;
 }
 
 export interface GamePort {

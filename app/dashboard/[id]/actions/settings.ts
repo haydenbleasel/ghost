@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getGame, resolveSettings, validateSettings } from "@/games";
 import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
+import { getProviderForUser } from "@/lib/providers";
 import { requireUser } from "@/lib/session";
 
 const inputSchema = z.object({
@@ -60,9 +61,22 @@ export const updateServerSettings = async (
     where: { serverId: parsed.data.serverId },
   });
   if (agent && server.observedState === "running") {
+    let memoryGb: number | null = null;
+    if (server.providerServerId) {
+      try {
+        const provider = await getProviderForUser(user.id);
+        const providerServer = await provider.getServer(
+          server.providerServerId
+        );
+        memoryGb = providerServer?.memoryGb ?? null;
+      } catch {
+        // Non-fatal: games fall back to a conservative default sizing.
+      }
+    }
     const compose = game.buildCompose(
       {
         joinPassword: server.joinPassword,
+        memoryGb,
         name: server.name,
         rconPassword: server.rconPassword,
       },

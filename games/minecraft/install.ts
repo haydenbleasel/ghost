@@ -10,6 +10,12 @@ export const buildMinecraftCompose = (
 ): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
+  // Give the JVM ~75% of the machine, leaving headroom for the OS and
+  // container runtime. Falls back to the heap for the smallest supported
+  // machine (8GB) when the machine size is unknown.
+  const heapGb = config.memoryGb
+    ? Math.max(1, Math.floor(config.memoryGb * 0.75))
+    : 6;
   return `services:
   minecraft:
     image: ${dockerImage}
@@ -22,7 +28,7 @@ export const buildMinecraftCompose = (
       MOTD: "${escape(config.name)} - Powered by Ghost"
       DIFFICULTY: "${settings.difficulty}"
       MODE: "${settings.mode}"
-      MEMORY: "6G"
+      MEMORY: "${heapGb}G"
       TZ: "${timezone}"
       ENABLE_RCON: "true"
       RCON_PASSWORD: "${escape(config.rconPassword)}"
