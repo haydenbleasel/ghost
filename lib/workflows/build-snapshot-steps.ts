@@ -156,10 +156,23 @@ export const stepGetBuilderStatus = async (input: {
 };
 
 export const stepCreateSnapshot = async (input: {
+  buildId: string;
   userId: string;
   providerBuilderId: string;
 }): Promise<{ snapshotImageId: string }> => {
   "use step";
+
+  const build = await prisma.snapshotBuild.findUnique({
+    select: { snapshotId: true },
+    where: { id: input.buildId },
+  });
+  if (!build) {
+    throw new FatalError(`SnapshotBuild ${input.buildId} not found`);
+  }
+  if (build.snapshotId) {
+    return { snapshotImageId: build.snapshotId };
+  }
+
   const provider = await getProviderForUser(input.userId);
   let imageId: string;
   try {
@@ -172,6 +185,14 @@ export const stepCreateSnapshot = async (input: {
     }
     throw error;
   }
+
+  // Persist immediately so a failure later in the workflow can find and
+  // delete the image instead of leaking a per-GB-billed snapshot.
+  await prisma.snapshotBuild.update({
+    data: { snapshotId: imageId },
+    where: { id: input.buildId },
+  });
+
   return { snapshotImageId: imageId };
 };
 
@@ -296,10 +317,17 @@ export const stepReadBuildState = async (input: {
 }): Promise<{
   providerBuilderId: string | null;
   agentBlobUrl: string | null;
+  snapshotId: string | null;
+  status: SnapshotBuildStatus;
 } | null> => {
   "use step";
   const build = await prisma.snapshotBuild.findUnique({
-    select: { agentBlobUrl: true, providerBuilderId: true },
+    select: {
+      agentBlobUrl: true,
+      providerBuilderId: true,
+      snapshotId: true,
+      status: true,
+    },
     where: { id: input.buildId },
   });
   if (!build) {
@@ -308,5 +336,27 @@ export const stepReadBuildState = async (input: {
   return {
     agentBlobUrl: build.agentBlobUrl,
     providerBuilderId: build.providerBuilderId,
+    snapshotId: build.snapshotId,
+    status: build.status,
   };
+};
+
+export const stepDeleteOrphanImage = async (input: {
+  userId: string;
+  imageId: string;
+}): Promise<{ deleted: boolean }> => {
+  "use step";
+  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
+  try {
+    provider = await getProviderForUser(input.userId);
+  } catch {
+    return { deleted: false };
+  }
+  // Best-effort: this only runs on the failure path, where the original
+  // error is what should surface, not a cleanup hiccup.
+  try {
+    return await provider.deleteImage(input.imageId);
+  } catch {
+    return { deleted: false };
+  }
 };
