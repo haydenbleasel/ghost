@@ -255,7 +255,14 @@ export const stepDeleteBuilder = async (input: {
   } catch {
     return { deleted: false };
   }
-  return provider.deleteServer(input.providerBuilderId);
+  // Non-fatal: this runs after the snapshot is saved, so a cleanup failure
+  // must not flip a "ready" build to "failed". A leftover builder VM is
+  // visible in the provider console and cheap to remove manually.
+  try {
+    return await provider.deleteServer(input.providerBuilderId);
+  } catch {
+    return { deleted: false };
+  }
 };
 
 export const stepDeletePreviousSnapshot = async (input: {
