@@ -6,6 +6,7 @@ import {
   stepCreateSnapshot,
   stepDeleteAgentBlob,
   stepDeleteBuilder,
+  stepDeleteOrphanImage,
   stepDeletePreviousSnapshot,
   stepGetBuilderStatus,
   stepGetImageStatus,
@@ -22,6 +23,56 @@ const MAX_BUILD_WAIT_SECONDS = 45 * 60;
 const BUILD_POLL_SECONDS = 15;
 const MAX_SNAPSHOT_WAIT_SECONDS = 15 * 60;
 const SNAPSHOT_POLL_SECONDS = 10;
+
+const waitForBuilderOff = async (input: {
+  buildId: string;
+  userId: string;
+  providerBuilderId: string;
+}): Promise<void> => {
+  const { buildId, userId, providerBuilderId } = input;
+  const buildDeadline = Date.now() + MAX_BUILD_WAIT_SECONDS * 1000;
+  let observedRunning = false;
+  while (Date.now() < buildDeadline) {
+    const { status } = await stepGetBuilderStatus({
+      providerBuilderId,
+      userId,
+    });
+    if (status === "off") {
+      return;
+    }
+    if (status === "unknown") {
+      throw new FatalError("Builder VM disappeared mid-build");
+    }
+    if (status === "running" && !observedRunning) {
+      observedRunning = true;
+      await stepUpdateBuildStatus({ buildId, status: "installing" });
+    }
+    await sleep(`${BUILD_POLL_SECONDS}s`);
+  }
+  throw new Error("Builder VM never reached 'off' status (build timed out)");
+};
+
+const waitForImageAvailable = async (input: {
+  userId: string;
+  snapshotImageId: string;
+}): Promise<void> => {
+  const { userId, snapshotImageId } = input;
+  const snapshotDeadline = Date.now() + MAX_SNAPSHOT_WAIT_SECONDS * 1000;
+  while (Date.now() < snapshotDeadline) {
+    const { status } = await stepGetImageStatus({
+      imageId: snapshotImageId,
+      userId,
+    });
+    if (status === "available") {
+      return;
+    }
+    if (status === "unavailable" || status === "unknown") {
+      throw new Error(`Snapshot image entered status '${status}'`);
+    }
+    await sleep(`${SNAPSHOT_POLL_SECONDS}s`);
+  }
+  throw new Error("Snapshot never became available (timed out)");
+};
 
 export const buildSnapshot = async (input: {
   buildId: string;
@@ -42,59 +93,17 @@ export const buildSnapshot = async (input: {
       userId,
     });
 
-    const buildDeadline = Date.now() + MAX_BUILD_WAIT_SECONDS * 1000;
-    let observedRunning = false;
-    let buildFinished = false;
-    while (Date.now() < buildDeadline) {
-      const { status } = await stepGetBuilderStatus({
-        providerBuilderId,
-        userId,
-      });
-      if (status === "off") {
-        buildFinished = true;
-        break;
-      }
-      if (status === "unknown") {
-        throw new FatalError("Builder VM disappeared mid-build");
-      }
-      if (status === "running" && !observedRunning) {
-        observedRunning = true;
-        await stepUpdateBuildStatus({ buildId, status: "installing" });
-      }
-      await sleep(`${BUILD_POLL_SECONDS}s`);
-    }
-    if (!buildFinished) {
-      throw new Error(
-        "Builder VM never reached 'off' status (build timed out)"
-      );
-    }
+    await waitForBuilderOff({ buildId, providerBuilderId, userId });
 
     await stepUpdateBuildStatus({ buildId, status: "snapshotting" });
 
     const { snapshotImageId } = await stepCreateSnapshot({
+      buildId,
       providerBuilderId,
       userId,
     });
 
-    const snapshotDeadline = Date.now() + MAX_SNAPSHOT_WAIT_SECONDS * 1000;
-    let snapshotReady = false;
-    while (Date.now() < snapshotDeadline) {
-      const { status } = await stepGetImageStatus({
-        imageId: snapshotImageId,
-        userId,
-      });
-      if (status === "available") {
-        snapshotReady = true;
-        break;
-      }
-      if (status === "unavailable" || status === "unknown") {
-        throw new Error(`Snapshot image entered status '${status}'`);
-      }
-      await sleep(`${SNAPSHOT_POLL_SECONDS}s`);
-    }
-    if (!snapshotReady) {
-      throw new Error("Snapshot never became available (timed out)");
-    }
+    await waitForImageAvailable({ snapshotImageId, userId });
 
     const { previousSnapshotId } = await stepSaveImageId({
       buildId,
@@ -123,6 +132,12 @@ export const buildSnapshot = async (input: {
       : baseReason;
 
     await stepMarkFailed({ buildId, reason });
+
+    // A snapshot image created by this build that never reached "ready" is
+    // referenced nowhere — delete it so it doesn't bill forever.
+    if (state?.snapshotId && state.status !== "ready") {
+      await stepDeleteOrphanImage({ imageId: state.snapshotId, userId });
+    }
 
     if (state?.agentBlobUrl) {
       await stepDeleteAgentBlob({ agentBlobUrl: state.agentBlobUrl });

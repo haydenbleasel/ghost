@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 
 import { z } from "zod";
 
@@ -62,10 +62,8 @@ export const saveState = async (state: State): Promise<void> => {
   await mkdir(STATE_DIR, { recursive: true });
   const tmp = `${STATE_PATH}.tmp`;
   await writeFile(tmp, JSON.stringify(state, null, 2), { mode: 0o600 });
-  await Bun.write(STATE_PATH, await Bun.file(tmp).arrayBuffer());
-  try {
-    await unlink(tmp);
-  } catch {
-    // ignore
-  }
+  // Atomic swap: a crash mid-save must never leave a truncated state.json,
+  // which would brick the agent on next boot (it refuses to re-enroll while
+  // the file exists).
+  await rename(tmp, STATE_PATH);
 };

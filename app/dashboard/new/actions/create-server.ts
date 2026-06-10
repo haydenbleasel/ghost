@@ -89,14 +89,17 @@ export const createServer = async (
     };
   }
 
-  let settings: Record<string, unknown> = {};
-  if (parsed.data.settings) {
-    const validation = validateSettings(game.settings, parsed.data.settings);
-    if (!validation.ok) {
-      return { error: validation.error, ok: false };
-    }
-    settings = validation.data as Record<string, unknown>;
+  // Always validate, even when no settings were sent: required fields (e.g.
+  // Don't Starve Together's cluster token) must block creation, otherwise a
+  // crafted request provisions a paid VM that can never start.
+  const validation = validateSettings(
+    game.settings,
+    parsed.data.settings ?? {}
+  );
+  if (!validation.ok) {
+    return { error: validation.error, ok: false };
   }
+  const settings = validation.data as Record<string, unknown>;
 
   const id = ulid();
   const rconPassword = crypto.randomBytes(16).toString("hex");

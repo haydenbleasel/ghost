@@ -63,15 +63,23 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
 
   useEffect(() => {
     let cancelled = false;
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     const connect = () => {
       if (cancelled) {
         return;
       }
-      const es = new EventSource(
+      const source = new EventSource(
         `/api/servers/${serverId}/logs/stream?cursor=${cursorRef.current}`
       );
-      es.addEventListener("log", (event) => {
+      es = source;
+      const scheduleReconnect = (delayMs: number) => {
+        source.close();
+        es = null;
+        reconnectTimer = setTimeout(connect, delayMs);
+      };
+      source.addEventListener("log", (event) => {
         const data = JSON.parse((event as MessageEvent).data) as LogItem;
         cursorRef.current = Math.max(cursorRef.current, data.seq);
         setLines((prev) =>
@@ -80,19 +88,21 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
             : [...prev.slice(-500), data]
         );
       });
-      es.addEventListener("close", () => {
-        es.close();
-        setTimeout(connect, 250);
+      source.addEventListener("close", () => {
+        scheduleReconnect(250);
       });
-      es.addEventListener("error", () => {
-        es.close();
-        setTimeout(connect, 2000);
+      source.addEventListener("error", () => {
+        scheduleReconnect(2000);
       });
     };
 
     connect();
     return () => {
       cancelled = true;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+      }
+      es?.close();
     };
   }, [serverId]);
 

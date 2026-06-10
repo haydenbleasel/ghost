@@ -68,7 +68,21 @@ export const POST = async () => {
     );
   }
 
-  await start(buildSnapshot, [{ buildId, userId: user.id }]);
+  try {
+    await start(buildSnapshot, [{ buildId, userId: user.id }]);
+  } catch (error) {
+    // The build row was already committed; a non-terminal status would make
+    // the "already running" guard reject every future build for this user.
+    await prisma.snapshotBuild.update({
+      data: {
+        errorReason: "Failed to start build workflow",
+        finishedAt: new Date(),
+        status: "failed",
+      },
+      where: { id: buildId },
+    });
+    throw error;
+  }
 
   return NextResponse.json({ buildId });
 };

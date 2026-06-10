@@ -20,6 +20,8 @@ export interface ProviderServer {
   id: ServerResourceId;
   status: ServerStatus;
   ipv4: string | null;
+  /** Machine memory in GB, when the provider reports it. */
+  memoryGb: number | null;
 }
 
 export type ProviderImageStatus = "creating" | "available" | "unavailable";

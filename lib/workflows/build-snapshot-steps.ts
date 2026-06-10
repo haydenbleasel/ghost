@@ -1,6 +1,4 @@
 import "server-only";
-import crypto from "node:crypto";
-
 import type { SnapshotBuildStatus } from "@prisma/client";
 import { del as blobDel, put } from "@vercel/blob";
 import { FatalError } from "workflow";
@@ -96,6 +94,17 @@ export const stepCreateBuilderVm = async (input: {
 }): Promise<{ providerBuilderId: string }> => {
   "use step";
 
+  const build = await prisma.snapshotBuild.findUnique({
+    select: { providerBuilderId: true },
+    where: { id: input.buildId },
+  });
+  if (!build) {
+    throw new FatalError(`SnapshotBuild ${input.buildId} not found`);
+  }
+  if (build.providerBuilderId) {
+    return { providerBuilderId: build.providerBuilderId };
+  }
+
   let provider: Awaited<ReturnType<typeof getProviderForUser>>;
   try {
     provider = await getProviderForUser(input.userId);
@@ -107,9 +116,10 @@ export const stepCreateBuilderVm = async (input: {
   }
 
   const userData = buildSnapshotCloudInit(input.agentDownloadUrl);
-  const name = `ghost-builder-${input.buildId.toLowerCase().slice(-12)}-${crypto
-    .randomBytes(2)
-    .toString("hex")}`;
+  // Deterministic name: if a retry races a create whose response was lost,
+  // the provider's unique-name constraint rejects the duplicate instead of
+  // silently billing a second VM.
+  const name = `ghost-builder-${input.buildId.toLowerCase().slice(-12)}`;
 
   let created: Awaited<ReturnType<typeof provider.createServer>>;
   try {
@@ -146,10 +156,23 @@ export const stepGetBuilderStatus = async (input: {
 };
 
 export const stepCreateSnapshot = async (input: {
+  buildId: string;
   userId: string;
   providerBuilderId: string;
 }): Promise<{ snapshotImageId: string }> => {
   "use step";
+
+  const build = await prisma.snapshotBuild.findUnique({
+    select: { snapshotId: true },
+    where: { id: input.buildId },
+  });
+  if (!build) {
+    throw new FatalError(`SnapshotBuild ${input.buildId} not found`);
+  }
+  if (build.snapshotId) {
+    return { snapshotImageId: build.snapshotId };
+  }
+
   const provider = await getProviderForUser(input.userId);
   let imageId: string;
   try {
@@ -162,6 +185,14 @@ export const stepCreateSnapshot = async (input: {
     }
     throw error;
   }
+
+  // Persist immediately so a failure later in the workflow can find and
+  // delete the image instead of leaking a per-GB-billed snapshot.
+  await prisma.snapshotBuild.update({
+    data: { snapshotId: imageId },
+    where: { id: input.buildId },
+  });
+
   return { snapshotImageId: imageId };
 };
 
@@ -224,7 +255,14 @@ export const stepDeleteBuilder = async (input: {
   } catch {
     return { deleted: false };
   }
-  return provider.deleteServer(input.providerBuilderId);
+  // Non-fatal: this runs after the snapshot is saved, so a cleanup failure
+  // must not flip a "ready" build to "failed". A leftover builder VM is
+  // visible in the provider console and cheap to remove manually.
+  try {
+    return await provider.deleteServer(input.providerBuilderId);
+  } catch {
+    return { deleted: false };
+  }
 };
 
 export const stepDeletePreviousSnapshot = async (input: {
@@ -286,10 +324,17 @@ export const stepReadBuildState = async (input: {
 }): Promise<{
   providerBuilderId: string | null;
   agentBlobUrl: string | null;
+  snapshotId: string | null;
+  status: SnapshotBuildStatus;
 } | null> => {
   "use step";
   const build = await prisma.snapshotBuild.findUnique({
-    select: { agentBlobUrl: true, providerBuilderId: true },
+    select: {
+      agentBlobUrl: true,
+      providerBuilderId: true,
+      snapshotId: true,
+      status: true,
+    },
     where: { id: input.buildId },
   });
   if (!build) {
@@ -298,5 +343,27 @@ export const stepReadBuildState = async (input: {
   return {
     agentBlobUrl: build.agentBlobUrl,
     providerBuilderId: build.providerBuilderId,
+    snapshotId: build.snapshotId,
+    status: build.status,
   };
+};
+
+export const stepDeleteOrphanImage = async (input: {
+  userId: string;
+  imageId: string;
+}): Promise<{ deleted: boolean }> => {
+  "use step";
+  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
+  try {
+    provider = await getProviderForUser(input.userId);
+  } catch {
+    return { deleted: false };
+  }
+  // Best-effort: this only runs on the failure path, where the original
+  // error is what should surface, not a cleanup hiccup.
+  try {
+    return await provider.deleteImage(input.imageId);
+  } catch {
+    return { deleted: false };
+  }
 };

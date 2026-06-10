@@ -24,7 +24,14 @@ export const POST = async (request: Request) => {
 
   const batchId = request.headers.get(AGENT_HEADERS.BATCH);
 
-  const parsed = eventBatchSchema.safeParse(JSON.parse(body));
+  let json: unknown;
+  try {
+    json = JSON.parse(body);
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = eventBatchSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
       { details: parsed.error.flatten(), error: "Invalid body" },
@@ -32,8 +39,11 @@ export const POST = async (request: Request) => {
     );
   }
 
+  // Dedupe ids are scoped by agentId (not serverId) so a re-enrolled agent's
+  // restarted agentSeq counter can't collide with rows from its predecessor.
   for (const event of parsed.data.activity) {
     await emitActivity({
+      dedupeId: `${verified.agentId}:${event.clientEventId}`,
       message: event.message,
       metadata: { ...event.metadata, agentSeq: event.agentSeq, batchId },
       occurredAt: new Date(event.occurredAt),
@@ -45,6 +55,7 @@ export const POST = async (request: Request) => {
 
   for (const logLine of parsed.data.logs) {
     await emitLog({
+      dedupeId: `${verified.agentId}:log:${logLine.agentSeq}`,
       line: logLine.line,
       serverId: verified.serverId,
       stream: logLine.stream,

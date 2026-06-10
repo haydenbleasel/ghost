@@ -13,7 +13,10 @@ import {
   getProviderForUser,
   getProviderForUserWithImage,
 } from "@/lib/providers";
-import { ProviderApiError } from "@/lib/providers/errors";
+import {
+  MissingProviderCredentialsError,
+  ProviderApiError,
+} from "@/lib/providers/errors";
 import type { Phase } from "@/protocol";
 
 const buildCloudInit = (input: {
@@ -57,6 +60,20 @@ export const stepCreateProviderServer = async (serverId: string) => {
     where: { id: serverId },
   });
   if (!server || server.desiredState === "deleted") {
+    // A previous attempt may have created the VM after teardown already
+    // looked for it (and found nothing to delete) — clean it up here, since
+    // nothing else will. deleteServer is a no-op when the VM is gone.
+    if (server?.providerServerId) {
+      try {
+        const provider = await getProviderForUser(server.userId);
+        await provider.deleteServer(server.providerServerId);
+      } catch (error) {
+        if (!(error instanceof MissingProviderCredentialsError)) {
+          // Let the step retry until the provider is reachable again.
+          throw error;
+        }
+      }
+    }
     return {
       cancelled: true as const,
       providerServerId: server?.providerServerId ?? null,
@@ -83,8 +100,13 @@ export const stepCreateProviderServer = async (serverId: string) => {
       server.userId,
       SNAPSHOT_ENVIRONMENT
     ));
-  } catch {
-    throw new FatalError("Owner has not configured provider credentials");
+  } catch (error) {
+    if (error instanceof MissingProviderCredentialsError) {
+      throw new FatalError("Owner has not configured provider credentials");
+    }
+    // Transient failures (DB, network) should retry, not permanently fail
+    // the provision with a misleading reason.
+    throw error;
   }
 
   const { token, jti, expiresAt } = await mintBootstrapJwt({ serverId });
@@ -131,17 +153,17 @@ export const stepCreateProviderServer = async (serverId: string) => {
       phase: "provisioning",
       providerServerId: created.id,
     },
-    where: { id: serverId },
+    where: { desiredState: { not: "deleted" }, id: serverId },
   });
-  const updated =
-    count > 0
-      ? await prisma.server.findUnique({
-          select: { desiredState: true },
-          where: { id: serverId },
-        })
-      : null;
 
-  if (!updated || updated.desiredState === "deleted") {
+  if (count === 0) {
+    // Deleted while the create was in flight. Persist the id (without
+    // clobbering teardown's phase/state) so the early-return path above can
+    // retry the cleanup if this inline delete fails.
+    await prisma.server.updateMany({
+      data: { providerServerId: created.id },
+      where: { id: serverId },
+    });
     await provider.deleteServer(created.id);
     return { cancelled: true as const, providerServerId: created.id };
   }
@@ -239,9 +261,21 @@ export const stepSendInstallConfig = async (serverId: string) => {
     throw new FatalError(`Unknown game: ${server.game}`);
   }
 
+  let memoryGb: number | null = null;
+  if (server.providerServerId) {
+    try {
+      const provider = await getProviderForUser(server.userId);
+      const providerServer = await provider.getServer(server.providerServerId);
+      memoryGb = providerServer?.memoryGb ?? null;
+    } catch {
+      // Non-fatal: games fall back to a conservative default sizing.
+    }
+  }
+
   const compose = game.buildCompose(
     {
       joinPassword: server.joinPassword,
+      memoryGb,
       name: server.name,
       rconPassword: server.rconPassword,
     },
@@ -291,9 +325,11 @@ export const stepMarkFailed = async (input: {
   reason: string;
 }) => {
   "use step";
+  // Skip servers the user has deleted: a teardown racing this workflow must
+  // not have its "deleted" state overwritten with "failed".
   const { count } = await prisma.server.updateMany({
     data: { errorReason: input.reason, observedState: "failed" },
-    where: { id: input.serverId },
+    where: { desiredState: { not: "deleted" }, id: input.serverId },
   });
   if (count === 0) {
     return;
