@@ -75,13 +75,21 @@ export const claimPendingCommands = async (
     return [];
   }
 
-  const ids = pending.map((c: { id: string }) => c.id);
-  await prisma.command.updateMany({
-    data: { deliveredAt: new Date(), status: "delivered" },
-    where: { id: { in: ids } },
-  });
+  // Claim each row conditionally so two overlapping polls (e.g. an agent
+  // retry racing a still-running long-poll) can never both deliver the same
+  // command: only the caller whose update flips the status wins the row.
+  const claimed: typeof pending = [];
+  for (const command of pending) {
+    const { count } = await prisma.command.updateMany({
+      data: { deliveredAt: new Date(), status: "delivered" },
+      where: { id: command.id, status: "pending" },
+    });
+    if (count === 1) {
+      claimed.push(command);
+    }
+  }
 
-  return pending.map(
+  return claimed.map(
     (command): Command =>
       ({
         id: command.id,

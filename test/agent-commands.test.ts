@@ -76,13 +76,14 @@ const prismaStub = {
       where,
       data,
     }: {
-      where: { id: { in: string[] } };
+      where: { id: string | { in: string[] }; status?: string };
       data: Partial<FakeCommandRow>;
     }) => {
+      const ids = typeof where.id === "string" ? [where.id] : where.id.in;
       let count = 0;
-      for (const id of where.id.in) {
+      for (const id of ids) {
         const row = store.get(id);
-        if (row) {
+        if (row && (!where.status || row.status === where.status)) {
           Object.assign(row, data);
           count += 1;
         }
@@ -208,6 +209,20 @@ describe("claimPendingCommands", () => {
         expect(row.status).toBe("pending");
       }
     }
+  });
+
+  test("never delivers the same command to two concurrent claims", async () => {
+    const { enqueueCommand, claimPendingCommands } = await importCommands();
+    await enqueueCommand({
+      payload: {},
+      serverId: "srv_1",
+      type: "FILES_DELETE",
+    });
+    const [a, b] = await Promise.all([
+      claimPendingCommands("srv_1"),
+      claimPendingCommands("srv_1"),
+    ]);
+    expect(a.length + b.length).toBe(1);
   });
 
   test("respects max parameter", async () => {
