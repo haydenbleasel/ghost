@@ -100,8 +100,13 @@ export const stepCreateProviderServer = async (serverId: string) => {
       server.userId,
       SNAPSHOT_ENVIRONMENT
     ));
-  } catch {
-    throw new FatalError("Owner has not configured provider credentials");
+  } catch (error) {
+    if (error instanceof MissingProviderCredentialsError) {
+      throw new FatalError("Owner has not configured provider credentials");
+    }
+    // Transient failures (DB, network) should retry, not permanently fail
+    // the provision with a misleading reason.
+    throw error;
   }
 
   const { token, jti, expiresAt } = await mintBootstrapJwt({ serverId });
