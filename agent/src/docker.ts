@@ -13,50 +13,46 @@ export const writeCompose = async (content: string): Promise<void> => {
   await writeFile(COMPOSE_PATH, content, { mode: 0o600 });
 };
 
-const runCompose = async (args: string[]): Promise<number> => {
+const runCompose = async (
+  args: string[]
+): Promise<{ code: number; stderr: string }> => {
   const proc = spawn({
     cmd: ["docker", "compose", "-f", COMPOSE_PATH, ...args],
     stderr: "pipe",
     stdout: "pipe",
   });
-  const exit = await proc.exited;
-  return exit;
+  // Drain both pipes while waiting: compose output (e.g. image pull
+  // progress) can exceed the OS pipe buffer, and an undrained pipe blocks
+  // the child forever.
+  const [code, , stderr] = await Promise.all([
+    proc.exited,
+    new Response(proc.stdout).arrayBuffer(),
+    new Response(proc.stderr).text(),
+  ]);
+  return { code, stderr };
 };
 
-export const composeUp = async (): Promise<void> => {
-  const code = await runCompose(["up", "-d"]);
+const runComposeOrThrow = async (args: string[]): Promise<void> => {
+  const { code, stderr } = await runCompose(args);
   if (code !== 0) {
-    throw new Error(`docker compose up exited ${code}`);
+    const detail = stderr.trim().split("\n").at(-1) ?? "";
+    throw new Error(
+      `docker compose ${args.join(" ")} exited ${code}${detail ? `: ${detail}` : ""}`
+    );
   }
 };
 
-export const composeDown = async (): Promise<void> => {
-  const code = await runCompose(["down"]);
-  if (code !== 0) {
-    throw new Error(`docker compose down exited ${code}`);
-  }
-};
+export const composeUp = (): Promise<void> => runComposeOrThrow(["up", "-d"]);
 
-export const composeRestart = async (): Promise<void> => {
-  const code = await runCompose(["restart"]);
-  if (code !== 0) {
-    throw new Error(`docker compose restart exited ${code}`);
-  }
-};
+export const composeDown = (): Promise<void> => runComposeOrThrow(["down"]);
 
-export const composeStop = async (): Promise<void> => {
-  const code = await runCompose(["stop"]);
-  if (code !== 0) {
-    throw new Error(`docker compose stop exited ${code}`);
-  }
-};
+export const composeRestart = (): Promise<void> =>
+  runComposeOrThrow(["restart"]);
 
-export const composeRemove = async (): Promise<void> => {
-  const code = await runCompose(["down", "-v"]);
-  if (code !== 0) {
-    throw new Error(`docker compose down -v exited ${code}`);
-  }
-};
+export const composeStop = (): Promise<void> => runComposeOrThrow(["stop"]);
+
+export const composeRemove = (): Promise<void> =>
+  runComposeOrThrow(["down", "-v"]);
 
 export const probeContainerState = async (): Promise<
   "running" | "stopped" | "missing" | "error"
