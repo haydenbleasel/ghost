@@ -119,25 +119,55 @@ export const createImageOps = (client: HetznerClient) => ({
     serverId: ServerResourceId
   ): Promise<ProviderImage[]> => {
     const numericServerId = Number(serverId);
-    const { data, error, response } = await client.GET("/images", {
-      params: {
-        query: {
-          per_page: 50,
-          sort: ["created:desc"],
-          type: ["backup", "snapshot"],
+
+    const fetchPage = async (
+      query: { type: ("backup" | "snapshot")[]; bound_to?: string[] },
+      page: number
+    ): Promise<{ images: HetznerImage[]; nextPage: number | null }> => {
+      const { data, error, response } = await client.GET("/images", {
+        params: {
+          query: { ...query, page, per_page: 50, sort: ["created:desc"] },
         },
-      },
-    });
-    if (!response.ok) {
-      throwIfHetznerError(error, response);
-    }
-    return (data?.images ?? [])
-      .filter(
-        (img) =>
-          img.bound_to === numericServerId ||
-          (img.type === "snapshot" && img.created_from?.id === numericServerId)
-      )
-      .map((img) => mapHetznerImage(img as HetznerImage));
+      });
+      if (!response.ok) {
+        throwIfHetznerError(error, response);
+      }
+      return {
+        images: (data?.images ?? []) as HetznerImage[],
+        nextPage: data?.meta.pagination.next_page ?? null,
+      };
+    };
+
+    const listPages = async (query: {
+      type: ("backup" | "snapshot")[];
+      bound_to?: string[];
+    }): Promise<HetznerImage[]> => {
+      const images: HetznerImage[] = [];
+      let page: number | null = 1;
+      while (page !== null) {
+        const result = await fetchPage(query, page);
+        images.push(...result.images);
+        page = result.nextPage;
+      }
+      return images;
+    };
+
+    // `bound_to` is only valid for type=backup and there is no server-side
+    // created_from filter, so backups are filtered by the API while
+    // snapshots are paged through in full and filtered here. Both follow
+    // pagination — accounts with >50 images previously lost backups
+    // silently because only the first page was fetched.
+    const [backups, snapshots] = await Promise.all([
+      listPages({ bound_to: [String(numericServerId)], type: ["backup"] }),
+      listPages({ type: ["snapshot"] }),
+    ]);
+
+    return [
+      ...backups,
+      ...snapshots.filter((img) => img.created_from?.id === numericServerId),
+    ]
+      .map((img) => mapHetznerImage(img))
+      .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 
   rebuildFromImage: async (
