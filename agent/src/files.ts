@@ -1,7 +1,15 @@
 import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { mkdir, readdir, rename, rm, stat, unlink } from "node:fs/promises";
-import { dirname, join, normalize, resolve, sep } from "node:path";
+import {
+  mkdir,
+  readdir,
+  realpath,
+  rename,
+  rm,
+  stat,
+  unlink,
+} from "node:fs/promises";
+import { basename, dirname, join, normalize, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { ReadableStream as NodeReadableStream } from "node:stream/web";
@@ -13,19 +21,64 @@ const ignore = (): undefined => undefined;
 const DATA_ROOT = process.env.GHOST_DATA_ROOT ?? "/var/lib/ghost/game/data";
 const MAX_DOWNLOAD_BYTES = 500 * 1024 * 1024;
 
-const resolveInRoot = (relative: string): string => {
-  const cleaned = normalize(`/${relative}`).replace(/^\/+/u, "");
-  const resolved = resolve(DATA_ROOT, cleaned);
-  if (resolved !== DATA_ROOT && !resolved.startsWith(DATA_ROOT + sep)) {
+let cachedRealRoot: string | null = null;
+const realDataRoot = async (): Promise<string> => {
+  if (!cachedRealRoot) {
+    await mkdir(DATA_ROOT, { recursive: true });
+    cachedRealRoot = await realpath(DATA_ROOT);
+  }
+  return cachedRealRoot;
+};
+
+// Resolve symlinks in the deepest existing ancestor of `target`, then
+// re-append the not-yet-existing tail (which cannot contain symlinks).
+const realpathDeepestAncestor = async (target: string): Promise<string> => {
+  let existing = target;
+  let tail = "";
+  for (;;) {
+    let real: string | null = null;
+    try {
+      real = await realpath(existing);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
+    if (real !== null) {
+      return tail ? join(real, tail) : real;
+    }
+    const parent = dirname(existing);
+    if (parent === existing) {
+      throw new Error("unable to resolve path");
+    }
+    tail = tail ? join(basename(existing), tail) : basename(existing);
+    existing = parent;
+  }
+};
+
+const assertWithinRoot = (path: string, root: string): void => {
+  if (path !== root && !path.startsWith(root + sep)) {
     throw new Error("path escapes data root");
   }
-  return resolved;
+};
+
+const resolveInRoot = async (relative: string): Promise<string> => {
+  const root = await realDataRoot();
+  const cleaned = normalize(`/${relative}`).replace(/^\/+/u, "");
+  const resolved = resolve(root, cleaned);
+  assertWithinRoot(resolved, root);
+  // The untrusted game container can plant symlinks inside the bind-mounted
+  // data root; resolve them and re-check so writes/deletes can't be
+  // redirected outside the root.
+  const real = await realpathDeepestAncestor(resolved);
+  assertWithinRoot(real, root);
+  return real;
 };
 
 export const listFiles = async (
   relativePath: string
 ): Promise<{ path: string; entries: FileEntry[] }> => {
-  const abs = resolveInRoot(relativePath);
+  const abs = await resolveInRoot(relativePath);
   await mkdir(abs, { recursive: true });
   const dirents = await readdir(abs, { withFileTypes: true });
   const entries: FileEntry[] = [];
@@ -53,8 +106,8 @@ export const listFiles = async (
 };
 
 export const deleteFile = async (relativePath: string): Promise<void> => {
-  const abs = resolveInRoot(relativePath);
-  if (abs === DATA_ROOT) {
+  const abs = await resolveInRoot(relativePath);
+  if (abs === (await realDataRoot())) {
     throw new Error("cannot delete data root");
   }
   const info = await stat(abs);
@@ -66,8 +119,8 @@ export const installFromUrl = async (input: {
   destPath: string;
   sha256?: string;
 }): Promise<{ bytesWritten: number; sha256: string }> => {
-  const abs = resolveInRoot(input.destPath);
-  if (abs === DATA_ROOT) {
+  const abs = await resolveInRoot(input.destPath);
+  if (abs === (await realDataRoot())) {
     throw new Error("destPath must be a file");
   }
   await mkdir(dirname(abs), { recursive: true });
