@@ -89,7 +89,7 @@
     "@types/gamedig": "^5.0.3",
     "@types/lodash.merge": "^4.6.9",
     "@types/node": "25.6.1",
-    "@types/react": "19.2.16",
+    "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@typescript/native-preview": "^7.0.0-dev.20260507.1",
     "husky": "^9.1.7",
