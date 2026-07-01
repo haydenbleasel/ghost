@@ -65,7 +65,7 @@
     "react-dom": "19.2.7",
     "react-hook-form": "^7.75.0",
     "react-resizable-panels": "^4.11.0",
-    "recharts": "3.8.1",
+    "recharts": "3.9.1",
     "schema-dts": "^2.0.0",
     "server-only": "^0.0.1",
     "shadcn": "^4.7.0",
