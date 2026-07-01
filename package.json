@@ -94,7 +94,7 @@
     "@typescript/native-preview": "^7.0.0-dev.20260507.1",
     "husky": "^9.1.7",
     "openapi-typescript": "^7.13.0",
-    "oxfmt": "^0.53.0",
+    "oxfmt": "^0.57.0",
     "oxlint": "^1.63.0",
     "postcss": "^8.5.14",
     "prisma": "^7.8.0",
