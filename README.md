@@ -17,8 +17,6 @@ Pick a game, pick a region, click start. Drop the IP in your group chat — no t
 - **Honest activity log** — every start, stop, restart, and config change in a clean, filterable timeline.
 - **Your infra, your rules** — bring your own Hetzner key. Your infrastructure, your billing, your data — Ghost just wires it up.
 
-**Supported games:** Minecraft, Rust, Valheim, Palworld, Counter-Strike 2, Left 4 Dead 2, Terraria, Satisfactory, Enshrouded, Don't Starve Together, and V Rising — with more a [request](https://github.com/haydenbleasel/ghost/issues/new) away.
-
 ## Deploy your own
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhaydenbleasel%2Fghost&project-name=ghost&repository-name=ghost&env=HETZNER_API_TOKEN,AUTH_PASSWORD,GHOST_SECRET&envDescription=Hetzner%20Cloud%20API%20token%2C%20dashboard%20password%2C%20and%20a%20random%20signing%20secret&envLink=https%3A%2F%2Fgithub.com%2Fhaydenbleasel%2Fghost%23environment-variables&stores=%5B%7B%22type%22%3A%22postgres%22%7D%2C%7B%22type%22%3A%22kv%22%7D%2C%7B%22type%22%3A%22blob%22%7D%5D)
@@ -49,6 +47,84 @@ Generate `GHOST_SECRET` with `openssl rand -hex 32`.
 ### Preview deployments
 
 If you use Vercel preview deployments, enable **Deployment Protection → Protection Bypass for Automation** in your project settings. The generated value is auto-injected as `VERCEL_AUTOMATION_BYPASS_SECRET` so Hetzner agents can punch through the auth wall on callbacks. Production deployments don't need it. Snapshots are scoped per environment, so a preview's golden image never clobbers production's.
+
+## Supported games
+
+Every supported game lives behind the same one-click flow. Your VM, your token, your billing.
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="public/games/minecraft.jpg" alt="Minecraft dedicated game server" /><br/>
+      <b>Minecraft</b><br/>
+      <sub>Minecraft is a sandbox game where you can build your own world.</sub>
+    </td>
+    <td width="50%">
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/252490/header.jpg" alt="Rust dedicated game server" /><br/>
+      <b>Rust</b><br/>
+      <sub>The only aim in Rust is to survive when everything on the island wants you to die.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/892970/header.jpg" alt="Valheim dedicated game server" /><br/>
+      <b>Valheim</b><br/>
+      <sub>A Viking-themed action RPG where you explore, craft, build, and survive.</sub>
+    </td>
+    <td width="50%">
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1623730/header.jpg" alt="Palworld dedicated game server" /><br/>
+      <b>Palworld</b><br/>
+      <sub>Fight, farm, build and work alongside mysterious creatures called "Pals".</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/730/header.jpg" alt="Counter-Strike 2 dedicated game server" /><br/>
+      <b>Counter-Strike 2</b><br/>
+      <sub>The legendary tactical FPS. Plant the bomb, defuse it, or just frag your friends.</sub>
+    </td>
+    <td width="50%">
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/550/header.jpg" alt="Left 4 Dead 2 dedicated game server" /><br/>
+      <b>Left 4 Dead 2</b><br/>
+      <sub>Co-op zombie apocalypse FPS. Fight your way through hordes of the infected with up to 3 friends.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/105600/header.jpg" alt="Terraria dedicated game server" /><br/>
+      <b>Terraria</b><br/>
+      <sub>Dig, fight, explore, build! Nothing is impossible in this 2D adventure game.</sub>
+    </td>
+    <td width="50%">
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/526870/header.jpg" alt="Satisfactory dedicated game server" /><br/>
+      <b>Satisfactory</b><br/>
+      <sub>Construct factories, automate production, and explore an alien planet with friends.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1203620/header.jpg" alt="Enshrouded dedicated game server" /><br/>
+      <b>Enshrouded</b><br/>
+      <sub>A game of survival, crafting, and action on a sprawling voxel-based continent.</sub>
+    </td>
+    <td width="50%">
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/322330/header.jpg" alt="Don't Starve Together dedicated game server" /><br/>
+      <b>Don't Starve Together</b><br/>
+      <sub>A multiplayer survival sandbox where you brave hunger, monsters, and madness with friends.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1604030/header.jpg" alt="V Rising dedicated game server" /><br/>
+      <b>V Rising</b><br/>
+      <sub>Rise as a vampire lord — hunt, build a castle, and battle players in a gothic open world.</sub>
+    </td>
+    <td width="50%">
+      <b><a href="https://github.com/haydenbleasel/ghost/issues/new">Don't see yours?</a></b><br/>
+      <sub>Open an issue on GitHub and we'll add it to the roadmap — or add it yourself with a game folder and a snapshot rebuild (see below).</sub>
+    </td>
+  </tr>
+</table>
 
 ## How it works
 
