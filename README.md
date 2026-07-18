@@ -2,12 +2,43 @@
 
 ![Ghost — control plane for dedicated game servers](app/opengraph-image.png)
 
-Simple, beautiful game servers. Ghost is a dedicated game server platform you can read, fork, and self-host. Spin one up in seconds — Docker, SSH, and firewall rules handled for you.
+Simple, beautiful game servers. Ghost is a dedicated game server platform you deploy yourself — your Vercel account, your Hetzner account, your billing, your data. Spin one up in seconds — Docker, SSH, and firewall rules handled for you.
+
+## Deploy your own
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhaydenbleasel%2Fghost&project-name=ghost&repository-name=ghost&env=HETZNER_API_TOKEN,AUTH_EMAIL,AUTH_PASSWORD,SESSION_SECRET,BOOTSTRAP_JWT_SECRET&envDescription=Hetzner%20Cloud%20API%20token%2C%20owner%20sign-in%20credentials%2C%20and%20signing%20secrets&envLink=https%3A%2F%2Fgithub.com%2Fhaydenbleasel%2Fghost%23environment-variables&stores=%5B%7B%22type%22%3A%22postgres%22%7D%2C%7B%22type%22%3A%22kv%22%7D%2C%7B%22type%22%3A%22blob%22%7D%5D)
+
+The Deploy Button clones this repo to your GitHub account, creates a Vercel project connected to it, provisions the backing stores (Neon Postgres, Upstash Redis, Vercel Blob — their connection strings are injected automatically), and prompts you for the five secrets below.
+
+1. **Create a Hetzner Cloud project** and generate an API token (Read & Write) — [how to create a token](https://docs.hetzner.cloud/#getting-started). All VMs run in your Hetzner project and are billed to you.
+2. **Click the button** and fill in the env vars (see [Environment variables](#environment-variables)).
+3. **Sign in** at your deployment's URL with `AUTH_EMAIL` / `AUTH_PASSWORD`.
+4. **Bake your golden image** — open `/dashboard/account` and click **Build snapshot**. Baking takes ~10–15 min. Once it's ready, you can create servers.
+
+> [!NOTE]
+> New Hetzner Cloud accounts are capped at 5 servers per project until the account is verified. Provisioning fails with `resource_limit_exceeded` once you hit it — request a limit increase from Hetzner support.
+
+### Environment variables
+
+Generate `SESSION_SECRET` and `BOOTSTRAP_JWT_SECRET` with `openssl rand -hex 32`.
+
+| Variable                       | Purpose                                                                                                        |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `HETZNER_API_TOKEN`            | Hetzner Cloud API token (Read & Write). Every provisioning call runs against your project.                     |
+| `AUTH_EMAIL` / `AUTH_PASSWORD` | Owner sign-in credentials for the dashboard. There is no sign-up — this deployment is yours alone.             |
+| `SESSION_SECRET`               | Signs the dashboard session cookie (32+ chars). Rotating it (or changing `AUTH_EMAIL`) signs out all sessions. |
+| `BOOTSTRAP_JWT_SECRET`         | Signs the one-time enrollment JWTs baked into new VMs (32+ chars).                                             |
+
+`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, and `BLOB_READ_WRITE_TOKEN` are injected by the store integrations. Sentry/PostHog/GA vars are optional — leave them unset and observability quietly disables.
+
+### Preview deployments
+
+If you use Vercel preview deployments, enable **Deployment Protection → Protection Bypass for Automation** in your project settings. The generated value is auto-injected as `VERCEL_AUTOMATION_BYPASS_SECRET` so Hetzner agents can punch through the auth wall on callbacks. Production deployments don't need it. Snapshots are scoped per environment, so a preview's golden image never clobbers production's.
 
 ## Layout
 
 ```
-app/                  Next.js App Router — UI, API, Better Auth
+app/                  Next.js App Router — UI, API, env-credential auth
 lib/                  server-side libs (db, redis, hetzner, agent helpers, workflows)
 protocol/             Zod schemas + signing canonicalization shared with the agent
 agent/                Bun-built TypeScript agent (compiled to a Linux binary)
@@ -15,56 +46,17 @@ prisma/               schema + migrations
 games/                per-game compose generators
 ```
 
-## Setup
+## Local development
 
-1. **Clone the repo**
+```bash
+git clone https://github.com/<you>/ghost.git && cd ghost
+bun install
+cp .env.example .env.local   # fill in the values
+bun migrate
+bun dev
+```
 
-   ```bash
-   git clone https://github.com/haydenbleasel/ghost.git
-   cd ghost
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   bun install
-   ```
-
-3. **Provision the backing services**
-   - **Postgres** via [Neon](https://neon.tech) — grab both the pooled and direct connection strings.
-   - **Redis** via [Vercel KV](https://vercel.com/docs/storage/vercel-kv) or [Upstash](https://upstash.com).
-   - **Blob storage** via [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) — used to host the agent binary.
-
-4. **Configure environment variables**
-
-   ```bash
-   cp .env.example .env.local
-   ```
-
-   Fill in the values from step 3. Generate `BOOTSTRAP_JWT_SECRET` and `BETTER_AUTH_SECRET` with `openssl rand -hex 32`.
-
-5. **Run database migrations**
-
-   ```bash
-   bun migrate
-   ```
-
-6. **Enable Vercel Deployment Protection bypass** (preview deploys only)
-
-   In your Vercel project settings, enable **Deployment Protection → Protection Bypass for Automation**. The generated value is auto-injected as `VERCEL_AUTOMATION_BYPASS_SECRET` so Hetzner agents can punch through the auth wall on callbacks.
-
-7. **Deploy to Vercel**
-
-   ```bash
-   vercel deploy
-   ```
-
-8. **Sign in and bake your golden image**
-
-   Open the deployed app, sign in, save a Hetzner Cloud token on `/dashboard/account/backend`, and click **Build snapshot**. Baking takes ~10–15 min.
-
-> [!NOTE]
-> New Hetzner Cloud accounts are capped at 5 servers per project until the account is verified. Provisioning fails with `resource_limit_exceeded` once you hit it — request a limit increase from Hetzner support.
+You'll need your own Postgres/Redis/Blob values in `.env.local` (the same ones your Vercel deployment uses, or separate dev instances).
 
 ### Adding a new game
 
@@ -82,4 +74,4 @@ Each game lives in its own folder under `games/`. To add one:
 ## Scripts
 
 - `bun dev` — Next dev server (turbopack)
-- `bun run build` — prisma generate + next build
+- `bun run build` — prisma migrate + generate + next build

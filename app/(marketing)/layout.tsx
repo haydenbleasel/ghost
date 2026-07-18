@@ -6,7 +6,7 @@ import { getSession } from "@/lib/session";
 
 const MarketingLayout = async ({ children }: { children: ReactNode }) => {
   const session = await getSession();
-  const isAuthenticated = Boolean(session?.user);
+  const isAuthenticated = Boolean(session);
 
   return (
     <div className="flex min-h-dvh flex-col">

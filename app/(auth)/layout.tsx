@@ -5,14 +5,14 @@ import { createMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/session";
 
 export const metadata = createMetadata({
-  description: "Sign in or create a Ghost account.",
+  description: "Sign in to your Ghost instance.",
   robots: { follow: false, index: false },
   title: "Account",
 });
 
 const AuthLayout = async ({ children }: { children: ReactNode }) => {
   const session = await getSession();
-  if (session?.user) {
+  if (session) {
     redirect("/dashboard");
   }
 

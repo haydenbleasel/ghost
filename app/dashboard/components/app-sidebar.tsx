@@ -10,9 +10,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,8 +32,9 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { games } from "@/games";
-import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
+
+import { signOut } from "../actions/sign-out";
 
 export interface SidebarServer {
   id: string;
@@ -45,9 +45,7 @@ export interface SidebarServer {
 }
 
 export interface SidebarUser {
-  name: string | null;
   email: string;
-  hasImage: boolean;
 }
 
 const statusDotClass = (state: string, deleting: boolean) => {
@@ -74,9 +72,8 @@ export const AppSidebar = ({
   user: SidebarUser;
 }) => {
   const pathname = usePathname();
-  const router = useRouter();
 
-  const initial = (user.name ?? user.email ?? "?").charAt(0).toUpperCase();
+  const initial = (user.email || "?").charAt(0).toUpperCase();
 
   return (
     <Sidebar collapsible="offcanvas" className="border-none">
@@ -173,27 +170,13 @@ export const AppSidebar = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg" tooltip={user.email}>
-                  <Avatar className="size-8 rounded-lg">
-                    {user.hasImage ? (
-                      <AvatarImage
-                        src="/api/account/avatar"
-                        alt={user.name ?? user.email}
-                        className="rounded-lg"
-                      />
-                    ) : null}
-                    <AvatarFallback className="rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
-                      {initial}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
+                    {initial}
+                  </div>
                   <div className="grid flex-1 text-left leading-tight">
                     <span className="truncate text-sm font-medium">
-                      {user.name ?? user.email}
+                      {user.email}
                     </span>
-                    {user.name ? (
-                      <span className="truncate text-muted-foreground text-xs">
-                        {user.email}
-                      </span>
-                    ) : null}
                   </div>
                   <ChevronsUpDown className="ml-auto" />
                 </SidebarMenuButton>
@@ -206,9 +189,6 @@ export const AppSidebar = ({
                 <DropdownMenuLabel className="font-normal">
                   <div className="grid text-left leading-tight">
                     <span className="truncate text-sm font-medium">
-                      {user.name ?? user.email}
-                    </span>
-                    <span className="truncate text-muted-foreground text-xs">
                       {user.email}
                     </span>
                   </div>
@@ -222,10 +202,8 @@ export const AppSidebar = ({
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onSelect={async () => {
-                    await signOut();
-                    router.push("/");
-                    router.refresh();
+                  onSelect={() => {
+                    void signOut();
                   }}
                 >
                   <LogOut />

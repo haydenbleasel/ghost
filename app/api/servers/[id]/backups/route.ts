@@ -2,11 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { getProviderForUser } from "@/lib/providers";
-import {
-  MissingProviderCredentialsError,
-  ProviderApiError,
-} from "@/lib/providers/errors";
+import { getProvider } from "@/lib/providers";
+import { ProviderApiError } from "@/lib/providers/errors";
 import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -16,23 +13,6 @@ const postSchema = z.object({
   description: z.string().trim().max(100).optional(),
 });
 
-const credsErrorResponse = () =>
-  NextResponse.json(
-    { error: "Configure your Hetzner credentials in account settings." },
-    { status: 412 }
-  );
-
-const resolveProvider = async (userId: string) => {
-  try {
-    return await getProviderForUser(userId);
-  } catch (error) {
-    if (error instanceof MissingProviderCredentialsError) {
-      return null;
-    }
-    throw error;
-  }
-};
-
 const apiErrorResponse = (error: ProviderApiError) =>
   NextResponse.json({ error: error.message }, { status: error.status });
 
@@ -40,11 +20,11 @@ export const GET = async (
   _request: Request,
   context: { params: Promise<{ id: string }> }
 ) => {
-  const user = await requireUser();
+  await requireUser();
   const { id } = await context.params;
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
 
   if (!server) {
@@ -55,13 +35,10 @@ export const GET = async (
     return NextResponse.json({ images: [] });
   }
 
-  const provider = await resolveProvider(user.id);
-  if (!provider) {
-    return credsErrorResponse();
-  }
-
   try {
-    const images = await provider.listImagesForServer(server.providerServerId);
+    const images = await getProvider().listImagesForServer(
+      server.providerServerId
+    );
     return NextResponse.json({
       images: images.map((img) => ({
         created: img.createdAt,
@@ -86,11 +63,11 @@ export const POST = async (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) => {
-  const user = await requireUser();
+  await requireUser();
   const { id } = await context.params;
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
 
   if (!server) {
@@ -110,15 +87,11 @@ export const POST = async (
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const provider = await resolveProvider(user.id);
-  if (!provider) {
-    return credsErrorResponse();
-  }
-
   try {
-    const imageId = await provider.createSnapshot(server.providerServerId, {
-      description: parsed.data.description,
-    });
+    const imageId = await getProvider().createSnapshot(
+      server.providerServerId,
+      { description: parsed.data.description }
+    );
     return NextResponse.json({ image: { id: imageId } });
   } catch (error) {
     if (error instanceof ProviderApiError) {
@@ -132,11 +105,11 @@ export const PATCH = async (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) => {
-  const user = await requireUser();
+  await requireUser();
   const { id } = await context.params;
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
 
   if (!server) {
@@ -156,13 +129,8 @@ export const PATCH = async (
     );
   }
 
-  const provider = await resolveProvider(user.id);
-  if (!provider) {
-    return credsErrorResponse();
-  }
-
   try {
-    await provider.setBackupsEnabled(
+    await getProvider().setBackupsEnabled(
       server.providerServerId,
       parsed.data.enabled
     );

@@ -4,11 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { getProviderForUser } from "@/lib/providers";
-import {
-  MissingProviderCredentialsError,
-  ProviderApiError,
-} from "@/lib/providers/errors";
+import { getProvider } from "@/lib/providers";
+import { ProviderApiError } from "@/lib/providers/errors";
 import { requireUser } from "@/lib/session";
 
 const inputSchema = z.object({
@@ -25,7 +22,7 @@ export type RescaleServerResult =
 export const rescaleServer = async (
   input: RescaleServerInput
 ): Promise<RescaleServerResult> => {
-  const user = await requireUser();
+  await requireUser();
 
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) {
@@ -33,7 +30,7 @@ export const rescaleServer = async (
   }
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id: parsed.data.serverId, userId: user.id },
+    where: { deletedAt: null, id: parsed.data.serverId },
   });
   if (!server) {
     return { error: "Not found", ok: false };
@@ -51,18 +48,7 @@ export const rescaleServer = async (
     return { error: "Already on this server type", ok: false };
   }
 
-  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
-  try {
-    provider = await getProviderForUser(user.id);
-  } catch (error) {
-    if (error instanceof MissingProviderCredentialsError) {
-      return {
-        error: "Configure your Hetzner credentials in account settings.",
-        ok: false,
-      };
-    }
-    throw error;
-  }
+  const provider = getProvider();
 
   try {
     await provider.rescaleServer(

@@ -6,11 +6,8 @@ import { FatalError } from "workflow";
 import { mintSnapshotDownloadToken } from "@/lib/agent/snapshot-token";
 import { prisma } from "@/lib/db";
 import { API_URL, env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
-import { getProviderForUser } from "@/lib/providers";
-import {
-  MissingProviderCredentialsError,
-  ProviderApiError,
-} from "@/lib/providers/errors";
+import { getProvider } from "@/lib/providers";
+import { ProviderApiError } from "@/lib/providers/errors";
 import { HETZNER_BUILDER_PROFILE } from "@/lib/providers/hetzner";
 import { compileAgentBinary } from "@/lib/sandbox/compile-agent";
 
@@ -89,7 +86,6 @@ export const stepCompileAgent = async (input: {
 
 export const stepCreateBuilderVm = async (input: {
   buildId: string;
-  userId: string;
   agentDownloadUrl: string;
 }): Promise<{ providerBuilderId: string }> => {
   "use step";
@@ -105,15 +101,7 @@ export const stepCreateBuilderVm = async (input: {
     return { providerBuilderId: build.providerBuilderId };
   }
 
-  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
-  try {
-    provider = await getProviderForUser(input.userId);
-  } catch (error) {
-    if (error instanceof MissingProviderCredentialsError) {
-      throw new FatalError("Provider credentials missing for user");
-    }
-    throw error;
-  }
+  const provider = getProvider();
 
   const userData = buildSnapshotCloudInit(input.agentDownloadUrl);
   // Deterministic name: if a retry races a create whose response was lost,
@@ -146,18 +134,15 @@ export const stepCreateBuilderVm = async (input: {
 };
 
 export const stepGetBuilderStatus = async (input: {
-  userId: string;
   providerBuilderId: string;
 }): Promise<{ status: string }> => {
   "use step";
-  const provider = await getProviderForUser(input.userId);
-  const server = await provider.getServer(input.providerBuilderId);
+  const server = await getProvider().getServer(input.providerBuilderId);
   return { status: server?.status ?? "unknown" };
 };
 
 export const stepCreateSnapshot = async (input: {
   buildId: string;
-  userId: string;
   providerBuilderId: string;
 }): Promise<{ snapshotImageId: string }> => {
   "use step";
@@ -173,7 +158,7 @@ export const stepCreateSnapshot = async (input: {
     return { snapshotImageId: build.snapshotId };
   }
 
-  const provider = await getProviderForUser(input.userId);
+  const provider = getProvider();
   let imageId: string;
   try {
     imageId = await provider.createSnapshot(input.providerBuilderId, {
@@ -197,38 +182,34 @@ export const stepCreateSnapshot = async (input: {
 };
 
 export const stepGetImageStatus = async (input: {
-  userId: string;
   imageId: string;
 }): Promise<{ status: string }> => {
   "use step";
-  const provider = await getProviderForUser(input.userId);
-  const image = await provider.getImage(input.imageId);
+  const image = await getProvider().getImage(input.imageId);
   return { status: image?.status ?? "unknown" };
 };
 
 export const stepSaveImageId = async (input: {
   buildId: string;
-  userId: string;
   snapshotImageId: string;
 }): Promise<{ previousSnapshotId: string | null }> => {
   "use step";
   const newId = input.snapshotImageId;
   const environment = SNAPSHOT_ENVIRONMENT;
   const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.userSnapshot.findUnique({
+    const existing = await tx.snapshot.findUnique({
       select: { providerImageId: true },
-      where: { userId_environment: { environment, userId: input.userId } },
+      where: { environment },
     });
     const previousSnapshotId = existing?.providerImageId ?? null;
-    await tx.userSnapshot.upsert({
+    await tx.snapshot.upsert({
       create: {
         environment,
         id: input.buildId,
         providerImageId: newId,
-        userId: input.userId,
       },
       update: { providerImageId: newId },
-      where: { userId_environment: { environment, userId: input.userId } },
+      where: { environment },
     });
     await tx.snapshotBuild.update({
       data: {
@@ -245,28 +226,20 @@ export const stepSaveImageId = async (input: {
 };
 
 export const stepDeleteBuilder = async (input: {
-  userId: string;
   providerBuilderId: string;
 }): Promise<{ deleted: boolean }> => {
   "use step";
-  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
-  try {
-    provider = await getProviderForUser(input.userId);
-  } catch {
-    return { deleted: false };
-  }
   // Non-fatal: this runs after the snapshot is saved, so a cleanup failure
   // must not flip a "ready" build to "failed". A leftover builder VM is
   // visible in the provider console and cheap to remove manually.
   try {
-    return await provider.deleteServer(input.providerBuilderId);
+    return await getProvider().deleteServer(input.providerBuilderId);
   } catch {
     return { deleted: false };
   }
 };
 
 export const stepDeletePreviousSnapshot = async (input: {
-  userId: string;
   previousSnapshotId: string | null;
   newSnapshotId: string;
 }): Promise<{ deleted: boolean }> => {
@@ -277,16 +250,10 @@ export const stepDeletePreviousSnapshot = async (input: {
   ) {
     return { deleted: false };
   }
-  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
-  try {
-    provider = await getProviderForUser(input.userId);
-  } catch {
-    return { deleted: false };
-  }
   // Non-fatal: a stranded snapshot is recoverable manually and shouldn't roll
-  // back the user's freshly-saved ID.
+  // back the freshly-saved ID.
   try {
-    return await provider.deleteImage(input.previousSnapshotId);
+    return await getProvider().deleteImage(input.previousSnapshotId);
   } catch {
     return { deleted: false };
   }
@@ -349,20 +316,13 @@ export const stepReadBuildState = async (input: {
 };
 
 export const stepDeleteOrphanImage = async (input: {
-  userId: string;
   imageId: string;
 }): Promise<{ deleted: boolean }> => {
   "use step";
-  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
-  try {
-    provider = await getProviderForUser(input.userId);
-  } catch {
-    return { deleted: false };
-  }
   // Best-effort: this only runs on the failure path, where the original
   // error is what should surface, not a cleanup hiccup.
   try {
-    return await provider.deleteImage(input.imageId);
+    return await getProvider().deleteImage(input.imageId);
   } catch {
     return { deleted: false };
   }

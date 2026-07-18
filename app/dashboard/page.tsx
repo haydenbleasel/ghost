@@ -35,10 +35,10 @@ const statusDotClass = (state: string, deleting: boolean) => {
 };
 
 const DashboardPage = async () => {
-  const user = await requireUser();
+  await requireUser();
   const servers = await prisma.server.findMany({
     orderBy: { createdAt: "desc" },
-    where: { deletedAt: null, userId: user.id },
+    where: { deletedAt: null },
   });
 
   const newServerAction = (

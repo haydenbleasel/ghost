@@ -45,18 +45,9 @@ export const FloatingNav = ({
           <Link href="/dashboard">Dashboard</Link>
         </Button>
       ) : (
-        <>
-          <Link
-            href="/sign-in"
-            aria-current={isActive("/sign-in")}
-            className={cn(linkClass, "ml-2 hidden sm:inline-block")}
-          >
-            Sign in
-          </Link>
-          <Button asChild size="sm" className="rounded-full">
-            <Link href="/sign-up">Get started</Link>
-          </Button>
-        </>
+        <Button asChild size="sm" className="ml-2 rounded-full">
+          <Link href="/sign-in">Sign in</Link>
+        </Button>
       )}
     </nav>
   );

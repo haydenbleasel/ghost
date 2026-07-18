@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { games } from "@/games";
 import { prisma } from "@/lib/db";
 import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
-import { getProviderForUserWithImage } from "@/lib/providers";
+import { getProviderWithImage } from "@/lib/providers";
 import { MissingProviderCredentialsError } from "@/lib/providers/errors";
 import type { Catalog } from "@/lib/providers/types";
 import { requireUser } from "@/lib/session";
@@ -18,12 +18,12 @@ const ServerLayout = async ({
   children: ReactNode;
   params: Promise<{ id: string }>;
 }) => {
-  const user = await requireUser();
+  await requireUser();
   const { id } = await params;
 
   const server = await prisma.server.findFirst({
     include: { agent: { select: { lastHeartbeatAt: true } } },
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
 
   if (!server) {
@@ -32,14 +32,12 @@ const ServerLayout = async ({
 
   let catalog: Catalog;
   try {
-    const { provider, imageId } = await getProviderForUserWithImage(
-      user.id,
-      SNAPSHOT_ENVIRONMENT
-    );
+    const { provider, imageId } =
+      await getProviderWithImage(SNAPSHOT_ENVIRONMENT);
     catalog = await provider.getCatalog(imageId);
   } catch (error) {
     if (error instanceof MissingProviderCredentialsError) {
-      redirect("/dashboard/account/backend");
+      redirect("/dashboard/account");
     }
     throw error;
   }

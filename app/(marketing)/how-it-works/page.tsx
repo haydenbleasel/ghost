@@ -14,7 +14,7 @@ export const metadata = createMetadata({
 const stack = [
   {
     description:
-      "The dashboard, API routes, server actions, and Better Auth all run on Vercel. The control plane holds coordination state only; game state lives on the VMs.",
+      "The dashboard, API routes, and server actions all run on Vercel. The control plane holds coordination state only; game state lives on the VMs.",
     label: "Browser → Next.js on Vercel",
   },
   {
@@ -81,14 +81,14 @@ const buildSteps = [
     title: "Spin up a builder VM",
   },
   {
-    body: "Once the VM is off, the workflow calls create_image, polls until the image is available, writes the new ID onto a UserSnapshot row scoped to the current deployment environment, then deletes both the builder VM and the previous snapshot.",
+    body: "Once the VM is off, the workflow calls create_image, polls until the image is available, writes the new ID onto a Snapshot row scoped to the current deployment environment, then deletes both the builder VM and the previous snapshot.",
     title: "Snapshot and swap",
   },
 ] as const;
 
 const HowItWorks = async () => {
   const session = await getSession();
-  const isAuthenticated = Boolean(session?.user);
+  const isAuthenticated = Boolean(session);
 
   return (
     <article>
@@ -177,7 +177,7 @@ const HowItWorks = async () => {
               Golden image
             </span>
             <h2 className="text-balance font-display font-medium text-3xl tracking-tight sm:text-4xl">
-              A per-user Hetzner snapshot, baked from the dashboard
+              A golden Hetzner snapshot, baked from the dashboard
             </h2>
             <p className="text-muted-foreground">
               New servers are ready in roughly 60 seconds because almost nothing
@@ -367,11 +367,11 @@ const HowItWorks = async () => {
               Your Hetzner account, your token, your billing
             </h2>
             <p className="text-muted-foreground">
-              Ghost does not hold the VMs. After signing in, you paste a Hetzner
-              Cloud API token on <code>/dashboard/account/backend</code>, which
-              is encrypted at rest in Postgres. Every Hetzner call — snapshot
-              build, server create, server delete — runs against your project
-              with your token, and is billed to you.
+              Ghost does not hold the VMs. Your deployment reads a Hetzner Cloud
+              API token from the <code>HETZNER_API_TOKEN</code> environment
+              variable. Every Hetzner call — snapshot build, server create,
+              server delete — runs against your project with your token, and is
+              billed to you.
             </p>
             <p className="text-muted-foreground">
               This means your snapshots and your servers continue to exist in
@@ -410,7 +410,7 @@ const HowItWorks = async () => {
             ) : (
               <>
                 <Button asChild size="lg">
-                  <Link href="/sign-up">Get started</Link>
+                  <Link href="/sign-in">Sign in</Link>
                 </Button>
                 <Button asChild size="lg" variant="ghost">
                   <Link

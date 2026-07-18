@@ -2,11 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { getProviderForUser } from "@/lib/providers";
-import {
-  MissingProviderCredentialsError,
-  ProviderApiError,
-} from "@/lib/providers/errors";
+import { getProvider } from "@/lib/providers";
+import { ProviderApiError } from "@/lib/providers/errors";
 import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -21,11 +18,11 @@ export const GET = async (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) => {
-  const user = await requireUser();
+  await requireUser();
   const { id } = await context.params;
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
 
   if (!server) {
@@ -48,18 +45,7 @@ export const GET = async (
     return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
 
-  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
-  try {
-    provider = await getProviderForUser(user.id);
-  } catch (error) {
-    if (error instanceof MissingProviderCredentialsError) {
-      return NextResponse.json(
-        { error: "Configure your Hetzner credentials in account settings." },
-        { status: 412 }
-      );
-    }
-    throw error;
-  }
+  const provider = getProvider();
 
   try {
     const result = await provider.getMetrics(server.providerServerId, {

@@ -26,17 +26,13 @@ const SNAPSHOT_POLL_SECONDS = 10;
 
 const waitForBuilderOff = async (input: {
   buildId: string;
-  userId: string;
   providerBuilderId: string;
 }): Promise<void> => {
-  const { buildId, userId, providerBuilderId } = input;
+  const { buildId, providerBuilderId } = input;
   const buildDeadline = Date.now() + MAX_BUILD_WAIT_SECONDS * 1000;
   let observedRunning = false;
   while (Date.now() < buildDeadline) {
-    const { status } = await stepGetBuilderStatus({
-      providerBuilderId,
-      userId,
-    });
+    const { status } = await stepGetBuilderStatus({ providerBuilderId });
     if (status === "off") {
       return;
     }
@@ -53,16 +49,12 @@ const waitForBuilderOff = async (input: {
 };
 
 const waitForImageAvailable = async (input: {
-  userId: string;
   snapshotImageId: string;
 }): Promise<void> => {
-  const { userId, snapshotImageId } = input;
+  const { snapshotImageId } = input;
   const snapshotDeadline = Date.now() + MAX_SNAPSHOT_WAIT_SECONDS * 1000;
   while (Date.now() < snapshotDeadline) {
-    const { status } = await stepGetImageStatus({
-      imageId: snapshotImageId,
-      userId,
-    });
+    const { status } = await stepGetImageStatus({ imageId: snapshotImageId });
     if (status === "available") {
       return;
     }
@@ -74,13 +66,10 @@ const waitForImageAvailable = async (input: {
   throw new Error("Snapshot never became available (timed out)");
 };
 
-export const buildSnapshot = async (input: {
-  buildId: string;
-  userId: string;
-}) => {
+export const buildSnapshot = async (input: { buildId: string }) => {
   "use workflow";
 
-  const { buildId, userId } = input;
+  const { buildId } = input;
 
   try {
     const { agentBlobUrl, agentDownloadUrl } = await stepCompileAgent({
@@ -90,33 +79,29 @@ export const buildSnapshot = async (input: {
     const { providerBuilderId } = await stepCreateBuilderVm({
       agentDownloadUrl,
       buildId,
-      userId,
     });
 
-    await waitForBuilderOff({ buildId, providerBuilderId, userId });
+    await waitForBuilderOff({ buildId, providerBuilderId });
 
     await stepUpdateBuildStatus({ buildId, status: "snapshotting" });
 
     const { snapshotImageId } = await stepCreateSnapshot({
       buildId,
       providerBuilderId,
-      userId,
     });
 
-    await waitForImageAvailable({ snapshotImageId, userId });
+    await waitForImageAvailable({ snapshotImageId });
 
     const { previousSnapshotId } = await stepSaveImageId({
       buildId,
       snapshotImageId,
-      userId,
     });
 
-    await stepDeleteBuilder({ providerBuilderId, userId });
+    await stepDeleteBuilder({ providerBuilderId });
 
     await stepDeletePreviousSnapshot({
       newSnapshotId: snapshotImageId,
       previousSnapshotId,
-      userId,
     });
 
     await stepDeleteAgentBlob({ agentBlobUrl });
@@ -136,7 +121,7 @@ export const buildSnapshot = async (input: {
     // A snapshot image created by this build that never reached "ready" is
     // referenced nowhere — delete it so it doesn't bill forever.
     if (state?.snapshotId && state.status !== "ready") {
-      await stepDeleteOrphanImage({ imageId: state.snapshotId, userId });
+      await stepDeleteOrphanImage({ imageId: state.snapshotId });
     }
 
     if (state?.agentBlobUrl) {

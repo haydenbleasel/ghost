@@ -5,8 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import {
   isTerminalSnapshotStatus,
@@ -21,7 +19,6 @@ import { cn } from "@/lib/utils";
 interface Props {
   configured: boolean;
   imageId: string | null;
-  tokenSaved: boolean;
   latestBuild: SnapshotBuildSummary | null;
 }
 
@@ -116,22 +113,13 @@ const BuildStatus = ({ build }: { build: SnapshotBuildSummary }) => {
   );
 };
 
-export const HetznerPanel = ({
-  configured,
-  imageId,
-  tokenSaved,
-  latestBuild,
-}: Props) => {
+export const SnapshotPanel = ({ configured, imageId, latestBuild }: Props) => {
   const router = useRouter();
-  const [token, setToken] = useState("");
-  const [pending, setPending] = useState(false);
-  const [clearing, setClearing] = useState(false);
   const [build, setBuild] = useState<SnapshotBuildSummary | null>(latestBuild);
   const [building, setBuilding] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const buildActive = build ? isActiveStatus(build.status) : false;
-  const showBuildButton = tokenSaved;
 
   useEffect(() => {
     setBuild(latestBuild);
@@ -178,60 +166,6 @@ export const HetznerPanel = ({
     };
   }, [buildActive, router]);
 
-  const canSubmit = token.trim().length >= 20;
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!canSubmit) {
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await fetch("/api/account/hetzner", {
-        body: JSON.stringify({ token: token.trim() }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-      const json = (await res.json().catch(() => ({}))) as {
-        error?: string;
-      };
-      if (!res.ok) {
-        throw new Error(json.error ?? "Could not save token");
-      }
-      setToken("");
-      toast.success("Hetzner token saved");
-      router.refresh();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not save token"
-      );
-    } finally {
-      setPending(false);
-    }
-  };
-
-  const handleClear = async () => {
-    if (!tokenSaved) {
-      return;
-    }
-    setClearing(true);
-    try {
-      const res = await fetch("/api/account/hetzner", { method: "DELETE" });
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error ?? "Could not clear token");
-      }
-      toast.success("Hetzner token cleared");
-      router.refresh();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not clear token"
-      );
-    } finally {
-      setClearing(false);
-    }
-  };
-
   const handleBuild = async () => {
     setBuilding(true);
     try {
@@ -265,79 +199,28 @@ export const HetznerPanel = ({
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h3 className="font-medium text-sm">Golden snapshot</h3>
         <p className="text-muted-foreground text-sm">
-          Provide a Hetzner Cloud API token (Read &amp; Write). Your token is
-          encrypted at rest and never leaves the server.{" "}
-          <a
-            className="underline"
-            href="https://docs.hetzner.cloud/#getting-started"
-            rel="noreferrer"
-            target="_blank"
-          >
-            How to create a token
-          </a>
-          . Once saved, click <strong>Build snapshot</strong> below to create
-          your golden image automatically.
+          {configured && imageId
+            ? `Current image ID: ${imageId}`
+            : "No snapshot yet. Build one to start provisioning servers."}
         </p>
-        <div className="space-y-2">
-          <Label htmlFor="hetzner-token">
-            API token{tokenSaved ? " (set new to replace)" : ""}
-          </Label>
-          <Input
-            autoComplete="off"
-            id="hetzner-token"
-            name="token"
-            onChange={(event) => setToken(event.target.value)}
-            placeholder={tokenSaved ? "••••••••••••••••" : "hcloud_…"}
-            required={!tokenSaved}
-            type="password"
-            value={token}
-          />
-        </div>
-        <div className="flex justify-start gap-2">
-          <Button disabled={!canSubmit || pending} size="sm" type="submit">
-            {pending ? "Verifying…" : "Save"}
-          </Button>
-          {tokenSaved ? (
-            <Button
-              disabled={clearing || pending}
-              onClick={handleClear}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              {clearing ? "Clearing…" : "Clear"}
-            </Button>
-          ) : null}
-        </div>
-      </form>
-      {showBuildButton ? (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <h3 className="font-medium text-sm">Golden snapshot</h3>
-            <p className="text-muted-foreground text-sm">
-              {configured && imageId
-                ? `Current image ID: ${imageId}`
-                : "No snapshot yet. Build one to start provisioning servers."}
-            </p>
-          </div>
-          {build && (buildActive || build.status === "failed") ? (
-            <BuildStatus build={build} />
-          ) : null}
-          <div className="flex justify-start">
-            <Button
-              disabled={building || buildActive}
-              onClick={handleBuild}
-              size="sm"
-              type="button"
-            >
-              {buildButtonLabel({ buildActive, building, configured })}
-            </Button>
-          </div>
-        </div>
+      </div>
+      {build && (buildActive || build.status === "failed") ? (
+        <BuildStatus build={build} />
       ) : null}
+      <div className="flex justify-start">
+        <Button
+          disabled={building || buildActive}
+          onClick={handleBuild}
+          size="sm"
+          type="button"
+        >
+          {buildButtonLabel({ buildActive, building, configured })}
+        </Button>
+      </div>
     </div>
   );
 };

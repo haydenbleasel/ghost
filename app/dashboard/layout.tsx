@@ -18,19 +18,12 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
       name: true,
       observedState: true,
     },
-    where: { deletedAt: null, userId: user.id },
+    where: { deletedAt: null },
   });
 
   return (
     <SidebarProvider className="bg-sidebar">
-      <AppSidebar
-        servers={servers}
-        user={{
-          email: user.email,
-          hasImage: Boolean(user.image),
-          name: user.name ?? null,
-        }}
-      />
+      <AppSidebar servers={servers} user={{ email: user.email }} />
       <SidebarTrigger className="fixed top-3 left-3 z-50 text-muted-foreground" />
       <AppContainer>{children}</AppContainer>
     </SidebarProvider>

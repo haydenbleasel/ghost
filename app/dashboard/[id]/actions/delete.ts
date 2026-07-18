@@ -17,7 +17,7 @@ export type DeleteServerResult = { ok: true } | { error: string; ok: false };
 export const deleteServer = async (
   input: DeleteServerInput
 ): Promise<DeleteServerResult> => {
-  const user = await requireUser();
+  await requireUser();
 
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) {
@@ -25,7 +25,7 @@ export const deleteServer = async (
   }
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id: parsed.data.serverId, userId: user.id },
+    where: { deletedAt: null, id: parsed.data.serverId },
   });
   if (!server) {
     return { error: "Not found", ok: false };

@@ -48,7 +48,7 @@ const features = [
 const HeroCtas = ({ isAuthenticated }: { isAuthenticated: boolean }) => (
   <>
     <Button asChild size="lg">
-      <Link href={isAuthenticated ? "/dashboard/new" : "/sign-up"}>
+      <Link href={isAuthenticated ? "/dashboard/new" : "/sign-in"}>
         Start a game server
       </Link>
     </Button>
@@ -71,19 +71,14 @@ const FinalCtas = ({ isAuthenticated }: { isAuthenticated: boolean }) =>
       <Link href="/dashboard/new">Start a game server</Link>
     </Button>
   ) : (
-    <>
-      <Button asChild size="lg">
-        <Link href="/sign-up">Get started</Link>
-      </Button>
-      <Button asChild size="lg" variant="ghost">
-        <Link href="/sign-in">Sign in</Link>
-      </Button>
-    </>
+    <Button asChild size="lg">
+      <Link href="/sign-in">Sign in</Link>
+    </Button>
   );
 
 const Home = async () => {
   const session = await getSession();
-  const isAuthenticated = Boolean(session?.user);
+  const isAuthenticated = Boolean(session);
 
   const supportedGames = games.filter((g) => g.enabled);
 
@@ -214,7 +209,7 @@ const Home = async () => {
               Everything you need, nothing you don&apos;t.
             </h2>
             <p className="max-w-[60ch] text-balance text-muted-foreground">
-              A small list of opinionated defaults that take you from sign-up to
+              A small list of opinionated defaults that take you from sign-in to
               a healthy game server in under a minute.
             </p>
           </FadeInOnScroll>

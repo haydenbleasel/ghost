@@ -9,12 +9,12 @@ export const GET = async (
   _request: Request,
   context: { params: Promise<{ id: string; commandId: string }> }
 ) => {
-  const user = await requireUser();
+  await requireUser();
   const { id, commandId } = await context.params;
 
   const server = await prisma.server.findFirst({
     select: { id: true },
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
   if (!server) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

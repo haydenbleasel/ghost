@@ -1,85 +1,21 @@
 "use client";
-import { FingerprintIcon } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authClient, signIn } from "@/lib/auth-client";
+
+import { signIn } from "./actions";
 
 const SignInPage = () => {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const [passkeyPending, setPasskeyPending] = useState(false);
-  const autofillStarted = useRef(false);
-
-  useEffect(() => {
-    if (autofillStarted.current) {
-      return;
-    }
-    autofillStarted.current = true;
-
-    let cancelled = false;
-    const handle = requestAnimationFrame(async () => {
-      if (
-        cancelled ||
-        !document.querySelector('input[autocomplete$="webauthn"]')
-      ) {
-        return;
-      }
-      try {
-        const result = await authClient.signIn.passkey({ autoFill: true });
-        if (cancelled || result?.error || !result?.data) {
-          return;
-        }
-        router.push("/dashboard");
-        router.refresh();
-      } catch {
-        // autofill is best-effort; ignore failures
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(handle);
-    };
-  }, [router]);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    setPending(true);
-    const { error } = await signIn.email({
-      email: String(form.get("email")),
-      password: String(form.get("password")),
-    });
-    setPending(false);
-    if (error) {
-      toast.error(error.message ?? "Sign in failed");
-      return;
-    }
-    router.push("/dashboard");
-    router.refresh();
-  };
-
-  const handlePasskeySignIn = async () => {
-    setPasskeyPending(true);
-    const result = await authClient.signIn.passkey();
-    setPasskeyPending(false);
-    if (result?.error) {
-      toast.error(result.error.message ?? "Passkey sign in failed");
-      return;
-    }
-    router.push("/dashboard");
-    router.refresh();
-  };
+  const [state, action, pending] = useActionState(signIn, null);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form action={action} className="space-y-4">
       <h1 className="text-2xl font-semibold">Sign in</h1>
+      <p className="text-sm text-muted-foreground">
+        Use the owner credentials configured on this deployment.
+      </p>
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -87,7 +23,7 @@ const SignInPage = () => {
           name="email"
           type="email"
           required
-          autoComplete="username webauthn"
+          autoComplete="username"
         />
       </div>
       <div className="space-y-2">
@@ -100,33 +36,12 @@ const SignInPage = () => {
           autoComplete="current-password"
         />
       </div>
+      {state?.error ? (
+        <p className="text-sm text-destructive">{state.error}</p>
+      ) : null}
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}
       </Button>
-      <div className="relative py-1">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">or</span>
-        </div>
-      </div>
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={handlePasskeySignIn}
-        disabled={passkeyPending}
-      >
-        <FingerprintIcon />
-        {passkeyPending ? "Waiting…" : "Sign in with a passkey"}
-      </Button>
-      <p className="text-center text-sm text-muted-foreground">
-        No account?{" "}
-        <Link className="underline" href="/sign-up">
-          Create one
-        </Link>
-      </p>
     </form>
   );
 };

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { getGame, resolveSettings, validateSettings } from "@/games";
 import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
-import { getProviderForUser } from "@/lib/providers";
+import { getProvider } from "@/lib/providers";
 import { requireUser } from "@/lib/session";
 
 const inputSchema = z.object({
@@ -23,7 +23,7 @@ export type UpdateServerSettingsResult =
 export const updateServerSettings = async (
   input: UpdateServerSettingsInput
 ): Promise<UpdateServerSettingsResult> => {
-  const user = await requireUser();
+  await requireUser();
 
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) {
@@ -31,7 +31,7 @@ export const updateServerSettings = async (
   }
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id: parsed.data.serverId, userId: user.id },
+    where: { deletedAt: null, id: parsed.data.serverId },
   });
   if (!server) {
     return { error: "Not found", ok: false };
@@ -64,8 +64,7 @@ export const updateServerSettings = async (
     let memoryGb: number | null = null;
     if (server.providerServerId) {
       try {
-        const provider = await getProviderForUser(user.id);
-        const providerServer = await provider.getServer(
+        const providerServer = await getProvider().getServer(
           server.providerServerId
         );
         memoryGb = providerServer?.memoryGb ?? null;

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { games } from "@/games";
 import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
-import { getProviderForUserWithImage } from "@/lib/providers";
+import { getProviderWithImage } from "@/lib/providers";
 import { MissingProviderCredentialsError } from "@/lib/providers/errors";
 import type { Catalog } from "@/lib/providers/types";
 import { requireUser } from "@/lib/session";
@@ -11,17 +11,15 @@ import { NewServerForm } from "./components/form";
 import type { GameOption } from "./components/form";
 
 const NewServerPage = async () => {
-  const user = await requireUser();
+  await requireUser();
   let catalog: Catalog;
   try {
-    const { provider, imageId } = await getProviderForUserWithImage(
-      user.id,
-      SNAPSHOT_ENVIRONMENT
-    );
+    const { provider, imageId } =
+      await getProviderWithImage(SNAPSHOT_ENVIRONMENT);
     catalog = await provider.getCatalog(imageId);
   } catch (error) {
     if (error instanceof MissingProviderCredentialsError) {
-      redirect("/dashboard/account/backend");
+      redirect("/dashboard/account");
     }
     throw error;
   }
