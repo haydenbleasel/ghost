@@ -6,13 +6,13 @@ Simple, beautiful game servers. Ghost is a dedicated game server platform you de
 
 ## Deploy your own
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhaydenbleasel%2Fghost&project-name=ghost&repository-name=ghost&env=HETZNER_API_TOKEN,AUTH_EMAIL,AUTH_PASSWORD,SESSION_SECRET,BOOTSTRAP_JWT_SECRET&envDescription=Hetzner%20Cloud%20API%20token%2C%20owner%20sign-in%20credentials%2C%20and%20signing%20secrets&envLink=https%3A%2F%2Fgithub.com%2Fhaydenbleasel%2Fghost%23environment-variables&stores=%5B%7B%22type%22%3A%22postgres%22%7D%2C%7B%22type%22%3A%22kv%22%7D%2C%7B%22type%22%3A%22blob%22%7D%5D)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhaydenbleasel%2Fghost&project-name=ghost&repository-name=ghost&env=HETZNER_API_TOKEN,AUTH_PASSWORD,GHOST_SECRET&envDescription=Hetzner%20Cloud%20API%20token%2C%20dashboard%20password%2C%20and%20a%20random%20signing%20secret&envLink=https%3A%2F%2Fgithub.com%2Fhaydenbleasel%2Fghost%23environment-variables&stores=%5B%7B%22type%22%3A%22postgres%22%7D%2C%7B%22type%22%3A%22kv%22%7D%2C%7B%22type%22%3A%22blob%22%7D%5D)
 
-The Deploy Button clones this repo to your GitHub account, creates a Vercel project connected to it, provisions the backing stores (Neon Postgres, Upstash Redis, Vercel Blob — their connection strings are injected automatically), and prompts you for the five secrets below.
+The Deploy Button clones this repo to your GitHub account, creates a Vercel project connected to it, provisions the backing stores (Neon Postgres, Upstash Redis, Vercel Blob — their connection strings are injected automatically), and prompts you for the three secrets below.
 
 1. **Create a Hetzner Cloud project** and generate an API token (Read & Write) — [how to create a token](https://docs.hetzner.cloud/#getting-started). All VMs run in your Hetzner project and are billed to you.
 2. **Click the button** and fill in the env vars (see [Environment variables](#environment-variables)).
-3. **Sign in** at your deployment's URL with `AUTH_EMAIL` / `AUTH_PASSWORD`.
+3. **Sign in** at your deployment's URL with `AUTH_PASSWORD` (email defaults to `admin@ghost.local` unless you set `AUTH_EMAIL`).
 4. **Bake your golden image** — open `/dashboard/account` and click **Build snapshot**. Baking takes ~10–15 min. Once it's ready, you can create servers.
 
 > [!NOTE]
@@ -20,14 +20,14 @@ The Deploy Button clones this repo to your GitHub account, creates a Vercel proj
 
 ### Environment variables
 
-Generate `SESSION_SECRET` and `BOOTSTRAP_JWT_SECRET` with `openssl rand -hex 32`.
+Generate `GHOST_SECRET` with `openssl rand -hex 32`.
 
-| Variable                       | Purpose                                                                                                        |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `HETZNER_API_TOKEN`            | Hetzner Cloud API token (Read & Write). Every provisioning call runs against your project.                     |
-| `AUTH_EMAIL` / `AUTH_PASSWORD` | Owner sign-in credentials for the dashboard. There is no sign-up — this deployment is yours alone.             |
-| `SESSION_SECRET`               | Signs the dashboard session cookie (32+ chars). Rotating it (or changing `AUTH_EMAIL`) signs out all sessions. |
-| `BOOTSTRAP_JWT_SECRET`         | Signs the one-time enrollment JWTs baked into new VMs (32+ chars).                                             |
+| Variable                | Purpose                                                                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `HETZNER_API_TOKEN`     | Hetzner Cloud API token (Read & Write). Every provisioning call runs against your project.                                    |
+| `AUTH_PASSWORD`         | Dashboard sign-in password (8+ chars). There is no sign-up — this deployment is yours alone.                                  |
+| `GHOST_SECRET`          | Signs the session cookie, agent bootstrap JWTs, and snapshot download tokens (32+ chars). Rotating it signs out all sessions. |
+| `AUTH_EMAIL` (optional) | Sign-in email. Defaults to `admin@ghost.local`; changing it also signs out existing sessions.                                 |
 
 `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, and `BLOB_READ_WRITE_TOKEN` are injected by the store integrations — nothing else to configure.
 

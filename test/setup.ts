@@ -17,8 +17,7 @@ const seed = (key: string, value: string) => {
   }
 };
 
-seed("BOOTSTRAP_JWT_SECRET", "0123456789abcdef0123456789abcdef0123");
-seed("SESSION_SECRET", "fedcba9876543210fedcba9876543210fedc");
+seed("GHOST_SECRET", "0123456789abcdef0123456789abcdef0123");
 seed("AUTH_EMAIL", "owner@example.com");
 seed("AUTH_PASSWORD", "correct-horse-battery");
 seed("HETZNER_API_TOKEN", "test-hetzner-token");

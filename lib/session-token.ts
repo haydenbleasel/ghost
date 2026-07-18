@@ -7,8 +7,13 @@ const AUDIENCE = "ghost-session";
 
 export const SESSION_COOKIE = "ghost_session";
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+// Fallback owner identity when AUTH_EMAIL is unset. Must match lib/env.ts's
+// default so tokens minted via env.AUTH_EMAIL verify here in the middleware.
+export const DEFAULT_AUTH_EMAIL = "admin@ghost.local";
 
-const secret = () => new TextEncoder().encode(process.env.SESSION_SECRET);
+const ownerEmail = () => process.env.AUTH_EMAIL || DEFAULT_AUTH_EMAIL;
+
+const secret = () => new TextEncoder().encode(process.env.GHOST_SECRET);
 
 export const mintSessionToken = (email: string): Promise<string> =>
   new SignJWT({ email })
@@ -33,10 +38,7 @@ export const verifySessionToken = async (
     });
     // Reject sessions minted for a previous owner so rotating AUTH_EMAIL
     // revokes them.
-    if (
-      typeof payload.email !== "string" ||
-      payload.email !== process.env.AUTH_EMAIL
-    ) {
+    if (typeof payload.email !== "string" || payload.email !== ownerEmail()) {
       return null;
     }
     return { email: payload.email };

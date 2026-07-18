@@ -6,7 +6,7 @@ import { mintSessionToken, verifySessionToken } from "@/lib/session-token";
 
 const SESSION_ISSUER = "ghost";
 const SESSION_AUDIENCE = "ghost-session";
-const sessionSecret = new TextEncoder().encode(process.env.SESSION_SECRET);
+const sessionSecret = new TextEncoder().encode(process.env.GHOST_SECRET);
 
 const ownerEmail = process.env.AUTH_EMAIL ?? "";
 

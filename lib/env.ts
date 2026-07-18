@@ -2,6 +2,8 @@ import { vercel } from "@t3-oss/env-core/presets-zod";
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+import { DEFAULT_AUTH_EMAIL } from "./session-token";
+
 export const env = createEnv({
   client: {},
   extends: [vercel()],
@@ -10,33 +12,33 @@ export const env = createEnv({
     AUTH_EMAIL: process.env.AUTH_EMAIL,
     AUTH_PASSWORD: process.env.AUTH_PASSWORD,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
-    BOOTSTRAP_JWT_SECRET: process.env.BOOTSTRAP_JWT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
+    GHOST_SECRET: process.env.GHOST_SECRET,
     HETZNER_API_TOKEN: process.env.HETZNER_API_TOKEN,
     KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
     KV_REST_API_URL: process.env.KV_REST_API_URL,
     NEXT_RUNTIME: process.env.NEXT_RUNTIME,
-    SESSION_SECRET: process.env.SESSION_SECRET,
     VERCEL_AUTOMATION_BYPASS_SECRET:
       process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
   },
   server: {
     ANALYZE: z.string().optional(),
-    AUTH_EMAIL: z.string().min(1).email(),
+    AUTH_EMAIL: z.string().min(1).email().default(DEFAULT_AUTH_EMAIL),
     AUTH_PASSWORD: z.string().min(8),
     BLOB_READ_WRITE_TOKEN: z.string().min(1).startsWith("vercel_blob_rw_"),
-    BOOTSTRAP_JWT_SECRET: z.string().min(32),
-
     DATABASE_URL: z.string().min(1).url(),
     DATABASE_URL_UNPOOLED: z.string().min(1).url().optional(),
+
+    // Single signing secret for the session cookie, agent bootstrap JWTs, and
+    // snapshot download tokens — the audiences are namespaced per use.
+    GHOST_SECRET: z.string().min(32),
     HETZNER_API_TOKEN: z.string().min(1),
     KV_REST_API_TOKEN: z.string().min(1),
 
     KV_REST_API_URL: z.string().min(1).url(),
 
     NEXT_RUNTIME: z.enum(["nodejs", "edge"]).optional(),
-    SESSION_SECRET: z.string().min(32),
     VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
   },
 });
