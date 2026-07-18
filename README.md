@@ -2,9 +2,11 @@
   <img src=".github/logo.svg" alt="Ghost" width="120" />
 </p>
 
-<h1 align="center">Ghost</h1>
-
-<p align="center">Simple, beautiful game servers in under a minute.</p>
+<h1 align="center">
+  Ghost
+  <br />
+  <sub><sup>Simple, beautiful game servers in under a minute.</sup></sub>
+</h1>
 
 Pick a game, pick a region, click start. Drop the IP in your group chat — no terminals, no toggles, no surprises. Ghost is an open-source dedicated game server platform you deploy yourself: your Vercel account, your Hetzner account, your billing, your data. Docker, SSH, and firewall rules are handled for you.
 
