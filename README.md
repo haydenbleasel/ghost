@@ -29,7 +29,7 @@ Generate `SESSION_SECRET` and `BOOTSTRAP_JWT_SECRET` with `openssl rand -hex 32`
 | `SESSION_SECRET`               | Signs the dashboard session cookie (32+ chars). Rotating it (or changing `AUTH_EMAIL`) signs out all sessions. |
 | `BOOTSTRAP_JWT_SECRET`         | Signs the one-time enrollment JWTs baked into new VMs (32+ chars).                                             |
 
-`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, and `BLOB_READ_WRITE_TOKEN` are injected by the store integrations. Sentry/PostHog/GA vars are optional — leave them unset and observability quietly disables.
+`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, and `BLOB_READ_WRITE_TOKEN` are injected by the store integrations — nothing else to configure.
 
 ### Preview deployments
 

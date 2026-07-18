@@ -23,7 +23,6 @@ const PUBLIC_PATHS = [
   "/sitemap.xml",
   "/api/agent",
   "/api/snapshot",
-  "/monitoring",
   "/.well-known/workflow",
 ];
 

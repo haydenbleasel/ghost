@@ -3,16 +3,7 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
 export const env = createEnv({
-  client: {
-    NEXT_PUBLIC_GA_MEASUREMENT_ID: z
-      .string()
-      .min(1)
-      .startsWith("G-")
-      .optional(),
-    NEXT_PUBLIC_POSTHOG_HOST: z.string().min(1).url().optional(),
-    NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1).startsWith("phc_").optional(),
-    NEXT_PUBLIC_SENTRY_DSN: z.string().min(1).url().optional(),
-  },
+  client: {},
   extends: [vercel()],
   runtimeEnv: {
     ANALYZE: process.env.ANALYZE,
@@ -25,13 +16,7 @@ export const env = createEnv({
     HETZNER_API_TOKEN: process.env.HETZNER_API_TOKEN,
     KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
     KV_REST_API_URL: process.env.KV_REST_API_URL,
-    NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
-    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
-    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
     NEXT_RUNTIME: process.env.NEXT_RUNTIME,
-    SENTRY_ORG: process.env.SENTRY_ORG,
-    SENTRY_PROJECT: process.env.SENTRY_PROJECT,
     SESSION_SECRET: process.env.SESSION_SECRET,
     VERCEL_AUTOMATION_BYPASS_SECRET:
       process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
@@ -51,9 +36,6 @@ export const env = createEnv({
     KV_REST_API_URL: z.string().min(1).url(),
 
     NEXT_RUNTIME: z.enum(["nodejs", "edge"]).optional(),
-    SENTRY_ORG: z.string().min(1).optional(),
-
-    SENTRY_PROJECT: z.string().min(1).optional(),
     SESSION_SECRET: z.string().min(32),
     VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
   },
