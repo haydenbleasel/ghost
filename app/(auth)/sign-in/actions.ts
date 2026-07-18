@@ -18,5 +18,5 @@ export const signIn = async (
   }
 
   await createSession();
-  redirect("/dashboard");
+  redirect("/");
 };

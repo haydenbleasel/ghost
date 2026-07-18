@@ -38,7 +38,7 @@ export const deleteServer = async (
 
   await start(teardownServer, [{ serverId: parsed.data.serverId }]);
 
-  revalidatePath("/dashboard", "layout");
+  revalidatePath("/", "layout");
 
   return { ok: true };
 };

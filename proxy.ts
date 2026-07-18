@@ -16,11 +16,8 @@ export const noseconeOptionsWithToolbar: NoseconeOptions =
 const securityHeaders = createMiddleware(noseconeOptions);
 
 const PUBLIC_PATHS = [
-  "/",
-  "/how-it-works",
   "/sign-in",
   "/robots.txt",
-  "/sitemap.xml",
   "/api/agent",
   "/api/snapshot",
   "/.well-known/workflow",
@@ -28,6 +25,8 @@ const PUBLIC_PATHS = [
 
 const isPublic = (pathname: string) =>
   PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+// Note: "/" itself is intentionally not public — the app root is the
+// dashboard, and unauthenticated visitors are bounced to /sign-in.
 
 const proxy = async (request: NextRequest) => {
   const { pathname } = request.nextUrl;

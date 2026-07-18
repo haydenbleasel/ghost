@@ -123,7 +123,7 @@ export const createServer = async (
 
   await start(provisionServer, [{ serverId: server.id }]);
 
-  revalidatePath("/dashboard", "layout");
+  revalidatePath("/", "layout");
 
   return { id: server.id, ok: true };
 };

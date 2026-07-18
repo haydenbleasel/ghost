@@ -6,5 +6,5 @@ import { destroySession } from "@/lib/session";
 
 export const signOut = async (): Promise<void> => {
   await destroySession();
-  redirect("/");
+  redirect("/sign-in");
 };

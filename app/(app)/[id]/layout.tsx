@@ -37,7 +37,7 @@ const ServerLayout = async ({
     catalog = await provider.getCatalog(imageId);
   } catch (error) {
     if (error instanceof MissingProviderCredentialsError) {
-      redirect("/dashboard/account");
+      redirect("/account");
     }
     throw error;
   }

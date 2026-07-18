@@ -43,7 +43,7 @@ const DashboardPage = async () => {
 
   const newServerAction = (
     <Button asChild size="sm">
-      <Link href="/dashboard/new">
+      <Link href="/new">
         <PlusIcon />
         New server
       </Link>
@@ -79,7 +79,7 @@ const DashboardPage = async () => {
             </EmptyHeader>
             <EmptyContent>
               <Button asChild>
-                <Link href="/dashboard/new">Create server</Link>
+                <Link href="/new">Create server</Link>
               </Button>
             </EmptyContent>
           </Empty>
@@ -102,7 +102,7 @@ const DashboardPage = async () => {
             return (
               <Link
                 key={server.id}
-                href={`/dashboard/${server.id}`}
+                href={`/${server.id}`}
                 className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl bg-card p-4 ring-1 ring-foreground/10 transition-colors hover:bg-muted/40"
               >
                 <div className="flex items-start gap-3">

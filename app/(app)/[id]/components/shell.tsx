@@ -153,7 +153,7 @@ export const ServerShell = ({
     const result = await deleteServer({ serverId: server.id });
     setPending(null);
     if (result.ok) {
-      router.push("/dashboard");
+      router.push("/");
     } else {
       toast.error(result.error);
     }
@@ -296,8 +296,8 @@ export const ServerShell = ({
                 <Link
                   href={
                     tab.value === "connect"
-                      ? `/dashboard/${server.id}`
-                      : `/dashboard/${server.id}/${tab.value}`
+                      ? `/${server.id}`
+                      : `/${server.id}/${tab.value}`
                   }
                 >
                   {tab.label}

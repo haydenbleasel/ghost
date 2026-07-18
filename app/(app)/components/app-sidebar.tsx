@@ -84,10 +84,10 @@ export const AppSidebar = ({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === "/dashboard"}
+                  isActive={pathname === "/"}
                   tooltip="Dashboard"
                 >
-                  <Link href="/dashboard">
+                  <Link href="/">
                     <LayoutDashboard />
                     <span>Dashboard</span>
                   </Link>
@@ -96,10 +96,10 @@ export const AppSidebar = ({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === "/dashboard/new"}
+                  isActive={pathname === "/new"}
                   tooltip="New server"
                 >
-                  <Link href="/dashboard/new">
+                  <Link href="/new">
                     <Plus />
                     <span>New server</span>
                   </Link>
@@ -121,7 +121,7 @@ export const AppSidebar = ({
                 </SidebarMenuItem>
               ) : (
                 servers.map((server) => {
-                  const href = `/dashboard/${server.id}`;
+                  const href = `/${server.id}`;
                   const game = games.find((g) => g.id === server.game);
                   const deleting = server.desiredState === "deleted";
                   return (
@@ -195,7 +195,7 @@ export const AppSidebar = ({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/account">
+                  <Link href="/account">
                     <User />
                     Account
                   </Link>

@@ -88,7 +88,7 @@ export const updateServerSettings = async (
     });
   }
 
-  revalidatePath("/dashboard", "layout");
+  revalidatePath("/", "layout");
 
   return {
     ok: true,

@@ -595,7 +595,7 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
         toast.error(result.error);
         return;
       }
-      router.push(`/dashboard/${result.id}`);
+      router.push(`/${result.id}`);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Could not create server"

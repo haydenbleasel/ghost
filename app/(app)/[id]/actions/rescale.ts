@@ -67,7 +67,7 @@ export const rescaleServer = async (
     where: { id: parsed.data.serverId },
   });
 
-  revalidatePath("/dashboard", "layout");
+  revalidatePath("/", "layout");
 
   return { ok: true, serverType: parsed.data.serverType };
 };

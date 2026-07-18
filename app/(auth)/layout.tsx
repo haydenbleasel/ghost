@@ -13,7 +13,7 @@ export const metadata = createMetadata({
 const AuthLayout = async ({ children }: { children: ReactNode }) => {
   const session = await getSession();
   if (session) {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   return (

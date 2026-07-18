@@ -60,7 +60,7 @@ export const runServerCommand = async (
     type: parsed.data.type,
   });
 
-  revalidatePath("/dashboard", "layout");
+  revalidatePath("/", "layout");
 
   return { ok: true };
 };
