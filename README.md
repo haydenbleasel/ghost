@@ -54,8 +54,36 @@ If you use Vercel preview deployments, enable **Deployment Protection → Protec
 
 Ghost is a control plane on Vercel that orchestrates Docker game servers on your own Hetzner Cloud account. The system has two halves: the control plane runs on Vercel and holds all coordination state; the runtime — the game container itself — runs on a Hetzner VM you own. The two communicate over a signed long-poll channel that the agent always initiates outbound, so VMs never expose a management port.
 
-```
-Browser ←SSE→ Vercel ←long-poll→ Hetzner VM
+```mermaid
+flowchart LR
+    browser["Browser<br/>dashboard"]
+    players["Players"]
+
+    subgraph vercel["Control plane — your Vercel account"]
+        next["Next.js<br/>UI + API routes"]
+        wf["Durable workflows<br/>provision · teardown · snapshot"]
+        db[("Neon Postgres<br/>servers · commands · logs")]
+        redis[("Upstash Redis<br/>event seq · nonces")]
+        blob[("Vercel Blob<br/>agent binary")]
+    end
+
+    hcloud["Hetzner Cloud API"]
+
+    subgraph vm["Game VM — your Hetzner account"]
+        agent["ghost-agent"]
+        game["Docker Compose<br/>game container"]
+    end
+
+    browser -- "SSE — logs · activity" --- next
+    next --- db
+    next --- redis
+    next --- wf
+    wf -- "create · snapshot · delete VMs" --> hcloud
+    hcloud -. "boots VM from golden image" .-> vm
+    agent -- "signed long-poll<br/>outbound only" --> next
+    wf -. "compiled agent binary" .-> blob
+    agent --> game
+    players -- "game traffic" --> game
 ```
 
 | Layer                        | Role                                                                                                                                                    |
