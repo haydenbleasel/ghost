@@ -130,8 +130,9 @@ Every supported game lives behind the same one-click flow. Your VM, your token, 
       <sub>Rise as a vampire lord — hunt, build a castle, and battle players in a gothic open world.</sub>
     </td>
     <td width="50%">
-      <b><a href="https://github.com/haydenbleasel/ghost/issues/new">Don't see yours?</a></b><br/>
-      <sub>Open an issue on GitHub and we'll add it to the roadmap — or add it yourself with a game folder and a snapshot rebuild (see below).</sub>
+      <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/427520/header.jpg" alt="Factorio dedicated game server" /><br/>
+      <b>Factorio</b><br/>
+      <sub>Build and grow a factory on an alien planet. Co-op automation sandbox.</sub>
     </td>
   </tr>
 </table>
