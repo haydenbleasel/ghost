@@ -1,0 +1,33 @@
+import type { ReactNode } from "react";
+
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/session";
+
+import { AppContainer } from "./components/app-container";
+import { AppSidebar } from "./components/app-sidebar";
+
+const DashboardLayout = async ({ children }: { children: ReactNode }) => {
+  const user = await requireUser();
+  const servers = await prisma.server.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      desiredState: true,
+      game: true,
+      id: true,
+      name: true,
+      observedState: true,
+    },
+    where: { deletedAt: null },
+  });
+
+  return (
+    <SidebarProvider className="bg-sidebar">
+      <AppSidebar servers={servers} user={{ email: user.email }} />
+      <SidebarTrigger className="fixed top-3 left-3 z-50 text-muted-foreground" />
+      <AppContainer>{children}</AppContainer>
+    </SidebarProvider>
+  );
+};
+
+export default DashboardLayout;

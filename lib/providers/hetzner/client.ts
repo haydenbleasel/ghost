@@ -1,0 +1,30 @@
+import "server-only";
+import createClient from "openapi-fetch";
+
+import { ProviderApiError } from "../errors";
+import type { paths } from "./schema";
+
+export type HetznerClient = ReturnType<typeof createClient<paths>>;
+
+export const createHetznerClient = (token: string): HetznerClient =>
+  createClient<paths>({
+    baseUrl: "https://api.hetzner.cloud/v1",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+export const throwIfHetznerError = (
+  error: unknown,
+  response: Response
+): void => {
+  if (response.ok) {
+    return;
+  }
+  const body = error as
+    | { error?: { code?: string; message?: string } }
+    | undefined;
+  const code = body?.error?.code ?? String(response.status);
+  const message = body?.error?.message ?? response.statusText;
+  throw new ProviderApiError(response.status, code, message);
+};

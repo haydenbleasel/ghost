@@ -6,109 +6,22 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Better Auth ────────────────────────────────────────────────
+// ─── App models ─────────────────────────────────────────────────
 
-model User {
-  id             String          @id
-  name           String
-  email          String          @unique
-  emailVerified  Boolean         @default(false)
-  image          String?
-  hetznerToken   String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  sessions       Session[]
-  accounts       Account[]
-  passkeys       Passkey[]
-  servers        Server[]
-  snapshotBuilds SnapshotBuild[]
-  snapshots      UserSnapshot[]
-
-  @@map("users")
-}
-
-// Per-user golden image, scoped by deployment environment so a snapshot built
-// on a preview deployment can't clobber the prod snapshot. `environment` is
+// Golden image, scoped by deployment environment so a snapshot built on a
+// preview deployment can't clobber the prod snapshot. `environment` is
 // "production", "preview:<branch>", or "development" (see SNAPSHOT_ENVIRONMENT
 // in lib/env.ts).
-model UserSnapshot {
-  id             String   @id
-  userId         String
-  environment    String
-  hetznerImageId String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Snapshot {
+  id              String   @id
+  environment     String   @unique
+  provider        String   @default("hetzner")
+  providerImageId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@unique([userId, environment])
-  @@index([userId])
-  @@map("user_snapshots")
+  @@map("snapshots")
 }
-
-model Session {
-  id        String   @id
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model Account {
-  id                    String    @id
-  userId                String
-  accountId             String
-  providerId            String
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("accounts")
-}
-
-model Verification {
-  id         String   @id
-  identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@map("verifications")
-}
-
-model Passkey {
-  id           String    @id
-  name         String?
-  publicKey    String
-  userId       String
-  credentialID String
-  counter      Int
-  deviceType   String
-  backedUp     Boolean
-  transports   String?
-  createdAt    DateTime? @default(now())
-  aaguid       String?
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([credentialID])
-  @@map("passkeys")
-}
-
-// ─── App models ─────────────────────────────────────────────────
 
 enum DesiredState {
   running
@@ -128,33 +41,31 @@ enum ObservedState {
 }
 
 model Server {
-  id              String            @id
-  userId          String
-  name            String
-  game            String
-  location        String
-  serverType      String
-  hetznerServerId String?           @unique
-  ipv4            String?
-  desiredState    DesiredState      @default(running)
-  observedState   ObservedState     @default(pending)
-  phase           String            @default("queued")
-  errorReason     String?
-  rconPassword    String
-  joinPassword    String?
-  settings        Json              @default("{}")
-  backupsEnabled  Boolean           @default(false)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  deletedAt       DateTime?
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent           Agent?
-  commands        Command[]
-  activityEvents  ActivityEvent[]
-  logChunks       LogChunk[]
-  enrollments     AgentEnrollment[]
+  id               String            @id
+  name             String
+  game             String
+  location         String
+  serverType       String
+  provider         String            @default("hetzner")
+  providerServerId String?           @unique
+  ipv4             String?
+  desiredState     DesiredState      @default(running)
+  observedState    ObservedState     @default(pending)
+  phase            String            @default("queued")
+  errorReason      String?
+  rconPassword     String
+  joinPassword     String?
+  settings         Json              @default("{}")
+  backupsEnabled   Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  agent            Agent?
+  commands         Command[]
+  activityEvents   ActivityEvent[]
+  logChunks        LogChunk[]
+  enrollments      AgentEnrollment[]
 
-  @@index([userId])
   @@index([desiredState, observedState])
   @@map("servers")
 }
@@ -245,19 +156,18 @@ enum SnapshotBuildStatus {
 
 model SnapshotBuild {
   id                 String              @id
-  userId             String
   status             SnapshotBuildStatus @default(pending)
   agentBlobUrl       String?
   agentSha           String?
-  hetznerBuilderId   String?
+  provider           String              @default("hetzner")
+  providerBuilderId  String?
   snapshotId         String?
   previousSnapshotId String?
   errorReason        String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   finishedAt         DateTime?
-  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
   @@map("snapshot_builds")
 }

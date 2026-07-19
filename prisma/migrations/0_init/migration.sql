@@ -11,91 +11,26 @@ CREATE TYPE "ObservedState" AS ENUM ('pending', 'provisioning', 'running', 'unhe
 CREATE TYPE "SnapshotBuildStatus" AS ENUM ('pending', 'compiling_agent', 'creating_vm', 'installing', 'snapshotting', 'ready', 'failed');
 
 -- CreateTable
-CREATE TABLE "users" (
+CREATE TABLE "snapshots" (
     "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
-    "image" TEXT,
-    "hetznerToken" TEXT,
-    "hetznerImageId" TEXT,
+    "environment" TEXT NOT NULL,
+    "provider" TEXT NOT NULL DEFAULT 'hetzner',
+    "providerImageId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "sessions" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "token" TEXT NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "ipAddress" TEXT,
-    "userAgent" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "sessions_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "accounts" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "accountId" TEXT NOT NULL,
-    "providerId" TEXT NOT NULL,
-    "accessToken" TEXT,
-    "refreshToken" TEXT,
-    "idToken" TEXT,
-    "accessTokenExpiresAt" TIMESTAMP(3),
-    "refreshTokenExpiresAt" TIMESTAMP(3),
-    "scope" TEXT,
-    "password" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "accounts_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "verifications" (
-    "id" TEXT NOT NULL,
-    "identifier" TEXT NOT NULL,
-    "value" TEXT NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "verifications_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "passkeys" (
-    "id" TEXT NOT NULL,
-    "name" TEXT,
-    "publicKey" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "credentialID" TEXT NOT NULL,
-    "counter" INTEGER NOT NULL,
-    "deviceType" TEXT NOT NULL,
-    "backedUp" BOOLEAN NOT NULL,
-    "transports" TEXT,
-    "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
-    "aaguid" TEXT,
-
-    CONSTRAINT "passkeys_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "snapshots_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "servers" (
     "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "game" TEXT NOT NULL,
     "location" TEXT NOT NULL,
     "serverType" TEXT NOT NULL,
-    "hetznerServerId" TEXT,
+    "provider" TEXT NOT NULL DEFAULT 'hetzner',
+    "providerServerId" TEXT,
     "ipv4" TEXT,
     "desiredState" "DesiredState" NOT NULL DEFAULT 'running',
     "observedState" "ObservedState" NOT NULL DEFAULT 'pending',
@@ -183,11 +118,11 @@ CREATE TABLE "log_chunks" (
 -- CreateTable
 CREATE TABLE "snapshot_builds" (
     "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
     "status" "SnapshotBuildStatus" NOT NULL DEFAULT 'pending',
     "agentBlobUrl" TEXT,
     "agentSha" TEXT,
-    "hetznerBuilderId" TEXT,
+    "provider" TEXT NOT NULL DEFAULT 'hetzner',
+    "providerBuilderId" TEXT,
     "snapshotId" TEXT,
     "previousSnapshotId" TEXT,
     "errorReason" TEXT,
@@ -199,22 +134,10 @@ CREATE TABLE "snapshot_builds" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+CREATE UNIQUE INDEX "snapshots_environment_key" ON "snapshots"("environment");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "sessions_token_key" ON "sessions"("token");
-
--- CreateIndex
-CREATE INDEX "passkeys_userId_idx" ON "passkeys"("userId");
-
--- CreateIndex
-CREATE INDEX "passkeys_credentialID_idx" ON "passkeys"("credentialID");
-
--- CreateIndex
-CREATE UNIQUE INDEX "servers_hetznerServerId_key" ON "servers"("hetznerServerId");
-
--- CreateIndex
-CREATE INDEX "servers_userId_idx" ON "servers"("userId");
+CREATE UNIQUE INDEX "servers_providerServerId_key" ON "servers"("providerServerId");
 
 -- CreateIndex
 CREATE INDEX "servers_desiredState_observedState_idx" ON "servers"("desiredState", "observedState");
@@ -241,19 +164,7 @@ CREATE INDEX "log_chunks_serverId_ts_idx" ON "log_chunks"("serverId", "ts");
 CREATE UNIQUE INDEX "log_chunks_serverId_seq_key" ON "log_chunks"("serverId", "seq");
 
 -- CreateIndex
-CREATE INDEX "snapshot_builds_userId_createdAt_idx" ON "snapshot_builds"("userId", "createdAt" DESC);
-
--- AddForeignKey
-ALTER TABLE "sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "passkeys" ADD CONSTRAINT "passkeys_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "servers" ADD CONSTRAINT "servers_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE INDEX "snapshot_builds_createdAt_idx" ON "snapshot_builds"("createdAt" DESC);
 
 -- AddForeignKey
 ALTER TABLE "agents" ADD CONSTRAINT "agents_serverId_fkey" FOREIGN KEY ("serverId") REFERENCES "servers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -269,7 +180,4 @@ ALTER TABLE "activity_events" ADD CONSTRAINT "activity_events_serverId_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "log_chunks" ADD CONSTRAINT "log_chunks_serverId_fkey" FOREIGN KEY ("serverId") REFERENCES "servers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "snapshot_builds" ADD CONSTRAINT "snapshot_builds_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

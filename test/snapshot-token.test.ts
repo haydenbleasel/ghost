@@ -10,7 +10,7 @@ import { env } from "@/lib/env";
 
 const SNAPSHOT_AUDIENCE = "ghost-snapshot-download";
 const SNAPSHOT_ISSUER = "ghost";
-const snapshotSecret = new TextEncoder().encode(env.BOOTSTRAP_JWT_SECRET);
+const snapshotSecret = new TextEncoder().encode(env.GHOST_SECRET);
 
 describe("snapshot download token", () => {
   test("mint then verify returns the original buildId", async () => {

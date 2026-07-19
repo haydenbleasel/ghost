@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import type { HetznerClient } from "@/lib/hetzner";
-import { getHetznerCatalog } from "@/lib/hetzner/catalog";
+import { getHetznerCatalog } from "@/lib/providers/hetzner/catalog";
+import type { HetznerClient } from "@/lib/providers/hetzner/client";
 
 const ok = <T>(data: T) => ({
   data,
@@ -65,8 +65,8 @@ const fsnDc = {
   location: {
     city: "Falkenstein",
     country: "DE",
-    latitude: 50.476_12,
-    longitude: 12.370_071,
+    latitude: 50.47612,
+    longitude: 12.370071,
     name: "fsn1",
   },
   server_types: { available: [100], supported: [100, 200] },
@@ -76,8 +76,8 @@ const nbgDc = {
   location: {
     city: "Nuremberg",
     country: "DE",
-    latitude: 49.452_102,
-    longitude: 11.076_665,
+    latitude: 49.452102,
+    longitude: 11.076665,
     name: "nbg1",
   },
   server_types: { available: [], supported: [100] },
@@ -235,7 +235,7 @@ describe("getHetznerCatalog", () => {
     );
   });
 
-  test("propagates Hetzner API errors", async () => {
+  test("propagates provider API errors", async () => {
     const client = {
       GET: (path: string) => {
         if (path === "/server_types") {
@@ -254,7 +254,7 @@ describe("getHetznerCatalog", () => {
       },
     } as unknown as HetznerClient;
     await expect(getHetznerCatalog(client, "1")).rejects.toThrow(
-      /Hetzner API internal: boom/u
+      /Provider API internal: boom/u
     );
   });
 

@@ -11,12 +11,12 @@ export const GET = async (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) => {
-  const user = await requireUser();
+  await requireUser();
   const { id } = await context.params;
 
   const server = await prisma.server.findFirst({
     select: { id: true },
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
 
   if (!server) {
@@ -24,7 +24,10 @@ export const GET = async (
   }
 
   const url = new URL(request.url);
-  const initialCursor = Number(url.searchParams.get("cursor") ?? 0);
+  const rawCursor = Number(url.searchParams.get("cursor") ?? 0);
+  // A non-numeric cursor would flow into Prisma as `seq: { gt: NaN }` and
+  // error the stream immediately.
+  const initialCursor = Number.isFinite(rawCursor) ? rawCursor : 0;
 
   return createSseResponse({
     eventName: "log",

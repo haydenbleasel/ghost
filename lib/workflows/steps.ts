@@ -9,50 +9,13 @@ import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
 import { API_URL, env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { emitActivity } from "@/lib/events/emit";
-import { HetznerApiError, throwIfHetznerError } from "@/lib/hetzner";
-import type { HetznerClient } from "@/lib/hetzner";
+import { getProvider, getProviderWithImage } from "@/lib/providers";
+import type { Provider } from "@/lib/providers";
 import {
-  getUserHetznerContext,
-  getUserHetznerImageContext,
-} from "@/lib/hetzner/credentials";
+  MissingProviderCredentialsError,
+  ProviderApiError,
+} from "@/lib/providers/errors";
 import type { Phase } from "@/protocol";
-
-const postCreateHetznerServer = async (input: {
-  client: HetznerClient;
-  image: string;
-  location: string;
-  name: string;
-  serverType: string;
-  userData: string;
-}) => {
-  const { data, error, response } = await input.client.POST("/servers", {
-    body: {
-      image: input.image,
-      location: input.location,
-      name: input.name,
-      public_net: { enable_ipv4: true, enable_ipv6: false },
-      server_type: input.serverType,
-      start_after_create: true,
-      user_data: input.userData,
-    },
-  });
-  if (!response.ok) {
-    const body = error as
-      | { error?: { code?: string; message?: string } }
-      | undefined;
-    const code = body?.error?.code ?? String(response.status);
-    const message = body?.error?.message ?? response.statusText;
-    const apiError = new HetznerApiError(response.status, code, message);
-    if (apiError.isClientError) {
-      throw new FatalError(apiError.message);
-    }
-    throw apiError;
-  }
-  if (!data?.server) {
-    throw new Error("Hetzner server creation returned no server");
-  }
-  return data.server;
-};
 
 const buildCloudInit = (input: {
   serverId: string;
@@ -88,24 +51,29 @@ ${ufwRules}
 `;
 };
 
-export const stepCreateHetznerServer = async (serverId: string) => {
+export const stepCreateProviderServer = async (serverId: string) => {
   "use step";
 
   const server = await prisma.server.findUnique({
     where: { id: serverId },
   });
   if (!server || server.desiredState === "deleted") {
+    // A previous attempt may have created the VM after teardown already
+    // looked for it (and found nothing to delete) — clean it up here, since
+    // nothing else will. deleteServer is a no-op when the VM is gone, and a
+    // transient provider failure lets the step retry.
+    if (server?.providerServerId) {
+      await getProvider().deleteServer(server.providerServerId);
+    }
     return {
       cancelled: true as const,
-      hetznerServerId: server?.hetznerServerId
-        ? Number(server.hetznerServerId)
-        : null,
+      providerServerId: server?.providerServerId ?? null,
     };
   }
-  if (server.hetznerServerId) {
+  if (server.providerServerId) {
     return {
       cancelled: false as const,
-      hetznerServerId: Number(server.hetznerServerId),
+      providerServerId: server.providerServerId,
     };
   }
 
@@ -114,17 +82,17 @@ export const stepCreateHetznerServer = async (serverId: string) => {
     throw new FatalError(`Unknown game: ${server.game}`);
   }
 
-  let hetzner: HetznerClient;
+  let provider: Provider;
   let imageId: string;
   try {
-    const ctx = await getUserHetznerImageContext(
-      server.userId,
-      SNAPSHOT_ENVIRONMENT
-    );
-    hetzner = ctx.client;
-    ({ imageId } = ctx);
-  } catch {
-    throw new FatalError("Owner has not configured Hetzner credentials");
+    ({ imageId, provider } = await getProviderWithImage(SNAPSHOT_ENVIRONMENT));
+  } catch (error) {
+    if (error instanceof MissingProviderCredentialsError) {
+      throw new FatalError("No golden snapshot built for this environment");
+    }
+    // Transient failures (DB, network) should retry, not permanently fail
+    // the provision with a misleading reason.
+    throw error;
   }
 
   const { token, jti, expiresAt } = await mintBootstrapJwt({ serverId });
@@ -144,92 +112,74 @@ export const stepCreateHetznerServer = async (serverId: string) => {
         : (env.VERCEL_AUTOMATION_BYPASS_SECRET ?? null),
   });
 
-  const hetznerName = `ghost-${serverId.toLowerCase().slice(-12)}-${crypto
+  const name = `ghost-${serverId.toLowerCase().slice(-12)}-${crypto
     .randomBytes(2)
     .toString("hex")}`;
 
-  const created = await postCreateHetznerServer({
-    client: hetzner,
-    image: imageId,
-    location: server.location,
-    name: hetznerName,
-    serverType: server.serverType,
-    userData,
-  });
+  let created: Awaited<ReturnType<typeof provider.createServer>>;
+  try {
+    created = await provider.createServer({
+      imageId,
+      location: server.location,
+      name,
+      serverType: server.serverType,
+      userData,
+    });
+  } catch (error) {
+    if (error instanceof ProviderApiError && error.isClientError) {
+      throw new FatalError(error.message);
+    }
+    throw error;
+  }
 
   const { count } = await prisma.server.updateMany({
     data: {
-      hetznerServerId: String(created.id),
-      ipv4: created.public_net.ipv4?.ip ?? null,
+      ipv4: created.ipv4,
       observedState: "provisioning",
       phase: "provisioning",
+      providerServerId: created.id,
     },
-    where: { id: serverId },
+    where: { desiredState: { not: "deleted" }, id: serverId },
   });
-  const updated =
-    count > 0
-      ? await prisma.server.findUnique({
-          select: { desiredState: true },
-          where: { id: serverId },
-        })
-      : null;
 
-  if (!updated || updated.desiredState === "deleted") {
-    const { error: delError, response: delResponse } = await hetzner.DELETE(
-      "/servers/{id}",
-      {
-        params: { path: { id: created.id } },
-      }
-    );
-    if (!delResponse.ok && delResponse.status !== 404) {
-      throwIfHetznerError(delError, delResponse);
-    }
-    return { cancelled: true as const, hetznerServerId: created.id };
+  if (count === 0) {
+    // Deleted while the create was in flight. Persist the id (without
+    // clobbering teardown's phase/state) so the early-return path above can
+    // retry the cleanup if this inline delete fails.
+    await prisma.server.updateMany({
+      data: { providerServerId: created.id },
+      where: { id: serverId },
+    });
+    await provider.deleteServer(created.id);
+    return { cancelled: true as const, providerServerId: created.id };
   }
 
   await emitActivity({
-    message: "Creating Hetzner server",
-    metadata: { hetznerServerId: created.id, location: server.location },
+    message: "Creating provider server",
+    metadata: { location: server.location, providerServerId: created.id },
     phase: "provisioning",
     serverId,
   });
 
-  return { cancelled: false as const, hetznerServerId: created.id };
+  return { cancelled: false as const, providerServerId: created.id };
 };
 
-export const stepGetHetznerStatus = async (input: {
+export const stepGetServerStatus = async (input: {
   serverId: string;
-  hetznerServerId: number;
+  providerServerId: string;
 }) => {
   "use step";
-  const owner = await prisma.server.findUnique({
-    select: { userId: true },
-    where: { id: input.serverId },
-  });
-  if (!owner) {
-    return { ip: null, status: "unknown" as const };
-  }
-  const { client } = await getUserHetznerContext(owner.userId);
-  const { data, error, response } = await client.GET("/servers/{id}", {
-    params: { path: { id: input.hetznerServerId } },
-  });
-  if (response.status === 404) {
-    return { ip: null, status: "unknown" as const };
-  }
-  if (!response.ok) {
-    throwIfHetznerError(error, response);
-  }
-  const server = data?.server;
+  const server = await getProvider().getServer(input.providerServerId);
   if (!server) {
     return { ip: null, status: "unknown" as const };
   }
   return {
-    ip: server.public_net.ipv4?.ip ?? null,
+    ip: server.ipv4,
     status: server.status,
   };
 };
 
-export const stepMarkHetznerRunning = async (input: {
+export const stepMarkServerRunning = async (input: {
   serverId: string;
   ipv4: string | null;
 }) => {
@@ -289,9 +239,22 @@ export const stepSendInstallConfig = async (serverId: string) => {
     throw new FatalError(`Unknown game: ${server.game}`);
   }
 
+  let memoryGb: number | null = null;
+  if (server.providerServerId) {
+    try {
+      const providerServer = await getProvider().getServer(
+        server.providerServerId
+      );
+      memoryGb = providerServer?.memoryGb ?? null;
+    } catch {
+      // Non-fatal: games fall back to a conservative default sizing.
+    }
+  }
+
   const compose = game.buildCompose(
     {
       joinPassword: server.joinPassword,
+      memoryGb,
       name: server.name,
       rconPassword: server.rconPassword,
     },
@@ -341,9 +304,11 @@ export const stepMarkFailed = async (input: {
   reason: string;
 }) => {
   "use step";
+  // Skip servers the user has deleted: a teardown racing this workflow must
+  // not have its "deleted" state overwritten with "failed".
   const { count } = await prisma.server.updateMany({
     data: { errorReason: input.reason, observedState: "failed" },
-    where: { id: input.serverId },
+    where: { desiredState: { not: "deleted" }, id: input.serverId },
   });
   if (count === 0) {
     return;
@@ -383,27 +348,13 @@ export const stepSendDeleteCommand = async (serverId: string) => {
   return { hadAgent: true };
 };
 
-export const stepDeleteHetzner = async (serverId: string) => {
+export const stepDeleteProviderServer = async (serverId: string) => {
   "use step";
   const server = await prisma.server.findUnique({ where: { id: serverId } });
-  if (!server?.hetznerServerId) {
+  if (!server?.providerServerId) {
     return { deleted: false };
   }
-  let client: HetznerClient;
-  try {
-    ({ client } = await getUserHetznerContext(server.userId));
-  } catch {
-    // Owner cleared their token; mark deleted in DB anyway since we can't
-    // reach Hetzner. The VM may need to be cleaned up manually.
-    return { deleted: false };
-  }
-  const { error, response } = await client.DELETE("/servers/{id}", {
-    params: { path: { id: Number(server.hetznerServerId) } },
-  });
-  if (!response.ok && response.status !== 404) {
-    throwIfHetznerError(error, response);
-  }
-  return { deleted: true };
+  return getProvider().deleteServer(server.providerServerId);
 };
 
 export const stepMarkDeleted = async (serverId: string) => {

@@ -6,7 +6,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { env } from "@/lib/env";
 import { BOOTSTRAP_TTL_SECONDS } from "@/protocol";
 
-const secret = new TextEncoder().encode(env.BOOTSTRAP_JWT_SECRET);
+const secret = new TextEncoder().encode(env.GHOST_SECRET);
 const ISSUER = "ghost";
 const AUDIENCE = "ghost-agent";
 

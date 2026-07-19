@@ -59,22 +59,33 @@ export const POST = async (request: Request) => {
 
   const agentId = `agt_${crypto.randomUUID()}`;
 
-  await prisma.$transaction([
-    prisma.agentEnrollment.update({
+  // Burn the token and create the agent atomically: if the create fails, the
+  // burn must roll back too, otherwise the VM's retry hits "Token already
+  // used" forever and the server can never enroll. The conditional burn also
+  // makes concurrent requests with the same token race safely — only one
+  // wins the row.
+  const agent = await prisma.$transaction(async (tx) => {
+    const burned = await tx.agentEnrollment.updateMany({
       data: { burnedAt: new Date() },
-      where: { jti: claims.jti },
-    }),
-    prisma.agent.deleteMany({ where: { serverId: claims.serverId } }),
-  ]);
-
-  const agent = await prisma.agent.create({
-    data: {
-      id: agentId,
-      publicKey: parsed.data.publicKey,
-      serverId: claims.serverId,
-      sessionVersion: 0,
-    },
+      where: { burnedAt: null, jti: claims.jti },
+    });
+    if (burned.count === 0) {
+      return null;
+    }
+    await tx.agent.deleteMany({ where: { serverId: claims.serverId } });
+    return await tx.agent.create({
+      data: {
+        id: agentId,
+        publicKey: parsed.data.publicKey,
+        serverId: claims.serverId,
+        sessionVersion: 0,
+      },
+    });
   });
+
+  if (!agent) {
+    return NextResponse.json({ error: "Token already used" }, { status: 409 });
+  }
 
   const response = enrollResponseSchema.parse({
     agentId: agent.id,

@@ -2,19 +2,19 @@ import { FatalError, sleep } from "workflow";
 
 import {
   stepAgentConnected,
-  stepCreateHetznerServer,
-  stepGetHetznerStatus,
+  stepCreateProviderServer,
+  stepGetServerStatus,
   stepMarkFailed,
-  stepMarkHetznerRunning,
   stepMarkReady,
+  stepMarkServerRunning,
   stepReadAgent,
   stepReadAgentPhase,
   stepReadDesiredState,
   stepSendInstallConfig,
 } from "./steps";
 
-const MAX_HETZNER_WAIT_SECONDS = 300;
-const HETZNER_POLL_SECONDS = 6;
+const MAX_PROVIDER_WAIT_SECONDS = 300;
+const PROVIDER_POLL_SECONDS = 6;
 const MAX_ENROLL_WAIT_SECONDS = 300;
 const ENROLL_POLL_SECONDS = 6;
 const MAX_INSTALL_WAIT_SECONDS = 900;
@@ -28,23 +28,24 @@ type PollOutcome<T> =
 const isCancelled = async (serverId: string): Promise<boolean> =>
   (await stepReadDesiredState(serverId)) === "deleted";
 
-const waitForHetznerRunning = async (input: {
+const waitForServerRunning = async (input: {
   serverId: string;
-  hetznerServerId: number;
+  providerServerId: string;
 }): Promise<PollOutcome<{ ipv4: string | null }>> => {
-  const deadline = Date.now() + MAX_HETZNER_WAIT_SECONDS * 1000;
+  const deadline = Date.now() + MAX_PROVIDER_WAIT_SECONDS * 1000;
   while (Date.now() < deadline) {
-    const status = await stepGetHetznerStatus(input);
+    const status = await stepGetServerStatus(input);
     if (status.status === "running") {
       return { type: "ready", value: { ipv4: status.ip } };
-    }
-    if (status.status === "unknown") {
-      throw new FatalError("Hetzner server not found after create");
     }
     if (await isCancelled(input.serverId)) {
       return { type: "cancelled" };
     }
-    await sleep(`${HETZNER_POLL_SECONDS}s`);
+    if (status.status === "unknown") {
+      // Not cancelled (checked above), so the VM genuinely vanished.
+      throw new FatalError("Provider server not found after create");
+    }
+    await sleep(`${PROVIDER_POLL_SECONDS}s`);
   }
   return { type: "timeout" };
 };
@@ -99,26 +100,26 @@ export const provisionServer = async (input: { serverId: string }) => {
       return;
     }
 
-    const createResult = await stepCreateHetznerServer(serverId);
-    if (createResult.cancelled || createResult.hetznerServerId === null) {
+    const createResult = await stepCreateProviderServer(serverId);
+    if (createResult.cancelled || createResult.providerServerId === null) {
       return;
     }
-    const { hetznerServerId } = createResult;
+    const { providerServerId } = createResult;
 
-    const hetznerOutcome = await waitForHetznerRunning({
-      hetznerServerId,
+    const providerOutcome = await waitForServerRunning({
+      providerServerId,
       serverId,
     });
-    if (hetznerOutcome.type === "cancelled") {
+    if (providerOutcome.type === "cancelled") {
       return;
     }
-    if (hetznerOutcome.type === "timeout") {
-      await stepMarkFailed({ reason: "Hetzner boot timeout", serverId });
+    if (providerOutcome.type === "timeout") {
+      await stepMarkFailed({ reason: "Provider boot timeout", serverId });
       return;
     }
 
-    await stepMarkHetznerRunning({
-      ipv4: hetznerOutcome.value.ipv4,
+    await stepMarkServerRunning({
+      ipv4: providerOutcome.value.ipv4,
       serverId,
     });
 

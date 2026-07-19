@@ -3,7 +3,7 @@ import { jwtVerify, SignJWT } from "jose";
 
 import { env } from "@/lib/env";
 
-const secret = new TextEncoder().encode(env.BOOTSTRAP_JWT_SECRET);
+const secret = new TextEncoder().encode(env.GHOST_SECRET);
 const ISSUER = "ghost";
 const AUDIENCE = "ghost-snapshot-download";
 

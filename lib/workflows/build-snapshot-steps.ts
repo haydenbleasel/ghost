@@ -1,6 +1,4 @@
 import "server-only";
-import crypto from "node:crypto";
-
 import type { SnapshotBuildStatus } from "@prisma/client";
 import { del as blobDel, put } from "@vercel/blob";
 import { FatalError } from "workflow";
@@ -8,19 +6,13 @@ import { FatalError } from "workflow";
 import { mintSnapshotDownloadToken } from "@/lib/agent/snapshot-token";
 import { prisma } from "@/lib/db";
 import { API_URL, env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
-import {
-  HetznerApiError,
-  MissingHetznerCredentialsError,
-  throwIfHetznerError,
-} from "@/lib/hetzner";
-import { getUserHetznerContext } from "@/lib/hetzner/credentials";
+import { getProvider } from "@/lib/providers";
+import { ProviderApiError } from "@/lib/providers/errors";
+import { HETZNER_BUILDER_PROFILE } from "@/lib/providers/hetzner";
 import { compileAgentBinary } from "@/lib/sandbox/compile-agent";
 
 import { buildSnapshotCloudInit } from "./build-snapshot-cloud-init";
 
-const BUILDER_LOCATION = "nbg1";
-const BUILDER_SERVER_TYPE = "cx23";
-const BUILDER_BASE_IMAGE = "ubuntu-24.04";
 const SNAPSHOT_DESCRIPTION = `ghost-gold-${SNAPSHOT_ENVIRONMENT.replace(":", "-")}`;
 // Covers cloud-init runtime (apt upgrade + Docker install) plus headroom.
 // Game images are pulled lazily at per-server provision time.
@@ -94,153 +86,130 @@ export const stepCompileAgent = async (input: {
 
 export const stepCreateBuilderVm = async (input: {
   buildId: string;
-  userId: string;
   agentDownloadUrl: string;
-}): Promise<{ hetznerBuilderId: number }> => {
+}): Promise<{ providerBuilderId: string }> => {
   "use step";
 
-  let hetzner: Awaited<ReturnType<typeof getUserHetznerContext>>["client"];
+  const build = await prisma.snapshotBuild.findUnique({
+    select: { providerBuilderId: true },
+    where: { id: input.buildId },
+  });
+  if (!build) {
+    throw new FatalError(`SnapshotBuild ${input.buildId} not found`);
+  }
+  if (build.providerBuilderId) {
+    return { providerBuilderId: build.providerBuilderId };
+  }
+
+  const provider = getProvider();
+
+  const userData = buildSnapshotCloudInit(input.agentDownloadUrl);
+  // Deterministic name: if a retry races a create whose response was lost,
+  // the provider's unique-name constraint rejects the duplicate instead of
+  // silently billing a second VM.
+  const name = `ghost-builder-${input.buildId.toLowerCase().slice(-12)}`;
+
+  let created: Awaited<ReturnType<typeof provider.createServer>>;
   try {
-    ({ client: hetzner } = await getUserHetznerContext(input.userId));
+    created = await provider.createServer({
+      imageId: HETZNER_BUILDER_PROFILE.baseImage,
+      location: HETZNER_BUILDER_PROFILE.location,
+      name,
+      serverType: HETZNER_BUILDER_PROFILE.serverType,
+      userData,
+    });
   } catch (error) {
-    if (error instanceof MissingHetznerCredentialsError) {
-      throw new FatalError("Hetzner credentials missing for user");
+    if (error instanceof ProviderApiError && error.isClientError) {
+      throw new FatalError(error.message);
     }
     throw error;
   }
 
-  const userData = buildSnapshotCloudInit(input.agentDownloadUrl);
-  const name = `ghost-builder-${input.buildId.toLowerCase().slice(-12)}-${crypto
-    .randomBytes(2)
-    .toString("hex")}`;
-
-  const { data, error, response } = await hetzner.POST("/servers", {
-    body: {
-      image: BUILDER_BASE_IMAGE,
-      location: BUILDER_LOCATION,
-      name,
-      public_net: { enable_ipv4: true, enable_ipv6: false },
-      server_type: BUILDER_SERVER_TYPE,
-      start_after_create: true,
-      user_data: userData,
-    },
-  });
-  if (!response.ok) {
-    const body = error as
-      | { error?: { code?: string; message?: string } }
-      | undefined;
-    const code = body?.error?.code ?? String(response.status);
-    const message = body?.error?.message ?? response.statusText;
-    const apiError = new HetznerApiError(response.status, code, message);
-    if (apiError.isClientError) {
-      throw new FatalError(apiError.message);
-    }
-    throw apiError;
-  }
-  if (!data?.server) {
-    throw new Error("Hetzner server creation returned no server");
-  }
-
-  const hetznerBuilderId = data.server.id;
   await prisma.snapshotBuild.update({
-    data: { hetznerBuilderId: String(hetznerBuilderId), status: "creating_vm" },
+    data: { providerBuilderId: created.id, status: "creating_vm" },
     where: { id: input.buildId },
   });
 
-  return { hetznerBuilderId };
+  return { providerBuilderId: created.id };
 };
 
 export const stepGetBuilderStatus = async (input: {
-  userId: string;
-  hetznerBuilderId: number;
+  providerBuilderId: string;
 }): Promise<{ status: string }> => {
   "use step";
-  const { client } = await getUserHetznerContext(input.userId);
-  const { data, error, response } = await client.GET("/servers/{id}", {
-    params: { path: { id: input.hetznerBuilderId } },
-  });
-  if (response.status === 404) {
-    return { status: "unknown" };
-  }
-  if (!response.ok) {
-    throwIfHetznerError(error, response);
-  }
-  return { status: data?.server?.status ?? "unknown" };
+  const server = await getProvider().getServer(input.providerBuilderId);
+  return { status: server?.status ?? "unknown" };
 };
 
 export const stepCreateSnapshot = async (input: {
-  userId: string;
-  hetznerBuilderId: number;
-}): Promise<{ snapshotImageId: number }> => {
+  buildId: string;
+  providerBuilderId: string;
+}): Promise<{ snapshotImageId: string }> => {
   "use step";
-  const { client } = await getUserHetznerContext(input.userId);
-  const { data, error, response } = await client.POST(
-    "/servers/{id}/actions/create_image",
-    {
-      body: { description: SNAPSHOT_DESCRIPTION, type: "snapshot" },
-      params: { path: { id: input.hetznerBuilderId } },
-    }
-  );
-  if (!response.ok) {
-    const body = error as
-      | { error?: { code?: string; message?: string } }
-      | undefined;
-    const code = body?.error?.code ?? String(response.status);
-    const message = body?.error?.message ?? response.statusText;
-    const apiError = new HetznerApiError(response.status, code, message);
-    if (apiError.isClientError) {
-      throw new FatalError(apiError.message);
-    }
-    throw apiError;
+
+  const build = await prisma.snapshotBuild.findUnique({
+    select: { snapshotId: true },
+    where: { id: input.buildId },
+  });
+  if (!build) {
+    throw new FatalError(`SnapshotBuild ${input.buildId} not found`);
   }
-  const imageId = data?.image?.id;
-  if (typeof imageId !== "number") {
-    throw new TypeError("Hetzner create_image returned no image id");
+  if (build.snapshotId) {
+    return { snapshotImageId: build.snapshotId };
   }
+
+  const provider = getProvider();
+  let imageId: string;
+  try {
+    imageId = await provider.createSnapshot(input.providerBuilderId, {
+      description: SNAPSHOT_DESCRIPTION,
+    });
+  } catch (error) {
+    if (error instanceof ProviderApiError && error.isClientError) {
+      throw new FatalError(error.message);
+    }
+    throw error;
+  }
+
+  // Persist immediately so a failure later in the workflow can find and
+  // delete the image instead of leaking a per-GB-billed snapshot.
+  await prisma.snapshotBuild.update({
+    data: { snapshotId: imageId },
+    where: { id: input.buildId },
+  });
+
   return { snapshotImageId: imageId };
 };
 
 export const stepGetImageStatus = async (input: {
-  userId: string;
-  imageId: number;
+  imageId: string;
 }): Promise<{ status: string }> => {
   "use step";
-  const { client } = await getUserHetznerContext(input.userId);
-  const { data, error, response } = await client.GET("/images/{id}", {
-    params: { path: { id: input.imageId } },
-  });
-  if (response.status === 404) {
-    return { status: "unknown" };
-  }
-  if (!response.ok) {
-    throwIfHetznerError(error, response);
-  }
-  return { status: data?.image?.status ?? "unknown" };
+  const image = await getProvider().getImage(input.imageId);
+  return { status: image?.status ?? "unknown" };
 };
 
 export const stepSaveImageId = async (input: {
   buildId: string;
-  userId: string;
-  snapshotImageId: number;
+  snapshotImageId: string;
 }): Promise<{ previousSnapshotId: string | null }> => {
   "use step";
-  const newId = String(input.snapshotImageId);
+  const newId = input.snapshotImageId;
   const environment = SNAPSHOT_ENVIRONMENT;
   const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.userSnapshot.findUnique({
-      select: { hetznerImageId: true },
-      where: { userId_environment: { environment, userId: input.userId } },
+    const existing = await tx.snapshot.findUnique({
+      select: { providerImageId: true },
+      where: { environment },
     });
-    const previousSnapshotId = existing?.hetznerImageId ?? null;
-    await tx.userSnapshot.upsert({
+    const previousSnapshotId = existing?.providerImageId ?? null;
+    await tx.snapshot.upsert({
       create: {
         environment,
-        hetznerImageId: newId,
         id: input.buildId,
-        userId: input.userId,
+        providerImageId: newId,
       },
-      update: { hetznerImageId: newId },
-      where: { userId_environment: { environment, userId: input.userId } },
+      update: { providerImageId: newId },
+      where: { environment },
     });
     await tx.snapshotBuild.update({
       data: {
@@ -257,27 +226,20 @@ export const stepSaveImageId = async (input: {
 };
 
 export const stepDeleteBuilder = async (input: {
-  userId: string;
-  hetznerBuilderId: number;
+  providerBuilderId: string;
 }): Promise<{ deleted: boolean }> => {
   "use step";
-  let client: Awaited<ReturnType<typeof getUserHetznerContext>>["client"];
+  // Non-fatal: this runs after the snapshot is saved, so a cleanup failure
+  // must not flip a "ready" build to "failed". A leftover builder VM is
+  // visible in the provider console and cheap to remove manually.
   try {
-    ({ client } = await getUserHetznerContext(input.userId));
+    return await getProvider().deleteServer(input.providerBuilderId);
   } catch {
     return { deleted: false };
   }
-  const { error, response } = await client.DELETE("/servers/{id}", {
-    params: { path: { id: input.hetznerBuilderId } },
-  });
-  if (!response.ok && response.status !== 404) {
-    throwIfHetznerError(error, response);
-  }
-  return { deleted: true };
 };
 
 export const stepDeletePreviousSnapshot = async (input: {
-  userId: string;
   previousSnapshotId: string | null;
   newSnapshotId: string;
 }): Promise<{ deleted: boolean }> => {
@@ -288,22 +250,13 @@ export const stepDeletePreviousSnapshot = async (input: {
   ) {
     return { deleted: false };
   }
-  const previousId = Number(input.previousSnapshotId);
-  if (!Number.isFinite(previousId)) {
-    return { deleted: false };
-  }
-  let client: Awaited<ReturnType<typeof getUserHetznerContext>>["client"];
+  // Non-fatal: a stranded snapshot is recoverable manually and shouldn't roll
+  // back the freshly-saved ID.
   try {
-    ({ client } = await getUserHetznerContext(input.userId));
+    return await getProvider().deleteImage(input.previousSnapshotId);
   } catch {
     return { deleted: false };
   }
-  const { response } = await client.DELETE("/images/{id}", {
-    params: { path: { id: previousId } },
-  });
-  // Non-fatal: a stranded snapshot is recoverable manually and shouldn't roll
-  // back the user's freshly-saved ID.
-  return { deleted: response.ok || response.status === 404 };
 };
 
 export const stepDeleteAgentBlob = async (input: {
@@ -336,12 +289,19 @@ export const stepMarkFailed = async (input: {
 export const stepReadBuildState = async (input: {
   buildId: string;
 }): Promise<{
-  hetznerBuilderId: number | null;
+  providerBuilderId: string | null;
   agentBlobUrl: string | null;
+  snapshotId: string | null;
+  status: SnapshotBuildStatus;
 } | null> => {
   "use step";
   const build = await prisma.snapshotBuild.findUnique({
-    select: { agentBlobUrl: true, hetznerBuilderId: true },
+    select: {
+      agentBlobUrl: true,
+      providerBuilderId: true,
+      snapshotId: true,
+      status: true,
+    },
     where: { id: input.buildId },
   });
   if (!build) {
@@ -349,8 +309,21 @@ export const stepReadBuildState = async (input: {
   }
   return {
     agentBlobUrl: build.agentBlobUrl,
-    hetznerBuilderId: build.hetznerBuilderId
-      ? Number(build.hetznerBuilderId)
-      : null,
+    providerBuilderId: build.providerBuilderId,
+    snapshotId: build.snapshotId,
+    status: build.status,
   };
+};
+
+export const stepDeleteOrphanImage = async (input: {
+  imageId: string;
+}): Promise<{ deleted: boolean }> => {
+  "use step";
+  // Best-effort: this only runs on the failure path, where the original
+  // error is what should surface, not a cleanup hiccup.
+  try {
+    return await getProvider().deleteImage(input.imageId);
+  } catch {
+    return { deleted: false };
+  }
 };

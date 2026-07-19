@@ -6,6 +6,7 @@ import {
   stepCreateSnapshot,
   stepDeleteAgentBlob,
   stepDeleteBuilder,
+  stepDeleteOrphanImage,
   stepDeletePreviousSnapshot,
   stepGetBuilderStatus,
   stepGetImageStatus,
@@ -23,91 +24,84 @@ const BUILD_POLL_SECONDS = 15;
 const MAX_SNAPSHOT_WAIT_SECONDS = 15 * 60;
 const SNAPSHOT_POLL_SECONDS = 10;
 
-export const buildSnapshot = async (input: {
+const waitForBuilderOff = async (input: {
   buildId: string;
-  userId: string;
-}) => {
+  providerBuilderId: string;
+}): Promise<void> => {
+  const { buildId, providerBuilderId } = input;
+  const buildDeadline = Date.now() + MAX_BUILD_WAIT_SECONDS * 1000;
+  let observedRunning = false;
+  while (Date.now() < buildDeadline) {
+    const { status } = await stepGetBuilderStatus({ providerBuilderId });
+    if (status === "off") {
+      return;
+    }
+    if (status === "unknown") {
+      throw new FatalError("Builder VM disappeared mid-build");
+    }
+    if (status === "running" && !observedRunning) {
+      observedRunning = true;
+      await stepUpdateBuildStatus({ buildId, status: "installing" });
+    }
+    await sleep(`${BUILD_POLL_SECONDS}s`);
+  }
+  throw new Error("Builder VM never reached 'off' status (build timed out)");
+};
+
+const waitForImageAvailable = async (input: {
+  snapshotImageId: string;
+}): Promise<void> => {
+  const { snapshotImageId } = input;
+  const snapshotDeadline = Date.now() + MAX_SNAPSHOT_WAIT_SECONDS * 1000;
+  while (Date.now() < snapshotDeadline) {
+    const { status } = await stepGetImageStatus({ imageId: snapshotImageId });
+    if (status === "available") {
+      return;
+    }
+    if (status === "unavailable" || status === "unknown") {
+      throw new Error(`Snapshot image entered status '${status}'`);
+    }
+    await sleep(`${SNAPSHOT_POLL_SECONDS}s`);
+  }
+  throw new Error("Snapshot never became available (timed out)");
+};
+
+export const buildSnapshot = async (input: { buildId: string }) => {
   "use workflow";
 
-  const { buildId, userId } = input;
+  const { buildId } = input;
 
   try {
     const { agentBlobUrl, agentDownloadUrl } = await stepCompileAgent({
       buildId,
     });
 
-    const { hetznerBuilderId } = await stepCreateBuilderVm({
+    const { providerBuilderId } = await stepCreateBuilderVm({
       agentDownloadUrl,
       buildId,
-      userId,
     });
 
-    const buildDeadline = Date.now() + MAX_BUILD_WAIT_SECONDS * 1000;
-    let observedRunning = false;
-    let buildFinished = false;
-    while (Date.now() < buildDeadline) {
-      const { status } = await stepGetBuilderStatus({
-        hetznerBuilderId,
-        userId,
-      });
-      if (status === "off") {
-        buildFinished = true;
-        break;
-      }
-      if (status === "unknown") {
-        throw new FatalError("Builder VM disappeared mid-build");
-      }
-      if (status === "running" && !observedRunning) {
-        observedRunning = true;
-        await stepUpdateBuildStatus({ buildId, status: "installing" });
-      }
-      await sleep(`${BUILD_POLL_SECONDS}s`);
-    }
-    if (!buildFinished) {
-      throw new Error(
-        "Builder VM never reached 'off' status (build timed out)"
-      );
-    }
+    await waitForBuilderOff({ buildId, providerBuilderId });
 
     await stepUpdateBuildStatus({ buildId, status: "snapshotting" });
 
     const { snapshotImageId } = await stepCreateSnapshot({
-      hetznerBuilderId,
-      userId,
+      buildId,
+      providerBuilderId,
     });
 
-    const snapshotDeadline = Date.now() + MAX_SNAPSHOT_WAIT_SECONDS * 1000;
-    let snapshotReady = false;
-    while (Date.now() < snapshotDeadline) {
-      const { status } = await stepGetImageStatus({
-        imageId: snapshotImageId,
-        userId,
-      });
-      if (status === "available") {
-        snapshotReady = true;
-        break;
-      }
-      if (status === "unavailable" || status === "unknown") {
-        throw new Error(`Snapshot image entered status '${status}'`);
-      }
-      await sleep(`${SNAPSHOT_POLL_SECONDS}s`);
-    }
-    if (!snapshotReady) {
-      throw new Error("Snapshot never became available (timed out)");
-    }
+    await waitForImageAvailable({ snapshotImageId });
 
     const { previousSnapshotId } = await stepSaveImageId({
       buildId,
       snapshotImageId,
-      userId,
     });
 
-    await stepDeleteBuilder({ hetznerBuilderId, userId });
+    await stepDeleteBuilder({ providerBuilderId });
 
     await stepDeletePreviousSnapshot({
-      newSnapshotId: String(snapshotImageId),
+      newSnapshotId: snapshotImageId,
       previousSnapshotId,
-      userId,
     });
 
     await stepDeleteAgentBlob({ agentBlobUrl });
@@ -116,13 +110,19 @@ export const buildSnapshot = async (input: {
     const state = await stepReadBuildState({ buildId });
 
     // Leave the builder VM up on failure so the user can SSH in / use the
-    // Hetzner web console to read cloud-init logs. Surface the VM id in the
-    // error reason so they know what to delete once they're done debugging.
-    const reason = state?.hetznerBuilderId
-      ? `${baseReason} (builder VM left for inspection — delete with \`hcloud server delete ${state.hetznerBuilderId}\`)`
+    // provider's web console to read cloud-init logs. Surface the VM id in
+    // the error reason so they know what to delete once they're done.
+    const reason = state?.providerBuilderId
+      ? `${baseReason} (builder VM left for inspection — id: ${state.providerBuilderId})`
       : baseReason;
 
     await stepMarkFailed({ buildId, reason });
+
+    // A snapshot image created by this build that never reached "ready" is
+    // referenced nowhere — delete it so it doesn't bill forever.
+    if (state?.snapshotId && state.status !== "ready") {
+      await stepDeleteOrphanImage({ imageId: state.snapshotId });
+    }
 
     if (state?.agentBlobUrl) {
       await stepDeleteAgentBlob({ agentBlobUrl: state.agentBlobUrl });

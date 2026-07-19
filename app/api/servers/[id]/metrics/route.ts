@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { MissingHetznerCredentialsError } from "@/lib/hetzner";
-import { getUserHetznerContext } from "@/lib/hetzner/credentials";
+import { getProvider } from "@/lib/providers";
+import { ProviderApiError } from "@/lib/providers/errors";
 import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -18,17 +18,17 @@ export const GET = async (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) => {
-  const user = await requireUser();
+  await requireUser();
   const { id } = await context.params;
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
 
   if (!server) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (!server.hetznerServerId) {
+  if (!server.providerServerId) {
     return NextResponse.json(
       { error: "Server is not provisioned yet" },
       { status: 409 }
@@ -45,34 +45,22 @@ export const GET = async (
     return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
 
-  let client: Awaited<ReturnType<typeof getUserHetznerContext>>["client"];
+  const provider = getProvider();
+
   try {
-    ({ client } = await getUserHetznerContext(user.id));
+    const result = await provider.getMetrics(server.providerServerId, {
+      end: parsed.data.end,
+      kind: parsed.data.type,
+      start: parsed.data.start,
+    });
+    return NextResponse.json({ metrics: result.metrics });
   } catch (error) {
-    if (error instanceof MissingHetznerCredentialsError) {
+    if (error instanceof ProviderApiError) {
       return NextResponse.json(
-        { error: "Configure your Hetzner credentials in account settings." },
-        { status: 412 }
+        { error: error.message },
+        { status: error.status }
       );
     }
     throw error;
   }
-
-  const { data, error, response } = await client.GET("/servers/{id}/metrics", {
-    params: {
-      path: { id: Number(server.hetznerServerId) },
-      query: {
-        end: parsed.data.end,
-        start: parsed.data.start,
-        type: [parsed.data.type],
-      },
-    },
-  });
-  if (!response.ok) {
-    const errorBody = error as { error?: { message?: string } } | undefined;
-    const message = errorBody?.error?.message ?? response.statusText;
-    return NextResponse.json({ error: message }, { status: response.status });
-  }
-
-  return NextResponse.json({ metrics: data?.metrics ?? null });
 };

@@ -144,7 +144,10 @@ export const executeCommand = async (
         break;
       }
       default: {
-        break;
+        // Protocol types the agent doesn't implement (e.g. UPLOAD_BACKUP)
+        // must not be acked as succeeded — the operator would get a false
+        // "backup taken" / "logs fetched".
+        throw new Error(`unsupported command type: ${command.type}`);
       }
     }
 
