@@ -4,7 +4,7 @@ import {
   stepDeleteHibernationSnapshot,
   stepDeleteProviderServer,
   stepMarkDeleted,
-  stepReadPhase,
+  stepReadAgentPhase,
   stepSendDeleteCommand,
 } from "./steps";
 
@@ -19,10 +19,14 @@ export const teardownServer = async (input: { serverId: string }) => {
   const { hadAgent } = await stepSendDeleteCommand(serverId);
 
   if (hadAgent) {
+    // The agent emits a "deleting" activity event once it has drained
+    // (compose removed, events flushed) and is about to shut the host down.
+    // Server.phase never takes a drain-related value here, so polling it
+    // would always burn the full window.
     const deadline = Date.now() + MAX_DRAIN_SECONDS * 1000;
     while (Date.now() < deadline) {
-      const phase = await stepReadPhase(serverId);
-      if (phase === "deleted" || phase === "errored") {
+      const agentPhase = await stepReadAgentPhase(serverId);
+      if (agentPhase === "deleting") {
         break;
       }
       await sleep(`${DRAIN_POLL_SECONDS}s`);

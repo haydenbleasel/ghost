@@ -18,7 +18,7 @@
     "workflow:ui": "workflow inspect runs --web",
     "check": "ultracite check",
     "fix": "ultracite fix",
-    "types": "tsgo --noEmit",
+    "types": "tsgo --noEmit && tsgo -p agent --noEmit",
     "test": "bun test --pass-with-no-tests",
     "test:coverage": "bun test --coverage --pass-with-no-tests",
     "changeset": "changeset",

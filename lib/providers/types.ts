@@ -99,9 +99,12 @@ export interface Provider {
 
   createServer: (input: CreateServerInput) => Promise<ProviderServer>;
   getServer: (id: ServerResourceId) => Promise<ProviderServer | null>;
+  /** Exact-name lookup, used to adopt a VM whose create response was lost. */
+  getServerByName: (name: string) => Promise<ProviderServer | null>;
   deleteServer: (id: ServerResourceId) => Promise<{ deleted: boolean }>;
   shutdownServer: (id: ServerResourceId) => Promise<void>;
   poweroffServer: (id: ServerResourceId) => Promise<void>;
+  poweronServer: (id: ServerResourceId) => Promise<void>;
   rescaleServer: (id: ServerResourceId, serverType: string) => Promise<void>;
   getMetrics: (
     id: ServerResourceId,

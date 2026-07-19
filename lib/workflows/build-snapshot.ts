@@ -36,7 +36,7 @@ const waitForBuilderOff = async (input: {
     if (status === "off") {
       return;
     }
-    if (status === "unknown") {
+    if (status === "missing") {
       throw new FatalError("Builder VM disappeared mid-build");
     }
     if (status === "running" && !observedRunning) {

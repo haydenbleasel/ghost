@@ -61,6 +61,14 @@ export const enqueueCommand = async (input: {
   } as Command;
 };
 
+// How long a "delivered" command may sit un-acked before it is re-served.
+// Delivery is not receipt: if the long-poll response carrying a command is
+// lost, the row would otherwise be stuck "delivered" forever with no
+// redelivery path. The agent dedupes re-executions by command id, and it
+// executes serially (it doesn't poll while a command runs), so a stale
+// delivery genuinely means the agent never got it or its ack was lost.
+const REDELIVER_AFTER_MS = 60_000;
+
 export const claimPendingCommands = async (
   serverId: string,
   max = 5
@@ -68,7 +76,16 @@ export const claimPendingCommands = async (
   const pending = await prisma.command.findMany({
     orderBy: { issuedAt: "asc" },
     take: max,
-    where: { serverId, status: "pending" },
+    where: {
+      OR: [
+        { status: "pending" },
+        {
+          deliveredAt: { lt: new Date(Date.now() - REDELIVER_AFTER_MS) },
+          status: "delivered",
+        },
+      ],
+      serverId,
+    },
   });
 
   if (pending.length === 0) {
@@ -77,12 +94,20 @@ export const claimPendingCommands = async (
 
   // Claim each row conditionally so two overlapping polls (e.g. an agent
   // retry racing a still-running long-poll) can never both deliver the same
-  // command: only the caller whose update flips the status wins the row.
+  // command: only the caller whose update flips the row wins it. For
+  // redeliveries the guard is the previous deliveredAt timestamp.
   const claimed: typeof pending = [];
   for (const command of pending) {
     const { count } = await prisma.command.updateMany({
       data: { deliveredAt: new Date(), status: "delivered" },
-      where: { id: command.id, status: "pending" },
+      where:
+        command.status === "pending"
+          ? { id: command.id, status: "pending" }
+          : {
+              deliveredAt: command.deliveredAt,
+              id: command.id,
+              status: "delivered",
+            },
     });
     if (count === 1) {
       claimed.push(command);

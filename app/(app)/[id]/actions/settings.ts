@@ -5,8 +5,8 @@ import { z } from "zod";
 
 import { getGame, resolveSettings, validateSettings } from "@/games";
 import { enqueueCommand } from "@/lib/agent/commands";
+import { buildServerCompose } from "@/lib/agent/compose";
 import { prisma } from "@/lib/db";
-import { getProvider } from "@/lib/providers";
 import { requireUser } from "@/lib/session";
 
 const inputSchema = z.object({
@@ -42,7 +42,11 @@ export const updateServerSettings = async (
     return { error: "Unknown game", ok: false };
   }
 
-  const validation = validateSettings(game.settings, parsed.data.values);
+  const validation = validateSettings(
+    game.settings,
+    parsed.data.values,
+    server.settings
+  );
   if (!validation.ok) {
     return { error: validation.error, ok: false };
   }
@@ -61,31 +65,14 @@ export const updateServerSettings = async (
     where: { serverId: parsed.data.serverId },
   });
   if (agent && server.observedState === "running") {
-    let memoryGb: number | null = null;
-    if (server.providerServerId) {
-      try {
-        const providerServer = await getProvider().getServer(
-          server.providerServerId
-        );
-        memoryGb = providerServer?.memoryGb ?? null;
-      } catch {
-        // Non-fatal: games fall back to a conservative default sizing.
-      }
+    const compose = await buildServerCompose(updated);
+    if (compose) {
+      await enqueueCommand({
+        payload: { compose },
+        serverId: parsed.data.serverId,
+        type: "UPDATE_CONFIG",
+      });
     }
-    const compose = game.buildCompose(
-      {
-        joinPassword: server.joinPassword,
-        memoryGb,
-        name: server.name,
-        rconPassword: server.rconPassword,
-      },
-      merged
-    );
-    await enqueueCommand({
-      payload: { compose },
-      serverId: parsed.data.serverId,
-      type: "UPDATE_CONFIG",
-    });
   }
 
   revalidatePath("/", "layout");

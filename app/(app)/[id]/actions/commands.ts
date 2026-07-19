@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { enqueueCommand } from "@/lib/agent/commands";
+import { buildServerCompose } from "@/lib/agent/compose";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
@@ -49,16 +50,30 @@ export const runServerCommand = async (
     where: { id: parsed.data.serverId },
   });
 
-  const payload =
-    parsed.data.type === "RESTART"
-      ? { clientIntentId: crypto.randomUUID() }
-      : {};
+  if (parsed.data.type === "START") {
+    // Settings edited while the server was stopped only exist in the
+    // database — the compose file on the VM is stale. UPDATE_CONFIG writes
+    // the freshly built compose before bringing the container up, so a
+    // start always applies the latest settings. Fall back to a bare START
+    // if the compose can't be built (unknown game).
+    const compose = await buildServerCompose(server);
+    await enqueueCommand({
+      payload: compose ? { compose } : {},
+      serverId: parsed.data.serverId,
+      type: compose ? "UPDATE_CONFIG" : "START",
+    });
+  } else {
+    const payload =
+      parsed.data.type === "RESTART"
+        ? { clientIntentId: crypto.randomUUID() }
+        : {};
 
-  await enqueueCommand({
-    payload,
-    serverId: parsed.data.serverId,
-    type: parsed.data.type,
-  });
+    await enqueueCommand({
+      payload,
+      serverId: parsed.data.serverId,
+      type: parsed.data.type,
+    });
+  }
 
   revalidatePath("/", "layout");
 

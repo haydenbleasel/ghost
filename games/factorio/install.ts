@@ -1,4 +1,5 @@
 import type { ComposeConfig } from "../compose";
+import { escapeComposeInterpolation } from "../compose";
 import type { FactorioSettings } from "./settings";
 
 export const dockerImage = "factoriotools/factorio:stable";
@@ -50,14 +51,13 @@ export const buildFactorioCompose = (
       public: settings.visibility === "public" && canListPublicly,
     },
   };
+  // YAML literal blocks (`content: |`) preserve text verbatim so no quote
+  // escaping is needed, but compose still interpolates `$` inside them.
   const serverSettingsBody = indentBlock(
-    JSON.stringify(serverSettings, null, 2),
+    escapeComposeInterpolation(JSON.stringify(serverSettings, null, 2)),
     6
   );
-  // YAML literal block (`content: |`) preserves text verbatim — no escaping
-  // needed (and applying compose-value quote escaping would mangle the
-  // password).
-  const rconBody = `      ${config.rconPassword}`;
+  const rconBody = `      ${escapeComposeInterpolation(config.rconPassword)}`;
   return `services:
   factorio:
     image: ${dockerImage}

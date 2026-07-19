@@ -18,16 +18,12 @@ export const minecraft = {
   name: "Minecraft",
   ports: [
     // This is the default port for Minecraft Java Edition, used for game traffic.
+    // No Bedrock/Geyser port: the compose runs a plain Java server, so
+    // advertising 19132/udp would surface a port nothing listens on.
     {
       from: 25_565,
       protocol: "tcp",
       to: 25_565,
-    },
-    // For Bedrock clients via a proxy like Geyser.
-    {
-      from: 19_132,
-      protocol: "udp",
-      to: 19_133,
     },
   ],
   requirements: {

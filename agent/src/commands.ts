@@ -56,17 +56,24 @@ export const executeCommand = async (
   command: Command,
   buffer: EventBuffer
 ): Promise<void> => {
-  if (state.lastExecutedCommandId === command.id) {
+  if (
+    state.lastExecutedCommandId === command.id ||
+    state.executedCommandIds?.includes(command.id)
+  ) {
     console.log(
       `[cmd] ${command.type} ${command.id} already executed; ack-only`
     );
-    await ackCommand(state, command.id, "succeeded", 0);
+    await ackCommand(state, command.id, "succeeded", 0).catch((error) => {
+      console.warn(`ack for ${command.id} failed`, error);
+    });
     return;
   }
 
   console.log(`[cmd] ${command.type} ${command.id} starting`);
   const started = Date.now();
+  const startedIso = new Date(started).toISOString();
   let result: Record<string, unknown> | undefined;
+  let failure: string | null = null;
   try {
     switch (command.type) {
       case "UPDATE_CONFIG": {
@@ -80,7 +87,7 @@ export const executeCommand = async (
           message: "Container started",
           phase: "starting",
         });
-        startLogTail(GAME_CONTAINER, buffer);
+        startLogTail(GAME_CONTAINER, buffer, startedIso);
         buffer.enqueueActivity({
           message: "Game is healthy",
           phase: "healthy",
@@ -89,7 +96,7 @@ export const executeCommand = async (
       }
       case "START": {
         await composeUp();
-        startLogTail(GAME_CONTAINER, buffer);
+        startLogTail(GAME_CONTAINER, buffer, startedIso);
         buffer.enqueueActivity({ message: "Starting game", phase: "starting" });
         buffer.enqueueActivity({
           message: "Game is healthy",
@@ -105,7 +112,7 @@ export const executeCommand = async (
       }
       case "RESTART": {
         await composeRestart();
-        startLogTail(GAME_CONTAINER, buffer);
+        startLogTail(GAME_CONTAINER, buffer, startedIso);
         buffer.enqueueActivity({
           message: "Game restarting",
           phase: "starting",
@@ -152,30 +159,44 @@ export const executeCommand = async (
     }
 
     state.lastExecutedCommandId = command.id;
+    state.executedCommandIds = [
+      ...(state.executedCommandIds ?? []),
+      command.id,
+    ].slice(-50);
     await saveState(state);
-    const durationMs = Date.now() - started;
+  } catch (error) {
+    failure = error instanceof Error ? error.message : "unknown";
+  }
+
+  const durationMs = Date.now() - started;
+  if (failure === null) {
     console.log(
       `[cmd] ${command.type} ${command.id} succeeded in ${durationMs}ms`
     );
+  } else {
+    console.error(
+      `[cmd] ${command.type} ${command.id} failed after ${durationMs}ms: ${failure}`
+    );
+    buffer.enqueueActivity({
+      message: `Command ${command.type} failed: ${failure}`,
+      phase: "errored",
+    });
+  }
+
+  // The ack is best-effort and must not share the execution try/catch: a
+  // transient ack failure would otherwise report a succeeded command as
+  // failed and abandon the rest of the envelope in pollCommands.
+  try {
     await ackCommand(
       state,
       command.id,
-      "succeeded",
+      failure === null ? "succeeded" : "failed",
       durationMs,
-      undefined,
+      failure ?? undefined,
       result
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "unknown";
-    const durationMs = Date.now() - started;
-    console.error(
-      `[cmd] ${command.type} ${command.id} failed after ${durationMs}ms: ${message}`
-    );
-    buffer.enqueueActivity({
-      message: `Command ${command.type} failed: ${message}`,
-      phase: "errored",
-    });
-    await ackCommand(state, command.id, "failed", durationMs, message);
+    console.warn(`ack for ${command.id} failed`, error);
   }
 };
 

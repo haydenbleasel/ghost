@@ -45,13 +45,15 @@ const realpathDeepestAncestor = async (target: string): Promise<string> => {
       }
     }
     if (real !== null) {
-      return tail ? join(real, tail) : real;
+      return tail ? nodePath.join(real, tail) : real;
     }
-    const parent = dirname(existing);
+    const parent = nodePath.dirname(existing);
     if (parent === existing) {
       throw new Error("unable to resolve path");
     }
-    tail = tail ? join(basename(existing), tail) : basename(existing);
+    tail = tail
+      ? nodePath.join(nodePath.basename(existing), tail)
+      : nodePath.basename(existing);
     existing = parent;
   }
 };
@@ -64,8 +66,8 @@ const assertWithinRoot = (path: string, root: string): void => {
 
 const resolveInRoot = async (relative: string): Promise<string> => {
   const root = await realDataRoot();
-  const cleaned = normalize(`/${relative}`).replace(/^\/+/u, "");
-  const resolved = resolve(root, cleaned);
+  const cleaned = nodePath.normalize(`/${relative}`).replace(/^\/+/u, "");
+  const resolved = nodePath.resolve(root, cleaned);
   assertWithinRoot(resolved, root);
   // The untrusted game container can plant symlinks inside the bind-mounted
   // data root; resolve them and re-check so writes/deletes can't be
@@ -84,7 +86,7 @@ export const listFiles = async (
   const entries: FileEntry[] = [];
   for (const dirent of dirents) {
     try {
-      const info = await stat(join(abs, dirent.name));
+      const info = await stat(nodePath.join(abs, dirent.name));
       entries.push({
         mtime: info.mtime.toISOString(),
         name: dirent.name,
@@ -101,7 +103,9 @@ export const listFiles = async (
     }
     return a.name.localeCompare(b.name);
   });
-  const normalized = normalize(`/${relativePath}`).replace(/^\/+/u, "");
+  const normalized = nodePath
+    .normalize(`/${relativePath}`)
+    .replace(/^\/+/u, "");
   return { entries, path: normalized };
 };
 
@@ -123,7 +127,7 @@ export const installFromUrl = async (input: {
   if (abs === (await realDataRoot())) {
     throw new Error("destPath must be a file");
   }
-  await mkdir(dirname(abs), { recursive: true });
+  await mkdir(nodePath.dirname(abs), { recursive: true });
 
   const res = await fetch(input.url);
   if (!res.ok || !res.body) {
@@ -160,7 +164,14 @@ export const installFromUrl = async (input: {
     throw new Error("sha256 mismatch");
   }
 
-  await rm(abs, { force: true });
-  await rename(tempPath, abs);
+  try {
+    // `force` doesn't cover directories: replacing an existing dir throws
+    // here, and the temp download must not be left behind when it does.
+    await rm(abs, { force: true });
+    await rename(tempPath, abs);
+  } catch (error) {
+    await unlink(tempPath).catch(ignore);
+    throw error;
+  }
   return { bytesWritten, sha256: digest };
 };

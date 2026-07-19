@@ -19,6 +19,14 @@ interface FakeCommandRow {
 const store = new Map<string, FakeCommandRow>();
 let creatThrowConflict = false;
 
+const matchesClause = (
+  r: FakeCommandRow,
+  clause: { status?: string; deliveredAt?: { lt: Date } }
+) =>
+  (clause.status === undefined || r.status === clause.status) &&
+  (clause.deliveredAt === undefined ||
+    (r.deliveredAt instanceof Date && r.deliveredAt < clause.deliveredAt.lt));
+
 const prismaStub = {
   command: {
     create: ({ data }: { data: FakeCommandRow }) => {
@@ -37,16 +45,26 @@ const prismaStub = {
       where,
       take,
     }: {
-      where: { serverId: string; status: string };
+      where: {
+        serverId: string;
+        status?: string;
+        OR?: { status?: string; deliveredAt?: { lt: Date } }[];
+      };
       take: number;
       orderBy: unknown;
     }) => {
       const rows = [...store.values()]
-        .filter(
-          (r) => r.serverId === where.serverId && r.status === where.status
+        .filter((r) => r.serverId === where.serverId)
+        .filter((r) =>
+          where.OR
+            ? where.OR.some((clause) => matchesClause(r, clause))
+            : matchesClause(r, where)
         )
         .toSorted((a, b) => a.issuedAt.getTime() - b.issuedAt.getTime())
-        .slice(0, take);
+        .slice(0, take)
+        // Snapshots, as Prisma returns: a concurrent update must not mutate
+        // a previously fetched row out from under the caller.
+        .map((r) => ({ ...r }));
       return Promise.resolve(rows);
     },
     findUnique: ({ where }: { where: { id: string } }) =>
@@ -76,14 +94,26 @@ const prismaStub = {
       where,
       data,
     }: {
-      where: { id: string | { in: string[] }; status?: string };
+      where: {
+        id: string | { in: string[] };
+        status?: string;
+        deliveredAt?: Date | null;
+      };
       data: Partial<FakeCommandRow>;
     }) => {
       const ids = typeof where.id === "string" ? [where.id] : where.id.in;
       let count = 0;
       for (const id of ids) {
         const row = store.get(id);
-        if (row && (!where.status || row.status === where.status)) {
+        const deliveredAtMatches =
+          !("deliveredAt" in where) ||
+          (row?.deliveredAt?.getTime() ?? null) ===
+            (where.deliveredAt?.getTime() ?? null);
+        if (
+          row &&
+          (!where.status || row.status === where.status) &&
+          deliveredAtMatches
+        ) {
           Object.assign(row, data);
           count += 1;
         }
@@ -223,6 +253,43 @@ describe("claimPendingCommands", () => {
       claimPendingCommands("srv_1"),
     ]);
     expect(a.length + b.length).toBe(1);
+  });
+
+  test("does not re-serve fresh deliveries", async () => {
+    const { enqueueCommand, claimPendingCommands } = await importCommands();
+    await enqueueCommand({
+      payload: {},
+      serverId: "srv_1",
+      type: "START",
+    });
+    const first = await claimPendingCommands("srv_1");
+    expect(first).toHaveLength(1);
+    expect(await claimPendingCommands("srv_1")).toEqual([]);
+  });
+
+  test("re-serves delivered commands whose ack never arrived", async () => {
+    const { enqueueCommand, claimPendingCommands } = await importCommands();
+    const cmd = await enqueueCommand({
+      payload: {},
+      serverId: "srv_1",
+      type: "START",
+    });
+    const first = await claimPendingCommands("srv_1");
+    expect(first).toHaveLength(1);
+
+    // Age the delivery past the redelivery window, as if the long-poll
+    // response (or the ack) was lost.
+    const row = store.get(cmd.id);
+    expect(row).toBeDefined();
+    if (row) {
+      row.deliveredAt = new Date(Date.now() - 120_000);
+    }
+
+    const redelivered = await claimPendingCommands("srv_1");
+    expect(redelivered).toHaveLength(1);
+    expect(redelivered[0].id).toBe(cmd.id);
+    // The re-claim refreshed deliveredAt, so it is not served a third time.
+    expect(await claimPendingCommands("srv_1")).toEqual([]);
   });
 
   test("respects max parameter", async () => {

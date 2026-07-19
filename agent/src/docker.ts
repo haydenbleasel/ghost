@@ -125,12 +125,17 @@ export const stopLogTail = (): void => {
 
 export const startLogTail = (
   containerName: string,
-  buffer: EventBuffer
+  buffer: EventBuffer,
+  since: string
 ): void => {
   stopLogTail();
 
+  // Tail from an explicit timestamp (the triggering command's start) rather
+  // than `--tail 200`: replaying history on every START/RESTART would
+  // re-emit old lines under fresh agentSeq values, which the server-side
+  // dedupe can't catch.
   tailProc = spawn({
-    cmd: ["docker", "logs", "-f", "--tail", "200", containerName],
+    cmd: ["docker", "logs", "-f", "--since", since, containerName],
     stderr: "pipe",
     stdout: "pipe",
   });

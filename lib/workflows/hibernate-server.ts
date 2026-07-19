@@ -9,7 +9,7 @@ import {
   stepMarkFailed,
   stepPoweroffProviderServer,
   stepReadDesiredState,
-  stepReadPhase,
+  stepReadObservedState,
   stepSendStopCommand,
   stepShutdownProviderServer,
 } from "./steps";
@@ -39,7 +39,7 @@ const waitForPowerOff = async (
     if (status === "off") {
       return true;
     }
-    if (status === "unknown") {
+    if (status === "missing") {
       throw new FatalError("Provider VM vanished before snapshot");
     }
     await sleep(`${POWER_POLL_SECONDS}s`);
@@ -59,10 +59,14 @@ export const hibernateServer = async (input: { serverId: string }) => {
 
     const { hadAgent } = await stepSendStopCommand(serverId);
     if (hadAgent) {
+      // When the agent finishes the STOP (world saved, container stopped)
+      // it reports a "stopped" event, which lands on Server.observedState.
+      // Server.phase never becomes "stopped", so polling it would always
+      // burn the full window — and risk shutting down mid-save.
       const deadline = Date.now() + MAX_STOP_DRAIN_SECONDS * 1000;
       while (Date.now() < deadline) {
-        const phase = await stepReadPhase(serverId);
-        if (phase === "stopped" || phase === "errored") {
+        const observed = await stepReadObservedState(serverId);
+        if (observed === "stopped" || observed === "failed") {
           break;
         }
         await sleep(`${STOP_DRAIN_POLL_SECONDS}s`);

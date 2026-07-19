@@ -16,6 +16,11 @@ const stateSchema = z.object({
   agentId: z.string().min(1),
   agentSeq: z.number().int().nonnegative(),
   apiBaseUrl: z.string().url(),
+  // Recently executed command ids: the control plane redelivers commands
+  // whose ack was lost, and a single "last id" can't dedupe a redelivery
+  // that arrives after a newer command already ran. Optional for
+  // backwards-compat with state files written before this field existed.
+  executedCommandIds: z.array(z.string()).optional(),
   lastExecutedCommandId: z.string().nullable(),
   privateKey: z.string().min(1),
   publicKey: z.string().min(1),
@@ -58,12 +63,28 @@ export const loadState = async (): Promise<State | null> => {
   return stateSchema.parse(JSON.parse(raw));
 };
 
-export const saveState = async (state: State): Promise<void> => {
-  await mkdir(STATE_DIR, { recursive: true });
-  const tmp = `${STATE_PATH}.tmp`;
-  await writeFile(tmp, JSON.stringify(state, null, 2), { mode: 0o600 });
-  // Atomic swap: a crash mid-save must never leave a truncated state.json,
-  // which would brick the agent on next boot (it refuses to re-enroll while
-  // the file exists).
-  await rename(tmp, STATE_PATH);
+// Saves are serialized and each uses its own temp file: the event-buffer
+// flush and command execution both call saveState concurrently, and two
+// interleaved writers sharing one temp path can rename a partially-written
+// file into place.
+let saveChain: Promise<void> = Promise.resolve();
+
+export const saveState = (state: State): Promise<void> => {
+  // Chain-append must not await here — the caller gets the promise for its
+  // own save while later calls queue behind it.
+  // oxlint-disable-next-line promise/prefer-await-to-then
+  const run = saveChain.then(async () => {
+    await mkdir(STATE_DIR, { recursive: true });
+    const tmp = `${STATE_PATH}.${crypto.randomUUID()}.tmp`;
+    await writeFile(tmp, JSON.stringify(state, null, 2), { mode: 0o600 });
+    // Atomic swap: a crash mid-save must never leave a truncated state.json,
+    // which would brick the agent on next boot (it refuses to re-enroll while
+    // the file exists).
+    await rename(tmp, STATE_PATH);
+  });
+  // oxlint-disable-next-line promise/prefer-await-to-then
+  saveChain = run.catch(() => {
+    // A failed save must not poison the chain for later saves.
+  });
+  return run;
 };

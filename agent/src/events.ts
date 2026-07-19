@@ -27,7 +27,7 @@ export class EventBuffer {
   private activity: PendingActivity[] = [];
   private logs: PendingLog[] = [];
   private timer: ReturnType<typeof setTimeout> | null = null;
-  private flushing = false;
+  private chain: Promise<void> = Promise.resolve();
   private readonly state: State;
 
   constructor(state: State) {
@@ -85,14 +85,23 @@ export class EventBuffer {
     }, FLUSH_INTERVAL_MS);
   }
 
-  async flush(): Promise<void> {
-    if (this.flushing) {
-      return;
-    }
+  // Flushes are serialized through a promise chain: a flush() issued while
+  // another is mid-POST runs after it instead of silently no-oping, so
+  // `await buffer.flush()` (shutdown, DELETE) always covers every event
+  // enqueued before the call.
+  flush(): Promise<void> {
+    // Chain-append must not await here — callers need the promise for the
+    // whole queued run, and awaiting would serialize callers instead.
+    // oxlint-disable-next-line promise/prefer-await-to-then
+    const run = this.chain.then(() => this.doFlush());
+    this.chain = run;
+    return run;
+  }
+
+  private async doFlush(): Promise<void> {
     if (this.activity.length === 0 && this.logs.length === 0) {
       return;
     }
-    this.flushing = true;
 
     const batchId = crypto.randomUUID();
     const activityBatch = this.activity;
@@ -113,16 +122,21 @@ export class EventBuffer {
       if (res.ok) {
         await saveState(this.state);
       } else {
-        this.activity.unshift(...activityBatch);
-        this.logs.unshift(...logBatch);
+        this.requeue(activityBatch, logBatch);
         console.warn(`events flush failed: ${res.status}`);
       }
     } catch (error) {
-      this.activity.unshift(...activityBatch);
-      this.logs.unshift(...logBatch);
+      this.requeue(activityBatch, logBatch);
       console.warn("events flush error", error);
-    } finally {
-      this.flushing = false;
     }
+  }
+
+  private requeue(activityBatch: PendingActivity[], logBatch: PendingLog[]) {
+    this.activity.unshift(...activityBatch);
+    this.logs.unshift(...logBatch);
+    // A quiet agent (e.g. just stopped, log tail gone) enqueues nothing
+    // more, so without an explicit reschedule these events would sit
+    // buffered until process exit.
+    this.scheduleFlush();
   }
 }

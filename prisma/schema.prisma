@@ -52,6 +52,11 @@ model Server {
   serverType         String
   provider           String            @default("hetzner")
   providerServerId   String?           @unique
+  // Name reserved for a provider VM before the create call is issued. A
+  // step retry reuses it, so a lost create response surfaces as a
+  // unique-name conflict (adopt the existing VM) instead of a second
+  // silently billed VM. Cleared once providerServerId is persisted.
+  pendingVmName      String?
   ipv4               String?
   desiredState       DesiredState      @default(running)
   observedState      ObservedState     @default(pending)

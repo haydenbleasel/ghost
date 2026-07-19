@@ -10,7 +10,11 @@ import { prisma } from "@/lib/db";
 import { API_URL, env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { emitActivity } from "@/lib/events/emit";
 import { getProvider, getProviderWithImage } from "@/lib/providers";
-import type { Provider } from "@/lib/providers";
+import type {
+  CreateServerInput,
+  Provider,
+  ProviderServer,
+} from "@/lib/providers";
 import {
   MissingProviderCredentialsError,
   ProviderApiError,
@@ -49,6 +53,49 @@ runcmd:
   - systemctl enable --now ghost-agent.service
 ${ufwRules}
 `;
+};
+
+// Reserve the VM name in the database before calling the provider: a step
+// retry reuses the reserved name, so a create whose response was lost
+// resurfaces as a unique-name conflict (handled by createOrAdoptVm) instead
+// of silently creating a second billed VM that nothing tracks.
+const reserveVmName = async (serverId: string): Promise<string> => {
+  const server = await prisma.server.findUniqueOrThrow({
+    select: { pendingVmName: true },
+    where: { id: serverId },
+  });
+  if (server.pendingVmName) {
+    return server.pendingVmName;
+  }
+  const name = `ghost-${serverId.toLowerCase().slice(-12)}-${crypto
+    .randomBytes(2)
+    .toString("hex")}`;
+  await prisma.server.update({
+    data: { pendingVmName: name },
+    where: { id: serverId },
+  });
+  return name;
+};
+
+const createOrAdoptVm = async (
+  provider: Provider,
+  input: CreateServerInput
+): Promise<ProviderServer> => {
+  try {
+    return await provider.createServer(input);
+  } catch (error) {
+    if (error instanceof ProviderApiError && error.isClientError) {
+      // The reserved name is random per attempt, so a VM already carrying it
+      // can only be our own earlier create whose response was lost — adopt
+      // it. Skip VMs mid-deletion; those can't be revived.
+      const existing = await provider.getServerByName(input.name);
+      if (existing && existing.status !== "deleting") {
+        return existing;
+      }
+      throw new FatalError(error.message);
+    }
+    throw error;
+  }
 };
 
 export const stepCreateProviderServer = async (serverId: string) => {
@@ -112,30 +159,20 @@ export const stepCreateProviderServer = async (serverId: string) => {
         : (env.VERCEL_AUTOMATION_BYPASS_SECRET ?? null),
   });
 
-  const name = `ghost-${serverId.toLowerCase().slice(-12)}-${crypto
-    .randomBytes(2)
-    .toString("hex")}`;
-
-  let created: Awaited<ReturnType<typeof provider.createServer>>;
-  try {
-    created = await provider.createServer({
-      imageId,
-      location: server.location,
-      name,
-      serverType: server.serverType,
-      userData,
-    });
-  } catch (error) {
-    if (error instanceof ProviderApiError && error.isClientError) {
-      throw new FatalError(error.message);
-    }
-    throw error;
-  }
+  const name = await reserveVmName(serverId);
+  const created = await createOrAdoptVm(provider, {
+    imageId,
+    location: server.location,
+    name,
+    serverType: server.serverType,
+    userData,
+  });
 
   const { count } = await prisma.server.updateMany({
     data: {
       ipv4: created.ipv4,
       observedState: "provisioning",
+      pendingVmName: null,
       phase: "provisioning",
       providerServerId: created.id,
     },
@@ -147,7 +184,7 @@ export const stepCreateProviderServer = async (serverId: string) => {
     // clobbering teardown's phase/state) so the early-return path above can
     // retry the cleanup if this inline delete fails.
     await prisma.server.updateMany({
-      data: { providerServerId: created.id },
+      data: { pendingVmName: null, providerServerId: created.id },
       where: { id: serverId },
     });
     await provider.deleteServer(created.id);
@@ -171,7 +208,10 @@ export const stepGetServerStatus = async (input: {
   "use step";
   const server = await getProvider().getServer(input.providerServerId);
   if (!server) {
-    return { ip: null, status: "unknown" as const };
+    // Distinct from the provider's own transient "unknown" status: only a
+    // 404 (VM truly gone) may trigger vanished-VM handling — clearing the
+    // reference on a mere "unknown" would orphan a live, billed VM.
+    return { ip: null, status: "missing" as const };
   }
   return {
     ip: server.ipv4,
@@ -351,10 +391,22 @@ export const stepSendDeleteCommand = async (serverId: string) => {
 export const stepDeleteProviderServer = async (serverId: string) => {
   "use step";
   const server = await prisma.server.findUnique({ where: { id: serverId } });
-  if (!server?.providerServerId) {
+  if (!server) {
     return { deleted: false };
   }
-  return getProvider().deleteServer(server.providerServerId);
+  if (server.providerServerId) {
+    return getProvider().deleteServer(server.providerServerId);
+  }
+  if (server.pendingVmName) {
+    // A crash between the provider create and persisting its id can leave a
+    // VM tracked only by its reserved name — this is the last chance to
+    // reap it.
+    const orphan = await getProvider().getServerByName(server.pendingVmName);
+    if (orphan) {
+      return getProvider().deleteServer(orphan.id);
+    }
+  }
+  return { deleted: false };
 };
 
 export const stepMarkDeleted = async (serverId: string) => {
@@ -377,17 +429,6 @@ export const stepMarkDeleted = async (serverId: string) => {
   });
 };
 
-export const stepReadPhase = async (
-  serverId: string
-): Promise<Phase | null> => {
-  "use step";
-  const server = await prisma.server.findUnique({
-    select: { phase: true },
-    where: { id: serverId },
-  });
-  return (server?.phase as Phase | undefined) ?? null;
-};
-
 export const stepReadAgentPhase = async (
   serverId: string
 ): Promise<Phase | null> => {
@@ -398,6 +439,15 @@ export const stepReadAgentPhase = async (
     where: { serverId, source: "agent" },
   });
   return (event?.phase as Phase | undefined) ?? null;
+};
+
+export const stepReadObservedState = async (serverId: string) => {
+  "use step";
+  const server = await prisma.server.findUnique({
+    select: { observedState: true },
+    where: { id: serverId },
+  });
+  return server?.observedState ?? null;
 };
 
 export const stepReadDesiredState = async (serverId: string) => {
@@ -539,6 +589,13 @@ export const stepCreateProviderServerFromSnapshot = async (
     return { cancelled: true as const };
   }
   if (server.providerServerId) {
+    // A VM that survived a failed hibernation attempt sits powered off;
+    // nothing else in the wake flow powers it on, so without this the boot
+    // wait below would poll an "off" VM until it times out.
+    const existing = await getProvider().getServer(server.providerServerId);
+    if (existing?.status === "off") {
+      await getProvider().poweronServer(server.providerServerId);
+    }
     return {
       cancelled: false as const,
       providerServerId: server.providerServerId,
@@ -549,30 +606,20 @@ export const stepCreateProviderServerFromSnapshot = async (
   }
   const provider = getProvider();
 
-  const name = `ghost-${serverId.toLowerCase().slice(-12)}-${crypto
-    .randomBytes(2)
-    .toString("hex")}`;
-
-  let created: Awaited<ReturnType<typeof provider.createServer>>;
-  try {
-    created = await provider.createServer({
-      imageId: server.hibernationImageId,
-      location: server.location,
-      name,
-      serverType: server.serverType,
-      userData: "",
-    });
-  } catch (error) {
-    if (error instanceof ProviderApiError && error.isClientError) {
-      throw new FatalError(error.message);
-    }
-    throw error;
-  }
+  const name = await reserveVmName(serverId);
+  const created = await createOrAdoptVm(provider, {
+    imageId: server.hibernationImageId,
+    location: server.location,
+    name,
+    serverType: server.serverType,
+    userData: "",
+  });
 
   await prisma.server.update({
     data: {
       ipv4: created.ipv4,
       observedState: "waking",
+      pendingVmName: null,
       phase: "waking",
       providerServerId: created.id,
     },

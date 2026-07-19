@@ -15,15 +15,24 @@ export interface GamePort {
 
 export const GAME_CONTAINER_NAME = "ghost-game";
 
+// Docker Compose applies `${VAR}`/`$VAR` interpolation to every string in
+// the file (including config `content` blocks); a literal dollar must be
+// written `$$` or compose substitutes an env var — and an unclosed `${`
+// aborts `compose up` with an interpolation error.
+export const escapeComposeInterpolation = (value: string): string =>
+  value.replaceAll("$", () => "$$");
+
 // Values land inside YAML double-quoted scalars, where `\` is the escape
 // character: backslashes must be escaped before quotes (a raw `\"` in the
 // input would otherwise terminate the scalar early), and control characters
 // (newlines especially) are stripped so user input can't inject YAML lines.
 export const escapeComposeValue = (value: string): string =>
-  value
-    .replaceAll(/\p{Cc}/gu, "")
-    .replaceAll("\\", "\\\\")
-    .replaceAll('"', '\\"');
+  escapeComposeInterpolation(
+    value
+      .replaceAll(/\p{Cc}/gu, "")
+      .replaceAll("\\", "\\\\")
+      .replaceAll('"', '\\"')
+  );
 
 const formatRange = (port: GamePort): string =>
   port.from === port.to ? `${port.from}` : `${port.from}:${port.to}`;

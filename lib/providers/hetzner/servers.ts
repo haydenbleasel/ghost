@@ -110,9 +110,38 @@ export const createServerOps = (client: HetznerClient) => ({
     };
   },
 
+  getServerByName: async (name: string): Promise<ProviderServer | null> => {
+    const { data, error, response } = await client.GET("/servers", {
+      params: { query: { name } },
+    });
+    if (!response.ok) {
+      throwIfHetznerError(error, response);
+    }
+    const server = data?.servers?.[0];
+    if (!server) {
+      return null;
+    }
+    return {
+      id: String(server.id),
+      ipv4: server.public_net.ipv4?.ip ?? null,
+      memoryGb: server.server_type?.memory ?? null,
+      status: toServerStatus(server.status),
+    };
+  },
+
   poweroffServer: async (id: ServerResourceId): Promise<void> => {
     const { error, response } = await client.POST(
       "/servers/{id}/actions/poweroff",
+      { params: { path: { id: Number(id) } } }
+    );
+    if (!response.ok && response.status !== 422) {
+      throwIfHetznerError(error, response);
+    }
+  },
+
+  poweronServer: async (id: ServerResourceId): Promise<void> => {
+    const { error, response } = await client.POST(
+      "/servers/{id}/actions/poweron",
       { params: { path: { id: Number(id) } } }
     );
     if (!response.ok && response.status !== 422) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { getSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 
@@ -9,7 +9,9 @@ export const GET = async (
   _request: Request,
   context: { params: Promise<{ id: string; commandId: string }> }
 ) => {
-  await requireUser();
+  if (!(await getSession())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { id, commandId } = await context.params;
 
   const server = await prisma.server.findFirst({

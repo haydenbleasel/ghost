@@ -11,11 +11,12 @@ export const palworldSettings = defineSettings({
   difficulty: {
     default: "None",
     label: "Difficulty",
+    // Palworld's Difficulty enum only accepts None/Normal/Difficult; other
+    // values (e.g. "Easy"/"Hard") are silently ignored by the server.
     options: [
       { label: "Default", value: "None" },
-      { value: "Easy" },
       { value: "Normal" },
-      { value: "Hard" },
+      { label: "Hard", value: "Difficult" },
     ],
     type: "select",
   },

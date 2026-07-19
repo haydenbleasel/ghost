@@ -138,7 +138,9 @@ export const stepGetBuilderStatus = async (input: {
 }): Promise<{ status: string }> => {
   "use step";
   const server = await getProvider().getServer(input.providerBuilderId);
-  return { status: server?.status ?? "unknown" };
+  // "missing" (404) is distinct from Hetzner's own transient "unknown"
+  // status — only a true 404 should abort the build.
+  return { status: server?.status ?? "missing" };
 };
 
 export const stepCreateSnapshot = async (input: {

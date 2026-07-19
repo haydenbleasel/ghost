@@ -3,13 +3,15 @@ import { ulid } from "ulid";
 import { start } from "workflow/api";
 
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { getSession } from "@/lib/session";
 import { buildSnapshot } from "@/lib/workflows/build-snapshot";
 
 export const runtime = "nodejs";
 
 export const GET = async () => {
-  await requireUser();
+  if (!(await getSession())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const build = await prisma.snapshotBuild.findFirst({
     orderBy: { createdAt: "desc" },
     select: {
@@ -26,7 +28,9 @@ export const GET = async () => {
 };
 
 export const POST = async () => {
-  await requireUser();
+  if (!(await getSession())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const buildId = ulid();
   let alreadyRunning = false;

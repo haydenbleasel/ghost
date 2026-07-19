@@ -30,10 +30,12 @@ export const isSignInRateLimited = async (ip: string): Promise<boolean> => {
 
 export const recordSignInFailure = async (ip: string): Promise<void> => {
   try {
-    const failures = await redis.incr(key(ip));
-    if (failures === 1) {
-      await redis.expire(key(ip), WINDOW_SECONDS);
-    }
+    await redis.incr(key(ip));
+    // Refresh the TTL on every failure rather than only the first: if the
+    // initial EXPIRE is ever missed (separate REST call, silently swallowed
+    // here), the counter would otherwise live forever and permanently lock
+    // the owner out once it crosses the threshold.
+    await redis.expire(key(ip), WINDOW_SECONDS);
   } catch {
     // best-effort
   }

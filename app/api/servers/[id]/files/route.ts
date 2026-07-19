@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 
 import { enqueueCommand, waitForCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { getSession } from "@/lib/session";
 import { filesListResultSchema } from "@/protocol";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const requireOwnedServer = async (id: string) => {
-  await requireUser();
+  if (!(await getSession())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const server = await prisma.server.findFirst({
     where: { deletedAt: null, id },
   });

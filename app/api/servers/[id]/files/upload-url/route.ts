@@ -3,7 +3,7 @@ import type { HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { getSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 
@@ -11,7 +11,9 @@ export const POST = async (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) => {
-  await requireUser();
+  if (!(await getSession())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { id } = await context.params;
 
   const server = await prisma.server.findFirst({

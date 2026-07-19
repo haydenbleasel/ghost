@@ -46,7 +46,7 @@ export const wakeServer = async (input: { serverId: string }) => {
         booted = true;
         break;
       }
-      if (status.status === "unknown") {
+      if (status.status === "missing") {
         await stepClearVanishedProviderServer(serverId);
         throw new FatalError("Provider server vanished after wake");
       }

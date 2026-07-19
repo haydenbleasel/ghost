@@ -124,7 +124,13 @@ export type ValidateResult<S extends SettingsSchema> =
 
 export const validateSettings = <S extends SettingsSchema>(
   schema: S,
-  input: unknown
+  input: unknown,
+  /**
+   * Previously saved values, consulted when a required field is absent from
+   * the input — a partial update must not be rejected for omitting a
+   * required field that is already stored.
+   */
+  stored?: unknown
 ): ValidateResult<S> => {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return { error: "Settings must be an object", ok: false };
@@ -140,9 +146,13 @@ export const validateSettings = <S extends SettingsSchema>(
     }
     out[key] = value;
   }
+  const storedValues =
+    stored && typeof stored === "object" && !Array.isArray(stored)
+      ? (stored as Record<string, unknown>)
+      : {};
   for (const [key, field] of Object.entries(schema)) {
     if (field.type === "string" && field.required) {
-      const value = out[key] ?? field.default;
+      const value = out[key] ?? storedValues[key] ?? field.default;
       if (typeof value !== "string" || value.length === 0) {
         return { error: `${field.label} is required`, ok: false };
       }

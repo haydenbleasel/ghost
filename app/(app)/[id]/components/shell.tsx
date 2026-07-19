@@ -117,7 +117,18 @@ export const ServerShell = ({
 
   useEffect(() => {
     const t = setInterval(async () => {
-      const res = await fetch(`/api/servers/${initial.id}`);
+      let res: Response;
+      try {
+        res = await fetch(`/api/servers/${initial.id}`);
+      } catch {
+        // Transient network failure; try again on the next tick.
+        return;
+      }
+      if (res.status === 401) {
+        // Session expired mid-visit — the API is unusable until re-auth.
+        router.push("/sign-in");
+        return;
+      }
       if (!res.ok) {
         return;
       }
@@ -141,7 +152,7 @@ export const ServerShell = ({
       }
     }, 5000);
     return () => clearInterval(t);
-  }, [initial.id]);
+  }, [initial.id, router]);
 
   const sendCommand = async (type: "START" | "STOP" | "RESTART") => {
     setPending(type);
@@ -393,6 +404,7 @@ export const ServerShell = ({
         {children}
       </PageBody>
       {deleteDialog}
+      {hibernateDialog}
     </ServerProvider>
   );
 };

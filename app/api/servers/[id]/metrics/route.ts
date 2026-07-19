@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getProvider } from "@/lib/providers";
 import { ProviderApiError } from "@/lib/providers/errors";
-import { requireUser } from "@/lib/session";
+import { getSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 
@@ -18,7 +18,9 @@ export const GET = async (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) => {
-  await requireUser();
+  if (!(await getSession())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { id } = await context.params;
 
   const server = await prisma.server.findFirst({
