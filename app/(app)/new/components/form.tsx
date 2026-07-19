@@ -542,12 +542,16 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
       : {}
   );
 
-  useEffect(() => {
+  // Reset per-game state when the game changes, during render rather than in
+  // an effect (https://react.dev/learn/you-might-not-need-an-effect).
+  const [prevGameId, setPrevGameId] = useState(gameId);
+  if (prevGameId !== gameId) {
+    setPrevGameId(gameId);
     if (selectedGame) {
       setSettings(getDefaults(selectedGame.settings) as SettingsValuesRecord);
       setTypeName(eligibleTypes[0]?.name ?? "");
     }
-  }, [selectedGame, eligibleTypes]);
+  }
 
   const setSettingField = (key: string, value: FieldValue) =>
     setSettings((prev) => ({ ...prev, [key]: value }));

@@ -245,6 +245,9 @@ export const FilesPanel = ({ serverId }: Props) => {
   );
 
   useEffect(() => {
+    // Fetch-on-navigation effect: every setState in `load` happens after an
+    // await, but the analyzer doesn't model async boundaries.
+    // oxlint-disable-next-line react/react-compiler
     load(path);
   }, [load, path]);
 

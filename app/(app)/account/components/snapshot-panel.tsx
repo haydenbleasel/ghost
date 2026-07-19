@@ -121,9 +121,13 @@ export const SnapshotPanel = ({ configured, imageId, latestBuild }: Props) => {
 
   const buildActive = build ? isActiveStatus(build.status) : false;
 
-  useEffect(() => {
+  // Adopt the server-provided build when it changes, during render rather
+  // than in an effect (https://react.dev/learn/you-might-not-need-an-effect).
+  const [prevLatestBuild, setPrevLatestBuild] = useState(latestBuild);
+  if (prevLatestBuild !== latestBuild) {
+    setPrevLatestBuild(latestBuild);
     setBuild(latestBuild);
-  }, [latestBuild]);
+  }
 
   useEffect(() => {
     if (!buildActive) {

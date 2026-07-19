@@ -35,12 +35,12 @@ The Deploy Button clones this repo to your GitHub account, creates a Vercel proj
 
 Generate `GHOST_SECRET` with `openssl rand -hex 32`.
 
-| Variable                | Purpose                                                                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `HETZNER_API_TOKEN`     | Hetzner Cloud API token (Read & Write). Every provisioning call runs against your project.                                    |
-| `AUTH_PASSWORD`         | Dashboard sign-in password (8+ chars). There is no sign-up — this deployment is yours alone.                                  |
-| `GHOST_SECRET`          | Signs the session cookie, agent bootstrap JWTs, and snapshot download tokens (32+ chars). Rotating it signs out all sessions. |
-| `AUTH_EMAIL` (optional) | Sign-in email. Defaults to `admin@ghost.local`; changing it also signs out existing sessions.                                 |
+| Variable | Purpose |
+| --- | --- |
+| `HETZNER_API_TOKEN` | Hetzner Cloud API token (Read & Write). Every provisioning call runs against your project. |
+| `AUTH_PASSWORD` | Dashboard sign-in password (8+ chars). There is no sign-up — this deployment is yours alone. |
+| `GHOST_SECRET` | Signs the session cookie, agent bootstrap JWTs, and snapshot download tokens (32+ chars). Rotating it signs out all sessions. |
+| `AUTH_EMAIL` (optional) | Sign-in email. Defaults to `admin@ghost.local`; changing it also signs out existing sessions. |
 
 `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, and `BLOB_READ_WRITE_TOKEN` are injected by the store integrations — nothing else to configure.
 
@@ -162,14 +162,14 @@ flowchart LR
     players -- "game traffic" --> game
 ```
 
-| Layer                        | Role                                                                                                                                                    |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Next.js on Vercel            | Dashboard, API routes, and server actions. Coordination state only; game state lives on the VMs.                                                        |
-| Workflow SDK (durable steps) | Provisioning, teardown, and snapshot builds run as durable workflows. Each step emits a structured activity event that the UI streams over SSE.         |
-| Neon Postgres (Prisma)       | Server records, agent registrations, command queue, activity log, and ring-buffered console logs.                                                       |
-| Upstash Redis                | Monotonic event sequence per server plus a short-TTL nonce cache for replay protection on signed agent requests.                                        |
-| Hetzner Cloud VMs            | Each game server is a VM booted from your prebaked snapshot — Docker, the agent, and every game image are already on disk.                              |
-| ghost-agent (on each VM)     | A single Bun-compiled Linux binary that supervises one Docker Compose project per VM. It long-polls for commands and never accepts inbound connections. |
+| Layer | Role |
+| --- | --- |
+| Next.js on Vercel | Dashboard, API routes, and server actions. Coordination state only; game state lives on the VMs. |
+| Workflow SDK (durable steps) | Provisioning, teardown, and snapshot builds run as durable workflows. Each step emits a structured activity event that the UI streams over SSE. |
+| Neon Postgres (Prisma) | Server records, agent registrations, command queue, activity log, and ring-buffered console logs. |
+| Upstash Redis | Monotonic event sequence per server plus a short-TTL nonce cache for replay protection on signed agent requests. |
+| Hetzner Cloud VMs | Each game server is a VM booted from your prebaked snapshot — Docker, the agent, and every game image are already on disk. |
+| ghost-agent (on each VM) | A single Bun-compiled Linux binary that supervises one Docker Compose project per VM. It long-polls for commands and never accepts inbound connections. |
 
 ### Provisioning
 

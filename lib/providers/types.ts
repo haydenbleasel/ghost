@@ -97,29 +97,29 @@ export interface BuilderProfile {
 export interface Provider {
   readonly id: ProviderId;
 
-  createServer(input: CreateServerInput): Promise<ProviderServer>;
-  getServer(id: ServerResourceId): Promise<ProviderServer | null>;
-  deleteServer(id: ServerResourceId): Promise<{ deleted: boolean }>;
-  rescaleServer(id: ServerResourceId, serverType: string): Promise<void>;
-  getMetrics(
+  createServer: (input: CreateServerInput) => Promise<ProviderServer>;
+  getServer: (id: ServerResourceId) => Promise<ProviderServer | null>;
+  deleteServer: (id: ServerResourceId) => Promise<{ deleted: boolean }>;
+  rescaleServer: (id: ServerResourceId, serverType: string) => Promise<void>;
+  getMetrics: (
     id: ServerResourceId,
     query: MetricsQuery
-  ): Promise<{ metrics: unknown }>;
+  ) => Promise<{ metrics: unknown }>;
 
-  setBackupsEnabled(id: ServerResourceId, enabled: boolean): Promise<void>;
+  setBackupsEnabled: (id: ServerResourceId, enabled: boolean) => Promise<void>;
 
-  createSnapshot(
+  createSnapshot: (
     serverId: ServerResourceId,
     opts: { description?: string }
-  ): Promise<ImageResourceId>;
-  getImage(id: ImageResourceId): Promise<ProviderImage | null>;
-  deleteImage(id: ImageResourceId): Promise<{ deleted: boolean }>;
-  listImagesForServer(serverId: ServerResourceId): Promise<ProviderImage[]>;
-  rebuildFromImage(
+  ) => Promise<ImageResourceId>;
+  getImage: (id: ImageResourceId) => Promise<ProviderImage | null>;
+  deleteImage: (id: ImageResourceId) => Promise<{ deleted: boolean }>;
+  listImagesForServer: (serverId: ServerResourceId) => Promise<ProviderImage[]>;
+  rebuildFromImage: (
     serverId: ServerResourceId,
     imageId: ImageResourceId
-  ): Promise<void>;
+  ) => Promise<void>;
 
-  getCatalog(referenceImageId: ImageResourceId): Promise<Catalog>;
-  validateCredentials(): Promise<CredentialValidationResult>;
+  getCatalog: (referenceImageId: ImageResourceId) => Promise<Catalog>;
+  validateCredentials: () => Promise<CredentialValidationResult>;
 }

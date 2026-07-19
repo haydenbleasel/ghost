@@ -5,6 +5,9 @@ export default defineConfig({
   ...ultracite,
   ignorePatterns: [
     ...(ultracite.ignorePatterns ?? []),
+    // Hand-formatted for GitHub: [!NOTE] alerts and HTML tables that the
+    // markdown formatter would mangle.
+    "README.md",
     "components/ui",
     "components/ai-elements",
     "components/kibo-ui",

@@ -45,7 +45,7 @@ const AccountPage = async () => {
         {configured ? null : (
           <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
             Click <strong>Build snapshot</strong> to create your golden image.
-            Servers can't be provisioned until it's ready.
+            Servers can&apos;t be provisioned until it&apos;s ready.
           </div>
         )}
         <SnapshotPanel

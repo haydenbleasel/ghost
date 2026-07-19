@@ -200,6 +200,9 @@ export const BackupsPanel = ({
   }, [serverId]);
 
   useEffect(() => {
+    // Fetch-on-mount effect: every setState in `load` happens after an await,
+    // but the analyzer doesn't model async boundaries.
+    // oxlint-disable-next-line react/react-compiler
     load();
   }, [load]);
 
@@ -426,7 +429,7 @@ export const BackupsPanel = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this backup?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the backup. You can't undo this.
+              This permanently removes the backup. You can&apos;t undo this.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

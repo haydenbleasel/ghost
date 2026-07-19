@@ -105,6 +105,9 @@ export const useServerMetrics = (
 
   useEffect(() => {
     if (observedState !== "running") {
+      // Metrics fetch effect: the sync early-exit just settles the loading
+      // flag; the analyzer doesn't model async boundaries in `load` below.
+      // oxlint-disable-next-line react/react-compiler
       setLoading(false);
       return;
     }
