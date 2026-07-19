@@ -48,6 +48,14 @@ Generate `GHOST_SECRET` with `openssl rand -hex 32`.
 
 If you use Vercel preview deployments, enable **Deployment Protection → Protection Bypass for Automation** in your project settings. The generated value is auto-injected as `VERCEL_AUTOMATION_BYPASS_SECRET` so Hetzner agents can punch through the auth wall on callbacks. Production deployments don't need it. Snapshots are scoped per environment, so a preview's golden image never clobbers production's.
 
+### Keeping your instance updated
+
+The Deploy Button creates a copy of this repo under your account — it doesn't track upstream automatically. To pull in new games and fixes:
+
+1. On your repo's GitHub page, click **Sync fork** (or merge `haydenbleasel/ghost` manually).
+2. Vercel deploys the update automatically; database migrations run as part of the build.
+3. If the update added or changed games, open `/account` and click **Build snapshot** so the new images get baked into your golden image.
+
 ## Supported games
 
 Every supported game lives behind the same one-click flow. Your VM, your token, your billing.
