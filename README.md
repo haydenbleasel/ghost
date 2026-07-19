@@ -135,12 +135,6 @@ Every supported game lives behind the same one-click flow. Your VM, your token, 
       <sub>Build and grow a factory on an alien planet. Co-op automation sandbox.</sub>
     </td>
   </tr>
-  <tr>
-    <td width="50%">
-      <b><a href="https://github.com/haydenbleasel/ghost/issues/new">Don't see yours?</a></b><br/>
-      <sub>Open an issue on GitHub and we'll add it to the roadmap — or add it yourself with a game folder and a snapshot rebuild (see below).</sub>
-    </td>
-  </tr>
 </table>
 
 ## How it works
