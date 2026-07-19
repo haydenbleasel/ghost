@@ -57,8 +57,6 @@ const PROVISIONING_PHASES = new Set([
   "starting",
   "healthy",
   "errored",
-  "hibernating",
-  "waking",
 ]);
 
 const TABS = [
@@ -131,6 +129,7 @@ export const ServerShell = ({
           desiredState: fresh.desiredState,
           errorReason: fresh.errorReason ?? null,
           game: fresh.game,
+          hibernationImageId: fresh.hibernationImageId ?? null,
           id: fresh.id,
           ipv4: fresh.ipv4,
           lastHeartbeatAt: fresh.agent?.lastHeartbeatAt ?? null,
@@ -168,24 +167,30 @@ export const ServerShell = ({
 
   const runHibernate = async () => {
     setPending("HIBERNATE");
-    const result = await hibernate({ serverId: server.id });
-    setPending(null);
-    if (result.ok) {
-      toast.success("Hibernating server");
-      setHibernateOpen(false);
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await hibernate({ serverId: server.id });
+      if (result.ok) {
+        toast.success("Hibernating server");
+        setHibernateOpen(false);
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setPending(null);
     }
   };
 
   const runWake = async () => {
     setPending("WAKE");
-    const result = await wake({ serverId: server.id });
-    setPending(null);
-    if (result.ok) {
-      toast.success("Waking server");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await wake({ serverId: server.id });
+      if (result.ok) {
+        toast.success("Waking server");
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setPending(null);
     }
   };
 
@@ -200,7 +205,16 @@ export const ServerShell = ({
   }
 
   const deleting = server.desiredState === "deleted";
-  const hibernated = server.observedState === "hibernated";
+  // "failed" is wake-able (or hibernate-able) again so a timed-out attempt
+  // isn't a dead end; which retry applies depends on which transition failed.
+  const canWake =
+    server.hibernationImageId !== null &&
+    (server.observedState === "hibernated" ||
+      (server.observedState === "failed" && server.desiredState === "running"));
+  const canHibernate =
+    server.observedState === "running" ||
+    server.observedState === "stopped" ||
+    (server.observedState === "failed" && server.desiredState === "hibernated");
   const statusLabel = deleting ? "deleting" : server.observedState;
 
   const meta = (
@@ -245,18 +259,14 @@ export const ServerShell = ({
           Restart
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {hibernated ? (
+        {canWake ? (
           <DropdownMenuItem disabled={pending !== null} onSelect={runWake}>
             <SunIcon />
             Wake
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem
-            disabled={
-              pending !== null ||
-              (server.observedState !== "running" &&
-                server.observedState !== "stopped")
-            }
+            disabled={pending !== null || !canHibernate}
             onSelect={() => setHibernateOpen(true)}
           >
             <MoonIcon />

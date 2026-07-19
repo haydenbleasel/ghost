@@ -23,26 +23,56 @@ export const wake = async (
   if (!parsed.success) {
     return { error: "Invalid input", ok: false };
   }
+  const { serverId } = parsed.data;
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id: parsed.data.serverId },
+    where: { deletedAt: null, id: serverId },
   });
   if (!server) {
     return { error: "Not found", ok: false };
-  }
-  if (server.observedState !== "hibernated") {
-    return { error: "Server is not hibernated", ok: false };
   }
   if (!server.hibernationImageId) {
     return { error: "No hibernation snapshot found", ok: false };
   }
 
-  await prisma.server.update({
-    data: { desiredState: "running", observedState: "waking" },
-    where: { id: parsed.data.serverId },
+  // Atomically claim the transition so a double-click can't start two
+  // workflows (two concurrent wakes could each create a VM). "failed" is
+  // claimable so a wake that timed out can be retried; the workflow reuses
+  // the existing VM when one survived the failed attempt.
+  const { count } = await prisma.server.updateMany({
+    data: {
+      desiredState: "running",
+      errorReason: null,
+      observedState: "waking",
+      phase: "waking",
+    },
+    where: {
+      deletedAt: null,
+      hibernationImageId: { not: null },
+      id: serverId,
+      observedState: { in: ["hibernated", "failed"] },
+    },
   });
+  if (count === 0) {
+    return { error: "Server is not hibernated", ok: false };
+  }
 
-  await start(wakeServer, [{ serverId: parsed.data.serverId }]);
+  try {
+    await start(wakeServer, [{ serverId }]);
+  } catch {
+    // The workflow never started; put the row back so the server isn't
+    // stranded in "waking" with nothing driving it.
+    await prisma.server.updateMany({
+      data: {
+        desiredState: server.desiredState,
+        errorReason: server.errorReason,
+        observedState: server.observedState,
+        phase: server.phase,
+      },
+      where: { id: serverId, observedState: "waking" },
+    });
+    return { error: "Failed to start wake", ok: false };
+  }
 
   revalidatePath("/", "layout");
   return { ok: true };

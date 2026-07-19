@@ -110,6 +110,16 @@ export const createServerOps = (client: HetznerClient) => ({
     };
   },
 
+  poweroffServer: async (id: ServerResourceId): Promise<void> => {
+    const { error, response } = await client.POST(
+      "/servers/{id}/actions/poweroff",
+      { params: { path: { id: Number(id) } } }
+    );
+    if (!response.ok && response.status !== 422) {
+      throwIfHetznerError(error, response);
+    }
+  },
+
   rescaleServer: async (
     id: ServerResourceId,
     serverType: string

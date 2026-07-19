@@ -450,6 +450,16 @@ export const stepShutdownProviderServer = async (serverId: string) => {
     return { ok: false as const };
   }
   await getProvider().shutdownServer(server.providerServerId);
+  return { ok: true as const, providerServerId: server.providerServerId };
+};
+
+export const stepPoweroffProviderServer = async (serverId: string) => {
+  "use step";
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server?.providerServerId) {
+    return { ok: false as const };
+  }
+  await getProvider().poweroffServer(server.providerServerId);
   return { ok: true as const };
 };
 
@@ -483,9 +493,12 @@ export const stepGetSnapshotStatus = async (input: {
   imageId: string;
 }) => {
   "use step";
+  // "missing" (deleted out from under us) is distinct from a bad status so
+  // the workflow can clear the dangling image id; transient provider errors
+  // throw and retry the step instead of masquerading as either.
   const image = await getProvider().getImage(input.imageId);
   if (!image) {
-    return { status: "unknown" as const };
+    return { status: "missing" as const };
   }
   return { status: image.status };
 };
@@ -572,6 +585,16 @@ export const stepCreateProviderServerFromSnapshot = async (
     serverId,
   });
   return { cancelled: false as const, providerServerId: created.id };
+};
+
+export const stepClearVanishedProviderServer = async (serverId: string) => {
+  "use step";
+  // The VM 404'd at the provider: drop the dangling reference so a wake
+  // retry recreates it from the snapshot instead of polling a ghost.
+  await prisma.server.updateMany({
+    data: { ipv4: null, providerServerId: null },
+    where: { id: serverId },
+  });
 };
 
 export const stepWaitAgentReconnected = async (serverId: string) => {

@@ -23,9 +23,10 @@ export const hibernate = async (
   if (!parsed.success) {
     return { error: "Invalid input", ok: false };
   }
+  const { serverId } = parsed.data;
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id: parsed.data.serverId },
+    where: { deletedAt: null, id: serverId },
   });
   if (!server) {
     return { error: "Not found", ok: false };
@@ -33,22 +34,51 @@ export const hibernate = async (
   if (!server.providerServerId) {
     return { error: "Server is not provisioned yet", ok: false };
   }
-  if (
-    server.observedState !== "running" &&
-    server.observedState !== "stopped"
-  ) {
+
+  // Atomically claim the transition so a double-click can't start two
+  // workflows. "failed" is only claimable when the failure came from a
+  // hibernation attempt (desiredState is still "hibernated"), never from a
+  // failed provision.
+  const { count } = await prisma.server.updateMany({
+    data: {
+      desiredState: "hibernated",
+      errorReason: null,
+      observedState: "hibernating",
+      phase: "hibernating",
+    },
+    where: {
+      OR: [
+        { observedState: { in: ["running", "stopped"] } },
+        { desiredState: "hibernated", observedState: "failed" },
+      ],
+      deletedAt: null,
+      id: serverId,
+      providerServerId: { not: null },
+    },
+  });
+  if (count === 0) {
     return {
       error: "Server must be running or stopped to hibernate",
       ok: false,
     };
   }
 
-  await prisma.server.update({
-    data: { desiredState: "hibernated", observedState: "hibernating" },
-    where: { id: parsed.data.serverId },
-  });
-
-  await start(hibernateServer, [{ serverId: parsed.data.serverId }]);
+  try {
+    await start(hibernateServer, [{ serverId }]);
+  } catch {
+    // The workflow never started; put the row back so the server isn't
+    // stranded in "hibernating" with nothing driving it.
+    await prisma.server.updateMany({
+      data: {
+        desiredState: server.desiredState,
+        errorReason: server.errorReason,
+        observedState: server.observedState,
+        phase: server.phase,
+      },
+      where: { id: serverId, observedState: "hibernating" },
+    });
+    return { error: "Failed to start hibernation", ok: false };
+  }
 
   revalidatePath("/", "layout");
   return { ok: true };

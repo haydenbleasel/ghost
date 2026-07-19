@@ -101,6 +101,7 @@ export interface Provider {
   getServer: (id: ServerResourceId) => Promise<ProviderServer | null>;
   deleteServer: (id: ServerResourceId) => Promise<{ deleted: boolean }>;
   shutdownServer: (id: ServerResourceId) => Promise<void>;
+  poweroffServer: (id: ServerResourceId) => Promise<void>;
   rescaleServer: (id: ServerResourceId, serverType: string) => Promise<void>;
   getMetrics: (
     id: ServerResourceId,

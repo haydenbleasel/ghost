@@ -1,6 +1,7 @@
 import { FatalError, sleep } from "workflow";
 
 import {
+  stepClearVanishedProviderServer,
   stepCreateProviderServerFromSnapshot,
   stepDeleteHibernationSnapshot,
   stepGetServerStatus,
@@ -46,6 +47,7 @@ export const wakeServer = async (input: { serverId: string }) => {
         break;
       }
       if (status.status === "unknown") {
+        await stepClearVanishedProviderServer(serverId);
         throw new FatalError("Provider server vanished after wake");
       }
       if (await isCancelled(serverId)) {
