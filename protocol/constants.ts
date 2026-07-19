@@ -9,13 +9,21 @@ export const PHASES = [
   "ready",
   "stopping",
   "stopped",
+  "hibernating",
+  "hibernated",
+  "waking",
   "errored",
   "deleting",
   "deleted",
 ] as const;
 export type Phase = (typeof PHASES)[number];
 
-export const DESIRED_STATES = ["running", "stopped", "deleted"] as const;
+export const DESIRED_STATES = [
+  "running",
+  "stopped",
+  "hibernated",
+  "deleted",
+] as const;
 export type DesiredState = (typeof DESIRED_STATES)[number];
 
 export const OBSERVED_STATES = [
@@ -25,6 +33,9 @@ export const OBSERVED_STATES = [
   "unhealthy",
   "lost",
   "stopped",
+  "hibernating",
+  "hibernated",
+  "waking",
   "failed",
   "deleted",
 ] as const;

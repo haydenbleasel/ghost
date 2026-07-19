@@ -140,4 +140,14 @@ export const createServerOps = (client: HetznerClient) => ({
       throwIfHetznerError(error, response);
     }
   },
+
+  shutdownServer: async (id: ServerResourceId): Promise<void> => {
+    const { error, response } = await client.POST(
+      "/servers/{id}/actions/shutdown",
+      { params: { path: { id: Number(id) } } }
+    );
+    if (!response.ok && response.status !== 422) {
+      throwIfHetznerError(error, response);
+    }
+  },
 });

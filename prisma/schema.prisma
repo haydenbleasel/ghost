@@ -26,6 +26,7 @@ model Snapshot {
 enum DesiredState {
   running
   stopped
+  hibernated
   deleted
 }
 
@@ -36,35 +37,40 @@ enum ObservedState {
   unhealthy
   lost
   stopped
+  hibernating
+  hibernated
+  waking
   failed
   deleted
 }
 
 model Server {
-  id               String            @id
-  name             String
-  game             String
-  location         String
-  serverType       String
-  provider         String            @default("hetzner")
-  providerServerId String?           @unique
-  ipv4             String?
-  desiredState     DesiredState      @default(running)
-  observedState    ObservedState     @default(pending)
-  phase            String            @default("queued")
-  errorReason      String?
-  rconPassword     String
-  joinPassword     String?
-  settings         Json              @default("{}")
-  backupsEnabled   Boolean           @default(false)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  deletedAt        DateTime?
-  agent            Agent?
-  commands         Command[]
-  activityEvents   ActivityEvent[]
-  logChunks        LogChunk[]
-  enrollments      AgentEnrollment[]
+  id                 String            @id
+  name               String
+  game               String
+  location           String
+  serverType         String
+  provider           String            @default("hetzner")
+  providerServerId   String?           @unique
+  ipv4               String?
+  desiredState       DesiredState      @default(running)
+  observedState      ObservedState     @default(pending)
+  phase              String            @default("queued")
+  errorReason        String?
+  rconPassword       String
+  joinPassword       String?
+  settings           Json              @default("{}")
+  backupsEnabled     Boolean           @default(false)
+  hibernationImageId String?
+  hibernatedAt       DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  deletedAt          DateTime?
+  agent              Agent?
+  commands           Command[]
+  activityEvents     ActivityEvent[]
+  logChunks          LogChunk[]
+  enrollments        AgentEnrollment[]
 
   @@index([desiredState, observedState])
   @@map("servers")
