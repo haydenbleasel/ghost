@@ -17,6 +17,8 @@ Pick a game, pick a region, click start. Drop the IP in your group chat — no t
 - **Honest activity log** — every start, stop, restart, and config change in a clean, filterable timeline.
 - **Your infra, your rules** — bring your own Hetzner key. Your infrastructure, your billing, your data — Ghost just wires it up.
 
+![The Ghost dashboard](.github/demo.jpeg)
+
 ## Deploy your own
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhaydenbleasel%2Fghost&project-name=ghost&repository-name=ghost&env=HETZNER_API_TOKEN,AUTH_PASSWORD,GHOST_SECRET&envDescription=Hetzner%20Cloud%20API%20token%2C%20dashboard%20password%2C%20and%20a%20random%20signing%20secret&envLink=https%3A%2F%2Fgithub.com%2Fhaydenbleasel%2Fghost%23environment-variables&stores=%5B%7B%22type%22%3A%22postgres%22%7D%2C%7B%22type%22%3A%22kv%22%7D%2C%7B%22type%22%3A%22blob%22%7D%5D)
