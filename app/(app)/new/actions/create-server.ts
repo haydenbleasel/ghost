@@ -1,15 +1,13 @@
 "use server";
 
-import crypto from "node:crypto";
-
 import type { Prisma } from "@prisma/client";
-import { humanId } from "human-id";
 import { revalidatePath } from "next/cache";
 import { ulid } from "ulid";
 import { start } from "workflow/api";
 import { z } from "zod";
 
 import { games, validateSettings } from "@/games";
+import { generateJoinPassword, generateRconPassword } from "@/lib/credentials";
 import { prisma } from "@/lib/db";
 import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { getProviderWithImage } from "@/lib/providers";
@@ -100,10 +98,8 @@ export const createServer = async (
   const settings = validation.data as Record<string, unknown>;
 
   const id = ulid();
-  const rconPassword = crypto.randomBytes(16).toString("hex");
-  const joinPassword = game.usesJoinPassword
-    ? humanId({ adjectiveCount: 0, capitalize: false, separator: "-" })
-    : null;
+  const rconPassword = generateRconPassword();
+  const joinPassword = game.usesJoinPassword ? generateJoinPassword() : null;
 
   const server = await prisma.server.create({
     data: {
