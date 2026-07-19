@@ -49,3 +49,4 @@ generated/
 .env*.local
 
 tsconfig.tsbuildinfo
+/.swc

@@ -15,6 +15,8 @@ let config: NextConfig = {
       },
     ],
   },
+
+  reactCompiler: true,
 };
 
 if (env.ANALYZE === "true") {

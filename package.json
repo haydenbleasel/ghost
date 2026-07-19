@@ -86,6 +86,7 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@typescript/native-preview": "^7.0.0-dev.20260707.2",
+    "babel-plugin-react-compiler": "^1.0.0",
     "husky": "^9.1.7",
     "openapi-typescript": "^7.13.0",
     "oxfmt": "^0.59.0",
