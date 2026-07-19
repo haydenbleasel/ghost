@@ -16,6 +16,10 @@ export const buildFactorioCompose = (
   settings: FactorioSettings
 ): string => {
   const timezone = config.timezone ?? "UTC";
+  // Factorio refuses to start a public game without factorio.com credentials,
+  // so fall back to LAN-only visibility until both are provided.
+  const canListPublicly =
+    settings.factorioUsername.length > 0 && settings.factorioToken.length > 0;
   // server-settings.json is the canonical config surface for Factorio.
   // Most tunables (name, max_players, password, visibility) have no env-var
   // route, so we render the file fresh on every deploy and inject it via a
@@ -43,7 +47,7 @@ export const buildFactorioCompose = (
     username: settings.factorioUsername,
     visibility: {
       lan: true,
-      public: settings.visibility === "public",
+      public: settings.visibility === "public" && canListPublicly,
     },
   };
   const serverSettingsBody = indentBlock(
@@ -59,6 +63,7 @@ export const buildFactorioCompose = (
     image: ${dockerImage}
     container_name: ghost-game
     restart: unless-stopped
+    stop_grace_period: 90s
     ports:
       - "34197:34197/udp"
       - "27015:27015/tcp"

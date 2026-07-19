@@ -62,7 +62,7 @@ export const factorioSettings = defineSettings({
   },
   visibility: {
     default: "public",
-    help: "Public lists the server on the Factorio matchmaking server (requires username + token). LAN restricts discovery to the local network — direct-IP connect still works.",
+    help: "Public lists the server on the Factorio matchmaking server (requires username + token — falls back to LAN only until both are set). LAN restricts discovery to the local network — direct-IP connect still works.",
     label: "Visibility",
     options: [
       { label: "Public", value: "public" },
