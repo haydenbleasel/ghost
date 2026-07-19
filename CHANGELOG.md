@@ -1,5 +1,110 @@
 # ghost
 
+## 2.0.0
+
+### Major Changes
+
+- [#76](https://github.com/haydenbleasel/ghost/pull/76) [`e133e1f`](https://github.com/haydenbleasel/ghost/commit/e133e1fee52c45b2aaf20220dc46a6dd89cbf1a2) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Rework Ghost from a hosted multi-tenant platform into a self-hosted, single-tenant deployment you run on your own Vercel account.
+
+  **Breaking: this release requires a fresh deployment.** The database schema is incompatible with 1.x (migrations were squashed to a new baseline) and the auth/credential model changed entirely.
+
+  - **Deploy your own** — the README now leads with a Vercel Deploy Button that clones the repo, provisions Neon Postgres, Upstash Redis, and Vercel Blob, and prompts for three secrets: `HETZNER_API_TOKEN`, `AUTH_PASSWORD`, and `GHOST_SECRET`.
+  - **Env-credential auth** — Better Auth is removed (along with sign-up, passkeys, profiles, and avatars). The owner signs in with `AUTH_EMAIL` / `AUTH_PASSWORD` from the environment; sessions are a jose-signed JWT cookie verified fully in the edge middleware.
+  - **Hetzner token from the environment** — `HETZNER_API_TOKEN` replaces the per-user encrypted token that previously lived in Postgres, and the token-management UI is gone.
+  - **Single-tenant schema** — the `User`, `Session`, `Account`, `Verification`, and `Passkey` models are dropped; `userId` scoping is removed from servers and snapshot builds; golden images are keyed per deployment environment.
+  - **One signing secret** — `GHOST_SECRET` replaces `BETTER_AUTH_SECRET`, `SESSION_SECRET`, and `BOOTSTRAP_JWT_SECRET`; each token type keeps its own issuer/audience pair.
+  - **App at root** — the dashboard now lives at `/` (with `/new`, `/account`, `/[id]`); the marketing site is removed and its content (features, supported games, how-it-works, animated logo) moved into the README.
+  - **Leaner by default** — Sentry, PostHog, and Google Analytics are removed, along with Dependabot; React Compiler is enabled; all dependencies bumped (and zod unpinned now that `@workflow/world` no longer requires an exact version).
+
+  **Reconnecting servers created by a 1.x instance.** Your VMs live in your own Hetzner account, so retiring the old control plane doesn't stop the games — players stay connected and nothing is deleted. But 2.0 starts with a fresh database, so those servers won't appear in your new dashboard. To move a world across:
+
+  1. **Copy the game data off the old VM.** Open the VM's console in the [Hetzner Cloud dashboard](https://console.hetzner.cloud) (or SSH if you added a key) and archive the game's data directory: `tar -czf /root/world.tar.gz -C /var/lib/ghost/game/data .` — then get the archive somewhere fetchable (e.g. `scp` it off, or upload it to any file host).
+  2. **Create a replacement server** for the same game on your new instance and let it provision.
+  3. **Restore the data.** Stop the new server from the dashboard, open the new VM's Hetzner console, and extract the archive over the data directory: `curl -L <archive-url> | tar -xz -C /var/lib/ghost/game/data` — then start the server again. (For a handful of individual files, the dashboard's **Files** tab can upload them directly instead.)
+  4. **Delete the old VM** from the Hetzner console once you've confirmed the world came across, so it stops billing. Old VMs are harmless in the meantime — their agents just long-poll the retired control-plane URL and get nothing.
+
+  If you'd rather start fresh, step 4 is the only one you need.
+
+### Patch Changes
+
+- [#55](https://github.com/haydenbleasel/ghost/pull/55) [`9f5d0fe`](https://github.com/haydenbleasel/ghost/commit/9f5d0fe810b4672a13bd71945e5626c150744308) Thanks [@tomnieuwland](https://github.com/tomnieuwland)! - Add Factorio support, using the factoriotools/factorio:stable image. Space Age DLC is enabled by default and toggleable. Supports Factorio Username/Password for server discovery.
+
+- [#56](https://github.com/haydenbleasel/ghost/pull/56) [`274f368`](https://github.com/haydenbleasel/ghost/commit/274f3689dbf6835a588307e1924d1f47be42a12a) Thanks [@tomnieuwland](https://github.com/tomnieuwland)! - Adds a script for generating docker compose files from defined games for local testing
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Report agent command results accurately when the ack POST fails transiently — a succeeded command was re-acked as failed and the remaining commands in the envelope were abandoned; acks are now best-effort and isolated from command execution
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Make agent enrollment survive a lost response — one dropped enroll reply used to brick the VM forever (each retry generated a fresh keypair and hit "Token already used" in a fatal loop, forcing server deletion); the agent now persists its keypair before the enroll POST and the server replays the success idempotently when a burned token arrives with the already-enrolled public key
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Fix lost agent events: a failed event flush never scheduled a retry (terminal events like 'Game stopped' could be dropped forever on a quiet agent), and concurrent flushes silently no-oped, letting shutdown discard buffered events mid-flight; flushes are now serialized and rescheduled on failure
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Fix every agent file command (list, delete, install-from-URL) crashing with a ReferenceError — agent/src/files.ts used node:path helpers it never imported; the agent package is now included in the repo typecheck so this class of bug can't ship again
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Clean up the temporary .part download when installing a file from URL fails at the final rename step, instead of leaking up to 500MB per failed attempt into the game data directory
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Stop replaying the last 200 historical log lines on every start/restart — the log tail now follows from the triggering command's start time, so old lines no longer reappear in the console with fresh sequence numbers
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Re-attach the console log tail when the agent boots with the game already running — after an agent crash or VM reboot the tail only started on the next user-issued start/restart, so the dashboard console silently went dead; the agent now probes the container on boot and tails from boot time (no historical replay)
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Prevent concurrent agent state saves from racing on a shared temp file, which could crash a just-executed command or corrupt state.json and brick the agent on next boot; saves are now serialized and use unique temp files
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Return 401 JSON from authenticated API routes when the session has expired instead of redirecting to the sign-in page — fetch/EventSource consumers were receiving the sign-in HTML with a 200, causing endless JSON parse errors and a dashboard that never noticed it was signed out; the server page poll now redirects to sign-in on 401
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Recover snapshot builds whose builder-VM create response was lost — the retry's unique-name conflict was turned straight into a fatal build failure, stranding a billed `ghost-builder-*` VM that nothing tracked or deleted; the step now adopts the existing VM by its deterministic name, and transient 429 rate limits retry instead of failing the build
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Redeliver commands whose delivery or ack was lost in transit — commands were marked delivered before the agent received them with no redelivery path, so a dropped long-poll response left them stuck forever; the agent now dedupes redeliveries against its recent command history
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Escape dollar signs in generated docker compose files — Docker Compose interpolates $VAR/${VAR} in every string, so a server name like 'Ca$h Grab' was silently mangled and an unclosed '${' made compose fail to start entirely; applies to all games including Factorio's literal config blocks
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Apply the observed-state transition when a retried agent event dedupes — if the first attempt crashed between inserting the event and updating the server row, the retry's duplicate hit returned early and the server was stuck showing "running" after the game had stopped (also breaking the hibernation stop drain); the dedupe path now falls through to the state update
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Fix the files API auth guard silently discarding its 401 — the unauthorized branch returned a bare response that the `"error" in owned` check never matched, so once unauthenticated API requests reach routes (middleware no longer redirects them) the handler would have fallen through and allowed unauthenticated file listing and deletion
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Fix the Hibernate action doing nothing on running or stopped servers — the confirmation dialog was only mounted while provisioning, so hibernation was unreachable from the UI in exactly the states where it is allowed
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Prevent a second hibernation from starting mid-hibernation — after the stop drain the agent's "stopped" event made the server claimable again, so another Hibernate click launched a concurrent workflow that could create a duplicate billed snapshot and end a successful hibernation in "failed"; the claim now requires a non-hibernating desired state, and the workflow re-asserts "hibernating" after the drain so the UI no longer offers Start against a VM being shut down
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Fix hibernation's stop-drain never detecting that the game stopped — the workflow polled a phase value that nothing ever set, always burning the full window and risking an ACPI shutdown mid-world-save; it now watches observed state and waits for the agent-reported stop
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Make hibernation snapshot creation crash-safe — a retried step whose previous snapshot succeeded but was never recorded created a second snapshot and orphaned the first, billed per-GB forever; the step now adopts an existing snapshot carrying the server's deterministic description before creating a new one
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Show the loading state while switching metric ranges on the Graphs tab — the aborted previous request was clearing the loading flag for the new in-flight one, so charts kept rendering old-range data with the new range's axis formatting until the fetch landed
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Return 401 JSON from the middleware for unauthenticated API requests instead of redirecting to the sign-in page — fetch and EventSource consumers were following the 307 and receiving sign-in HTML with a 200, which made the route-level 401 handling (and the dashboard's signed-out detection) unreachable
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Remove the advertised Bedrock port (19132-19133/udp) from Minecraft — the compose file runs a plain Java server that never listens on it, so the connect panel and firewall advertised a dead port
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Allow number settings (e.g. Max players) to be cleared while retyping — the input snapped back to the previous value on backspace, so typing "1" after clearing "6" produced 61; the field now tracks the raw text while focused and commits valid numbers
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Fix Palworld difficulty options: the server only accepts None/Normal/Difficult, so the previous Easy and Hard options were silently ignored
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Allow partial settings updates to omit required fields that are already stored — a valid update could previously be rejected with 'X is required' even though the value was saved on the server
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Stop treating Hetzner 429 rate limits as permanent failures during VM creation — the adopt-or-fatal branch matched every 4xx, so a transient rate limit during provision or wake marked the server permanently failed; 429 now rethrows as retryable
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Make rescale actually work — Hetzner's change_type requires the VM powered off, but a "stopped" Ghost server only has its game container stopped, so every rescale attempt failed with a provider error; rescaling now runs as a workflow that gracefully powers the VM off (hard poweroff as fallback), changes the type, and boots it back up, with an atomic claim so it can't race a double-click or an in-flight hibernation
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Refresh the hardware specs on the Details tab when a rescale lands — previously only the type name ever updated, so cores/memory kept showing the old size until a hard reload; the server poll now rebuilds the specs from the catalog when the server type changes (disk preserved, matching Hetzner's keep-disk rescale)
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Keep saved game settings visible after tab navigation — a successful save only updated the form's local state, so switching tabs and returning showed the stale pre-save values (and the 5-second poll never refreshed settings either); the save now updates the shared server context and the poll carries settings through
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Prevent the sign-in failure counter from becoming immortal when its expiry write is missed — the TTL is now refreshed on every failure, so a stale counter can no longer lock the owner out permanently
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Apply settings saved while a server is stopped: Start now sends the freshly built compose file (UPDATE_CONFIG) instead of a bare START, so the server always boots with the latest settings instead of silently reusing the stale compose on disk
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Fix server deletion always stalling for the full 120-second drain window — the workflow polled a phase value that nothing ever set; it now watches for the agent's own 'deleting' event and proceeds as soon as the drain completes
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Distinguish a truly deleted VM (provider 404) from Hetzner's transient 'unknown' server status — a transient 'unknown' during wake or hibernate could drop the reference to a live, billed VM and orphan it
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Make VM creation crash-safe: the VM name is reserved in the database before calling the provider, so a retried create adopts the existing VM via a unique-name conflict instead of silently creating (and billing) a second untracked one, and teardown reaps VMs known only by their reserved name
+
+- [`cf52b97`](https://github.com/haydenbleasel/ghost/commit/cf52b976b8a8d15b77cc8de8b470aef6bea7eb51) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Power on a surviving VM when waking after a failed hibernation — the wake workflow reused the powered-off VM but nothing ever powered it on, so every wake attempt timed out and the server was stuck until deleted
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Start the game after waking from hibernation — the container is stopped manually before the snapshot, so Docker's `unless-stopped` policy never brings it back on the restored VM; the wake workflow reported "running" while the game was down and the Start button was disabled. Wake now sends a fresh compose (UPDATE_CONFIG) once the agent reconnects, which also applies settings saved while hibernated
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Stop a deletion racing a wake (or provision retry) from leaking a billed VM — the wake step persisted the restored VM's id without checking that the server hadn't been deleted mid-create, and the provision step's cancelled path never reaped a VM known only by its reserved name; both now mirror the guarded persist-then-cleanup pattern so the orphan is deleted
+
+- [`bcf6715`](https://github.com/haydenbleasel/ghost/commit/bcf67151bfe941ff1d668089eeb5b81c15f27677) Thanks [@haydenbleasel](https://github.com/haydenbleasel)! - Stop the new-server wizard's Create button from silently doing nothing when a required game setting (e.g. Don't Starve Together's cluster token) is empty — the final step now stays disabled until required settings are filled in, instead of enabling the button and swallowing the click
+
 ## 1.2.0
 
 ### Minor Changes
