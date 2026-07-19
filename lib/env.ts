@@ -2,58 +2,43 @@ import { vercel } from "@t3-oss/env-core/presets-zod";
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+import { DEFAULT_AUTH_EMAIL } from "./session-token";
+
 export const env = createEnv({
-  client: {
-    NEXT_PUBLIC_GA_MEASUREMENT_ID: z
-      .string()
-      .min(1)
-      .startsWith("G-")
-      .optional(),
-    NEXT_PUBLIC_POSTHOG_HOST: z.string().min(1).url().optional(),
-    NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1).startsWith("phc_").optional(),
-    NEXT_PUBLIC_SENTRY_DSN: z.string().min(1).url().optional(),
-  },
+  client: {},
   extends: [vercel()],
   runtimeEnv: {
     ANALYZE: process.env.ANALYZE,
-    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    AUTH_EMAIL: process.env.AUTH_EMAIL,
+    AUTH_PASSWORD: process.env.AUTH_PASSWORD,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
-    BOOTSTRAP_JWT_SECRET: process.env.BOOTSTRAP_JWT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
+    GHOST_SECRET: process.env.GHOST_SECRET,
+    HETZNER_API_TOKEN: process.env.HETZNER_API_TOKEN,
     KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
     KV_REST_API_URL: process.env.KV_REST_API_URL,
-    NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
-    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
-    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
     NEXT_RUNTIME: process.env.NEXT_RUNTIME,
-    SENTRY_ORG: process.env.SENTRY_ORG,
-    SENTRY_PROJECT: process.env.SENTRY_PROJECT,
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     VERCEL_AUTOMATION_BYPASS_SECRET:
       process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
   },
   server: {
     ANALYZE: z.string().optional(),
-    BETTER_AUTH_SECRET: z.string().min(32),
-
-    BETTER_AUTH_URL: z.string().min(1).url(),
+    AUTH_EMAIL: z.string().min(1).email().default(DEFAULT_AUTH_EMAIL),
+    AUTH_PASSWORD: z.string().min(8),
     BLOB_READ_WRITE_TOKEN: z.string().min(1).startsWith("vercel_blob_rw_"),
-    BOOTSTRAP_JWT_SECRET: z.string().min(32),
-
     DATABASE_URL: z.string().min(1).url(),
     DATABASE_URL_UNPOOLED: z.string().min(1).url().optional(),
+
+    // Single signing secret for the session cookie, agent bootstrap JWTs, and
+    // snapshot download tokens — the audiences are namespaced per use.
+    GHOST_SECRET: z.string().min(32),
+    HETZNER_API_TOKEN: z.string().min(1),
     KV_REST_API_TOKEN: z.string().min(1),
 
     KV_REST_API_URL: z.string().min(1).url(),
 
     NEXT_RUNTIME: z.enum(["nodejs", "edge"]).optional(),
-    SENTRY_ORG: z.string().min(1).optional(),
-
-    SENTRY_PROJECT: z.string().min(1).optional(),
-    STRIPE_SECRET_KEY: z.string().min(1).optional(),
     VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
   },
 });

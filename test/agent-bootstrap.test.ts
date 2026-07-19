@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
 
 const BOOTSTRAP_AUDIENCE = "ghost-agent";
 const BOOTSTRAP_ISSUER = "ghost";
-const bootstrapSecret = new TextEncoder().encode(env.BOOTSTRAP_JWT_SECRET);
+const bootstrapSecret = new TextEncoder().encode(env.GHOST_SECRET);
 
 const signWithoutClaim = (claim: "sub" | "jti") => {
   const jwt = new SignJWT({})

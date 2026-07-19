@@ -11,12 +11,12 @@ export const GET = async (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) => {
-  const user = await requireUser();
+  await requireUser();
   const { id } = await context.params;
 
   const server = await prisma.server.findFirst({
     select: { id: true },
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
 
   if (!server) {

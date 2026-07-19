@@ -9,10 +9,8 @@ import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
 import { API_URL, env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { emitActivity } from "@/lib/events/emit";
-import {
-  getProviderForUser,
-  getProviderForUserWithImage,
-} from "@/lib/providers";
+import { getProvider, getProviderWithImage } from "@/lib/providers";
+import type { Provider } from "@/lib/providers";
 import {
   MissingProviderCredentialsError,
   ProviderApiError,
@@ -62,17 +60,10 @@ export const stepCreateProviderServer = async (serverId: string) => {
   if (!server || server.desiredState === "deleted") {
     // A previous attempt may have created the VM after teardown already
     // looked for it (and found nothing to delete) — clean it up here, since
-    // nothing else will. deleteServer is a no-op when the VM is gone.
+    // nothing else will. deleteServer is a no-op when the VM is gone, and a
+    // transient provider failure lets the step retry.
     if (server?.providerServerId) {
-      try {
-        const provider = await getProviderForUser(server.userId);
-        await provider.deleteServer(server.providerServerId);
-      } catch (error) {
-        if (!(error instanceof MissingProviderCredentialsError)) {
-          // Let the step retry until the provider is reachable again.
-          throw error;
-        }
-      }
+      await getProvider().deleteServer(server.providerServerId);
     }
     return {
       cancelled: true as const,
@@ -91,18 +82,13 @@ export const stepCreateProviderServer = async (serverId: string) => {
     throw new FatalError(`Unknown game: ${server.game}`);
   }
 
-  let provider: Awaited<
-    ReturnType<typeof getProviderForUserWithImage>
-  >["provider"];
+  let provider: Provider;
   let imageId: string;
   try {
-    ({ imageId, provider } = await getProviderForUserWithImage(
-      server.userId,
-      SNAPSHOT_ENVIRONMENT
-    ));
+    ({ imageId, provider } = await getProviderWithImage(SNAPSHOT_ENVIRONMENT));
   } catch (error) {
     if (error instanceof MissingProviderCredentialsError) {
-      throw new FatalError("Owner has not configured provider credentials");
+      throw new FatalError("No golden snapshot built for this environment");
     }
     // Transient failures (DB, network) should retry, not permanently fail
     // the provision with a misleading reason.
@@ -183,15 +169,7 @@ export const stepGetServerStatus = async (input: {
   providerServerId: string;
 }) => {
   "use step";
-  const owner = await prisma.server.findUnique({
-    select: { userId: true },
-    where: { id: input.serverId },
-  });
-  if (!owner) {
-    return { ip: null, status: "unknown" as const };
-  }
-  const provider = await getProviderForUser(owner.userId);
-  const server = await provider.getServer(input.providerServerId);
+  const server = await getProvider().getServer(input.providerServerId);
   if (!server) {
     return { ip: null, status: "unknown" as const };
   }
@@ -264,8 +242,9 @@ export const stepSendInstallConfig = async (serverId: string) => {
   let memoryGb: number | null = null;
   if (server.providerServerId) {
     try {
-      const provider = await getProviderForUser(server.userId);
-      const providerServer = await provider.getServer(server.providerServerId);
+      const providerServer = await getProvider().getServer(
+        server.providerServerId
+      );
       memoryGb = providerServer?.memoryGb ?? null;
     } catch {
       // Non-fatal: games fall back to a conservative default sizing.
@@ -375,15 +354,7 @@ export const stepDeleteProviderServer = async (serverId: string) => {
   if (!server?.providerServerId) {
     return { deleted: false };
   }
-  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
-  try {
-    provider = await getProviderForUser(server.userId);
-  } catch {
-    // Owner cleared their token; mark deleted in DB anyway since we can't
-    // reach the provider. The VM may need to be cleaned up manually.
-    return { deleted: false };
-  }
-  return provider.deleteServer(server.providerServerId);
+  return getProvider().deleteServer(server.providerServerId);
 };
 
 export const stepMarkDeleted = async (serverId: string) => {

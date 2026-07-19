@@ -1,16 +1,8 @@
 import type { MetadataRoute } from "next";
 
-import { SEO_URL } from "@/lib/env";
-
+// The whole app sits behind the owner sign-in — nothing to index.
 const robots = (): MetadataRoute.Robots => ({
-  rules: [
-    {
-      allow: "/",
-      disallow: ["/dashboard/", "/api/", "/sign-in", "/sign-up"],
-      userAgent: "*",
-    },
-  ],
-  sitemap: `${SEO_URL}/sitemap.xml`,
+  rules: [{ disallow: "/", userAgent: "*" }],
 });
 
 export default robots;

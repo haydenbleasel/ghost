@@ -9,9 +9,9 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const requireOwnedServer = async (id: string) => {
-  const user = await requireUser();
+  await requireUser();
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
   if (!server) {
     return {

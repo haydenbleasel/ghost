@@ -9,7 +9,7 @@ import { buildSnapshot } from "@/lib/workflows/build-snapshot";
 export const runtime = "nodejs";
 
 export const GET = async () => {
-  const user = await requireUser();
+  await requireUser();
   const build = await prisma.snapshotBuild.findFirst({
     orderBy: { createdAt: "desc" },
     select: {
@@ -21,43 +21,28 @@ export const GET = async () => {
       snapshotId: true,
       status: true,
     },
-    where: { userId: user.id },
   });
   return NextResponse.json({ build });
 };
 
 export const POST = async () => {
-  const user = await requireUser();
-
-  const row = await prisma.user.findUnique({
-    select: { providerToken: true },
-    where: { id: user.id },
-  });
-  if (!row?.providerToken) {
-    return NextResponse.json(
-      { error: "Save a Hetzner token before building a snapshot." },
-      { status: 412 }
-    );
-  }
+  await requireUser();
 
   const buildId = ulid();
   let alreadyRunning = false;
   await prisma.$transaction(async (tx) => {
-    // Row-lock the user so concurrent POSTs serialize on the same user.
-    await tx.$queryRaw`SELECT 1 FROM users WHERE id = ${user.id} FOR UPDATE`;
+    // Advisory lock so concurrent POSTs serialize; released at commit.
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('ghost.snapshot-build'))`;
     const active = await tx.snapshotBuild.findFirst({
       select: { id: true },
-      where: {
-        status: { notIn: ["ready", "failed"] },
-        userId: user.id,
-      },
+      where: { status: { notIn: ["ready", "failed"] } },
     });
     if (active) {
       alreadyRunning = true;
       return;
     }
     await tx.snapshotBuild.create({
-      data: { id: buildId, status: "pending", userId: user.id },
+      data: { id: buildId, status: "pending" },
     });
   });
 
@@ -69,10 +54,10 @@ export const POST = async () => {
   }
 
   try {
-    await start(buildSnapshot, [{ buildId, userId: user.id }]);
+    await start(buildSnapshot, [{ buildId }]);
   } catch (error) {
     // The build row was already committed; a non-terminal status would make
-    // the "already running" guard reject every future build for this user.
+    // the "already running" guard reject every future build.
     await prisma.snapshotBuild.update({
       data: {
         errorReason: "Failed to start build workflow",

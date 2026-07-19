@@ -1,20 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
-import { getProviderForUser } from "@/lib/providers";
-import {
-  MissingProviderCredentialsError,
-  ProviderApiError,
-} from "@/lib/providers/errors";
+import { getProvider } from "@/lib/providers";
+import { ProviderApiError } from "@/lib/providers/errors";
 import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
-
-const credsErrorResponse = () =>
-  NextResponse.json(
-    { error: "Configure your Hetzner credentials in account settings." },
-    { status: 412 }
-  );
 
 const apiErrorResponse = (error: ProviderApiError) =>
   NextResponse.json({ error: error.message }, { status: error.status });
@@ -23,11 +14,11 @@ export const DELETE = async (
   _request: Request,
   context: { params: Promise<{ id: string; imageId: string }> }
 ) => {
-  const user = await requireUser();
+  await requireUser();
   const { id, imageId } = await context.params;
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
+    where: { deletedAt: null, id },
   });
 
   if (!server) {
@@ -41,15 +32,7 @@ export const DELETE = async (
     );
   }
 
-  let provider: Awaited<ReturnType<typeof getProviderForUser>>;
-  try {
-    provider = await getProviderForUser(user.id);
-  } catch (error) {
-    if (error instanceof MissingProviderCredentialsError) {
-      return credsErrorResponse();
-    }
-    throw error;
-  }
+  const provider = getProvider();
 
   try {
     const image = await provider.getImage(imageId);

@@ -1,8 +1,9 @@
 import { createMiddleware, defaults, withVercelToolbar } from "@nosecone/next";
 import type { NoseconeOptions } from "@nosecone/next";
-import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/session-token";
 
 export const noseconeOptions: NoseconeOptions = {
   ...defaults,
@@ -15,32 +16,30 @@ export const noseconeOptionsWithToolbar: NoseconeOptions =
 const securityHeaders = createMiddleware(noseconeOptions);
 
 const PUBLIC_PATHS = [
-  "/",
-  "/how-it-works",
   "/sign-in",
-  "/sign-up",
   "/robots.txt",
-  "/sitemap.xml",
-  "/api/auth",
   "/api/agent",
   "/api/snapshot",
-  "/monitoring",
   "/.well-known/workflow",
 ];
 
 const isPublic = (pathname: string) =>
   PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+// Note: "/" itself is intentionally not public — the app root is the
+// dashboard, and unauthenticated visitors are bounced to /sign-in.
 
-const proxy = (request: NextRequest) => {
+const proxy = async (request: NextRequest) => {
   const { pathname } = request.nextUrl;
 
   if (isPublic(pathname)) {
     return securityHeaders();
   }
 
-  const sessionCookie = getSessionCookie(request);
+  const session = await verifySessionToken(
+    request.cookies.get(SESSION_COOKIE)?.value
+  );
 
-  if (!sessionCookie) {
+  if (!session) {
     const url = request.nextUrl.clone();
     url.pathname = "/sign-in";
     return NextResponse.redirect(url);

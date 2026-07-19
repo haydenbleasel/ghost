@@ -9,7 +9,7 @@ import {
   stat,
   unlink,
 } from "node:fs/promises";
-import { basename, dirname, join, normalize, resolve, sep } from "node:path";
+import nodePath from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { ReadableStream as NodeReadableStream } from "node:stream/web";
@@ -57,7 +57,7 @@ const realpathDeepestAncestor = async (target: string): Promise<string> => {
 };
 
 const assertWithinRoot = (path: string, root: string): void => {
-  if (path !== root && !path.startsWith(root + sep)) {
+  if (path !== root && !path.startsWith(root + nodePath.sep)) {
     throw new Error("path escapes data root");
   }
 };

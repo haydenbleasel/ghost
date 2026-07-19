@@ -1,19 +1,19 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { createMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/session";
 
-export const metadata = createMetadata({
-  description: "Sign in or create a Ghost account.",
+export const metadata: Metadata = {
+  description: "Sign in to your Ghost instance.",
   robots: { follow: false, index: false },
-  title: "Account",
-});
+  title: "Sign in",
+};
 
 const AuthLayout = async ({ children }: { children: ReactNode }) => {
   const session = await getSession();
-  if (session?.user) {
-    redirect("/dashboard");
+  if (session) {
+    redirect("/");
   }
 
   return (

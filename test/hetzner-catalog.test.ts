@@ -65,8 +65,8 @@ const fsnDc = {
   location: {
     city: "Falkenstein",
     country: "DE",
-    latitude: 50.476_12,
-    longitude: 12.370_071,
+    latitude: 50.47612,
+    longitude: 12.370071,
     name: "fsn1",
   },
   server_types: { available: [100], supported: [100, 200] },
@@ -76,8 +76,8 @@ const nbgDc = {
   location: {
     city: "Nuremberg",
     country: "DE",
-    latitude: 49.452_102,
-    longitude: 11.076_665,
+    latitude: 49.452102,
+    longitude: 11.076665,
     name: "nbg1",
   },
   server_types: { available: [], supported: [100] },
