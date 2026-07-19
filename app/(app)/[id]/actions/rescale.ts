@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { start } from "workflow/api";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { getProvider } from "@/lib/providers";
-import { ProviderApiError } from "@/lib/providers/errors";
 import { requireUser } from "@/lib/session";
+import { rescaleServer as rescaleServerWorkflow } from "@/lib/workflows/rescale-server";
 
 const inputSchema = z.object({
   serverId: z.string().min(1),
@@ -15,9 +15,7 @@ const inputSchema = z.object({
 
 export type RescaleServerInput = z.infer<typeof inputSchema>;
 
-export type RescaleServerResult =
-  | { ok: true; serverType: string }
-  | { error: string; ok: false };
+export type RescaleServerResult = { ok: true } | { error: string; ok: false };
 
 export const rescaleServer = async (
   input: RescaleServerInput
@@ -28,46 +26,52 @@ export const rescaleServer = async (
   if (!parsed.success) {
     return { error: "Invalid input", ok: false };
   }
+  const { serverId, serverType } = parsed.data;
 
   const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id: parsed.data.serverId },
+    where: { deletedAt: null, id: serverId },
   });
   if (!server) {
     return { error: "Not found", ok: false };
   }
-
   if (!server.providerServerId) {
     return { error: "Server is not provisioned yet", ok: false };
   }
-
-  if (server.observedState !== "stopped") {
-    return { error: "Server must be stopped before rescaling", ok: false };
-  }
-
-  if (parsed.data.serverType === server.serverType) {
+  if (serverType === server.serverType) {
     return { error: "Already on this server type", ok: false };
   }
 
-  const provider = getProvider();
-
-  try {
-    await provider.rescaleServer(
-      server.providerServerId,
-      parsed.data.serverType
-    );
-  } catch (error) {
-    if (error instanceof ProviderApiError) {
-      return { error: error.message, ok: false };
-    }
-    throw error;
+  // Atomically claim the transition via phase so a double-click (or a click
+  // racing hibernation, which briefly shows "stopped" too) can't start two
+  // workflows. desiredState "stopped" excludes mid-hibernation claims.
+  const { count } = await prisma.server.updateMany({
+    data: { errorReason: null, phase: "rescaling" },
+    where: {
+      deletedAt: null,
+      desiredState: "stopped",
+      id: serverId,
+      observedState: "stopped",
+      phase: { not: "rescaling" },
+      providerServerId: { not: null },
+    },
+  });
+  if (count === 0) {
+    return { error: "Server must be stopped before rescaling", ok: false };
   }
 
-  await prisma.server.update({
-    data: { serverType: parsed.data.serverType },
-    where: { id: parsed.data.serverId },
-  });
+  try {
+    await start(rescaleServerWorkflow, [{ serverId, serverType }]);
+  } catch {
+    // The workflow never started; release the claim so the server isn't
+    // stranded in "rescaling" with nothing driving it.
+    await prisma.server.updateMany({
+      data: { phase: server.phase },
+      where: { id: serverId, phase: "rescaling" },
+    });
+    return { error: "Failed to start rescale", ok: false };
+  }
 
   revalidatePath("/", "layout");
 
-  return { ok: true, serverType: parsed.data.serverType };
+  return { ok: true };
 };

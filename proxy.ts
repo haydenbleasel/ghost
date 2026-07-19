@@ -40,6 +40,11 @@ const proxy = async (request: NextRequest) => {
   );
 
   if (!session) {
+    // API consumers (fetch/EventSource) must see a 401, not a redirect —
+    // following the redirect hands them the sign-in HTML with a 200.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/sign-in";
     return NextResponse.redirect(url);

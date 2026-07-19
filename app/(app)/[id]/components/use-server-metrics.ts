@@ -169,7 +169,11 @@ export const useServerMetrics = (
           setError("Failed to load metrics");
         }
       } finally {
-        setLoading(false);
+        // An aborted request means a newer one replaced it — leave `loading`
+        // to the request that is actually in flight.
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
     load();

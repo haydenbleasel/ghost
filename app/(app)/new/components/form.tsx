@@ -34,6 +34,29 @@ import { Cobe } from "./cobe";
 
 const VISIBLE_ALL_SIZES = 3;
 
+const isSettingsValid = (
+  schema: SettingsSchema | undefined,
+  settings: SettingsValuesRecord
+): boolean =>
+  schema ? missingRequiredFields(schema, settings).length === 0 : true;
+
+const computeStepValid = (input: {
+  gameId: string;
+  eligibleTypesCount: number;
+  typeName: string;
+  locationName: string;
+  nameValid: boolean;
+  settingsValid: boolean;
+}): boolean[] => [
+  Boolean(input.gameId),
+  Boolean(input.typeName) && input.eligibleTypesCount > 0,
+  Boolean(input.locationName),
+  // Required game settings are edited on the final step alongside the name —
+  // gate the submit button on both so a missing required field can't produce
+  // a silently-ignored click.
+  input.nameValid && input.settingsValid,
+];
+
 const formatPrice = (amount: number, currency: string) =>
   new Intl.NumberFormat(undefined, {
     currency,
@@ -564,23 +587,18 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
   const trimmedName = name.trim();
   const nameValid = trimmedName.length >= 3 && trimmedName.length <= 40;
 
-  const stepValid = [
-    Boolean(gameId),
-    Boolean(typeName) && eligibleTypes.length > 0,
-    Boolean(locationName),
+  const settingsValid = isSettingsValid(selectedGame?.settings, settings);
+
+  const stepValid = computeStepValid({
+    eligibleTypesCount: eligibleTypes.length,
+    gameId,
+    locationName,
     nameValid,
-  ];
+    settingsValid,
+    typeName,
+  });
 
-  const settingsValid = selectedGame
-    ? missingRequiredFields(selectedGame.settings, settings).length === 0
-    : true;
-
-  const canSubmit =
-    nameValid &&
-    Boolean(gameId) &&
-    Boolean(typeName) &&
-    Boolean(locationName) &&
-    settingsValid;
+  const canSubmit = stepValid.every(Boolean);
 
   const submit = async () => {
     if (!canSubmit) {

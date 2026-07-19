@@ -29,7 +29,6 @@ interface Props {
   currentServerType: string;
   eligibleTypes: CatalogServerType[];
   currency: string;
-  onChange: (patch: { serverType?: string }) => void;
 }
 
 const formatPrice = (amount: number, currency: string) =>
@@ -45,7 +44,6 @@ export const SettingsPanel = ({
   currentServerType,
   eligibleTypes,
   currency,
-  onChange,
 }: Props) => {
   const [rescaleOpen, setRescaleOpen] = useState(false);
   const [rescalePending, setRescalePending] = useState(false);
@@ -68,8 +66,10 @@ export const SettingsPanel = ({
         toast.error(result.error);
         return;
       }
-      onChange({ serverType: result.serverType });
-      toast.success(`Rescaled to ${result.serverType}`);
+      // The rescale runs in the background (the VM must be power-cycled
+      // around the type change); the shell poll picks up the new type when
+      // it lands.
+      toast.success(`Rescaling to ${selectedType} — this takes a minute`);
       setRescaleOpen(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Rescale failed");

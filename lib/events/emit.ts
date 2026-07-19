@@ -52,12 +52,13 @@ export const emitActivity = async (input: ActivityPayload): Promise<void> => {
       },
     });
   } catch (error) {
-    if (input.dedupeId && isUniqueViolation(error)) {
-      // Retried batch — the event (and its observedState transition) was
-      // already recorded.
-      return;
+    if (!(input.dedupeId && isUniqueViolation(error))) {
+      throw error;
     }
-    throw error;
+    // Retried batch — the event row exists, but the first attempt may have
+    // crashed between the insert and the observedState update below, so fall
+    // through and re-apply it. Safe: agent flushes are serialized, so a
+    // retry cannot overtake a newer event's transition.
   }
 
   const nextObservedState = PHASE_TO_OBSERVED_STATE[input.phase];

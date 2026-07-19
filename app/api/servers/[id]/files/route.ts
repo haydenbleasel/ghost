@@ -10,7 +10,9 @@ export const maxDuration = 30;
 
 const requireOwnedServer = async (id: string) => {
   if (!(await getSession())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return {
+      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    } as const;
   }
   const server = await prisma.server.findFirst({
     where: { deletedAt: null, id },

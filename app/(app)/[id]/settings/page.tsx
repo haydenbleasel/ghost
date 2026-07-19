@@ -14,6 +14,7 @@ const SettingsTab = () => {
       {game && (
         <GameSettingsForm
           initialValues={resolveSettings(game.settings, server.settings)}
+          onSaved={(settings) => updateServer({ settings })}
           schema={game.settings}
           serverId={server.id}
         />
@@ -23,7 +24,6 @@ const SettingsTab = () => {
         currentServerType={server.serverType}
         eligibleTypes={eligibleTypes}
         observedState={server.observedState}
-        onChange={(patch) => updateServer(patch)}
         serverId={server.id}
       />
     </div>

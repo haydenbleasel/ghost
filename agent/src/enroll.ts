@@ -1,10 +1,20 @@
 import { enrollResponseSchema } from "../../protocol";
-import { deleteBootstrap, saveState } from "./config";
+import {
+  deleteBootstrap,
+  deleteEnrollKeypair,
+  loadEnrollKeypair,
+  saveEnrollKeypair,
+  saveState,
+} from "./config";
 import type { Bootstrap, State } from "./config";
 import { generateKeypair } from "./signing";
 
 export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
-  const keypair = await generateKeypair();
+  // Reuse (and persist, before the POST) the keypair across attempts so a
+  // lost enroll response is recoverable — the server replies idempotently to
+  // a burned token when the public key matches the enrolled agent.
+  const keypair = (await loadEnrollKeypair()) ?? (await generateKeypair());
+  await saveEnrollKeypair(keypair);
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -45,6 +55,7 @@ export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
 
   await saveState(state);
   await deleteBootstrap();
+  await deleteEnrollKeypair();
 
   return state;
 };

@@ -1,5 +1,6 @@
 import { pollCommands } from "./commands";
 import { loadBootstrap, loadState, saveState } from "./config";
+import { GAME_CONTAINER, probeContainerState, startLogTail } from "./docker";
 import { enroll } from "./enroll";
 import { EventBuffer } from "./events";
 import { runHeartbeat } from "./heartbeat";
@@ -13,6 +14,14 @@ const run = async (state: Awaited<ReturnType<typeof loadState>>) => {
   buffer.enqueueActivity({ message: "Agent online", phase: "agent_connected" });
   await buffer.flush();
   await saveState(state);
+
+  // The log tail only starts inside START/RESTART/UPDATE_CONFIG handlers, so
+  // after an agent crash or a VM reboot a still-running game would stream no
+  // logs until the next user-issued restart. Re-attach here, tailing from
+  // boot time so no historical lines are replayed.
+  if ((await probeContainerState()) === "running") {
+    startLogTail(GAME_CONTAINER, buffer, new Date().toISOString());
+  }
 
   const controller = new AbortController();
   const shutdown = async (code: number) => {

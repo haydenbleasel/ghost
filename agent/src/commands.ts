@@ -9,6 +9,7 @@ import {
   composeRestart,
   composeStop,
   composeUp,
+  GAME_CONTAINER,
   startLogTail,
   stopLogTail,
   writeCompose,
@@ -16,8 +17,6 @@ import {
 import type { EventBuffer } from "./events";
 import { deleteFile, installFromUrl, listFiles } from "./files";
 import { signedFetch } from "./signing";
-
-const GAME_CONTAINER = "ghost-game";
 
 const sleep = async (ms: number, signal: AbortSignal): Promise<void> => {
   try {

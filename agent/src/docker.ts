@@ -8,6 +8,8 @@ import type { EventBuffer } from "./events";
 const COMPOSE_DIR = process.env.GHOST_COMPOSE_DIR ?? "/var/lib/ghost/game";
 const COMPOSE_PATH = `${COMPOSE_DIR}/docker-compose.yml`;
 
+export const GAME_CONTAINER = "ghost-game";
+
 export const writeCompose = async (content: string): Promise<void> => {
   await mkdir(COMPOSE_DIR, { recursive: true });
   await writeFile(COMPOSE_PATH, content, { mode: 0o600 });

@@ -29,6 +29,34 @@ interface InputProps {
   onChange: (value: FieldValue) => void;
 }
 
+const NumberSettingInput = ({ id, field, value, onChange }: InputProps) => {
+  // Track the raw text while focused so the field can be cleared while
+  // retyping — a controlled valueAsNumber snaps back on every keystroke.
+  const [draft, setDraft] = useState<string | null>(null);
+  if (field.type !== "number") {
+    return null;
+  }
+  return (
+    <Input
+      id={id}
+      type="number"
+      className="w-32"
+      value={draft ?? (typeof value === "number" ? value : "")}
+      min={field.min}
+      max={field.max}
+      step={field.step ?? 1}
+      onChange={(event) => {
+        setDraft(event.target.value);
+        const next = event.target.valueAsNumber;
+        if (Number.isFinite(next)) {
+          onChange(next);
+        }
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  );
+};
+
 const SettingInput = ({ id, field, value, onChange }: InputProps) => {
   switch (field.type) {
     case "boolean": {
@@ -42,20 +70,11 @@ const SettingInput = ({ id, field, value, onChange }: InputProps) => {
     }
     case "number": {
       return (
-        <Input
+        <NumberSettingInput
           id={id}
-          type="number"
-          className="w-32"
-          value={typeof value === "number" ? value : ""}
-          min={field.min}
-          max={field.max}
-          step={field.step ?? 1}
-          onChange={(event) => {
-            const next = event.target.valueAsNumber;
-            if (Number.isFinite(next)) {
-              onChange(next);
-            }
-          }}
+          field={field}
+          value={value}
+          onChange={onChange}
         />
       );
     }
@@ -160,6 +179,7 @@ interface Props {
   serverId: string;
   schema: SettingsSchema;
   initialValues: Record<string, unknown>;
+  onSaved?: (settings: SettingsValuesRecord) => void;
 }
 
 const valuesEqual = (
@@ -179,6 +199,7 @@ export const GameSettingsForm = ({
   serverId,
   schema,
   initialValues,
+  onSaved,
 }: Props) => {
   const [values, setValues] = useState<SettingsValuesRecord>(
     () => initialValues as SettingsValuesRecord
@@ -208,6 +229,7 @@ export const GameSettingsForm = ({
       const next = result.settings as SettingsValuesRecord;
       setBaseline(next);
       setValues(next);
+      onSaved?.(next);
       toast.success("Settings saved");
     } catch (error) {
       toast.error(

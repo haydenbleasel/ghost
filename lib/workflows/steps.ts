@@ -6,6 +6,7 @@ import { buildUfwRules, getGame } from "@/games";
 import type { GamePort } from "@/games";
 import { mintBootstrapJwt } from "@/lib/agent/bootstrap";
 import { enqueueCommand } from "@/lib/agent/commands";
+import { buildServerCompose } from "@/lib/agent/compose";
 import { prisma } from "@/lib/db";
 import { API_URL, env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { emitActivity } from "@/lib/events/emit";
@@ -85,6 +86,11 @@ const createOrAdoptVm = async (
     return await provider.createServer(input);
   } catch (error) {
     if (error instanceof ProviderApiError && error.isClientError) {
+      // 429 is a transient rate limit, not a rejected request — rethrow so
+      // the step retries instead of permanently failing the server.
+      if (error.status === 429) {
+        throw error;
+      }
       // The reserved name is random per attempt, so a VM already carrying it
       // can only be our own earlier create whose response was lost — adopt
       // it. Skip VMs mid-deletion; those can't be revived.
@@ -111,6 +117,14 @@ export const stepCreateProviderServer = async (serverId: string) => {
     // transient provider failure lets the step retry.
     if (server?.providerServerId) {
       await getProvider().deleteServer(server.providerServerId);
+    } else if (server?.pendingVmName) {
+      // The create may have succeeded without its id ever being persisted —
+      // the VM is known only by its reserved name, and teardown's own
+      // name-reap may have run before the VM existed.
+      const orphan = await getProvider().getServerByName(server.pendingVmName);
+      if (orphan) {
+        await getProvider().deleteServer(orphan.id);
+      }
     }
     return {
       cancelled: true as const,
@@ -522,9 +536,24 @@ export const stepCreateHibernationSnapshot = async (serverId: string) => {
   if (server.hibernationImageId) {
     return { imageId: server.hibernationImageId };
   }
-  const imageId = await getProvider().createSnapshot(server.providerServerId, {
-    description: `ghost-hibernation-${serverId}`,
-  });
+  const description = `ghost-hibernation-${serverId}`;
+  // A retried step whose previous createSnapshot succeeded but never
+  // persisted its id would otherwise create a second snapshot and orphan the
+  // first (billed per-GB forever) — adopt the existing one instead.
+  const images = await getProvider().listImagesForServer(
+    server.providerServerId
+  );
+  const existing = images.find(
+    (image) =>
+      image.type === "snapshot" &&
+      image.description === description &&
+      image.status !== "unavailable"
+  );
+  const imageId =
+    existing?.id ??
+    (await getProvider().createSnapshot(server.providerServerId, {
+      description,
+    }));
   await prisma.server.update({
     data: { hibernationImageId: imageId },
     where: { id: serverId },
@@ -586,6 +615,21 @@ export const stepCreateProviderServerFromSnapshot = async (
   "use step";
   const server = await prisma.server.findUnique({ where: { id: serverId } });
   if (!server || server.desiredState !== "running") {
+    // Mirror stepCreateProviderServer: a previous attempt may have created
+    // the VM after teardown already looked for it — reap it here, whether it
+    // is known by id or only by its reserved name.
+    if (server?.desiredState === "deleted") {
+      if (server.providerServerId) {
+        await getProvider().deleteServer(server.providerServerId);
+      } else if (server.pendingVmName) {
+        const orphan = await getProvider().getServerByName(
+          server.pendingVmName
+        );
+        if (orphan) {
+          await getProvider().deleteServer(orphan.id);
+        }
+      }
+    }
     return { cancelled: true as const };
   }
   if (server.providerServerId) {
@@ -615,7 +659,7 @@ export const stepCreateProviderServerFromSnapshot = async (
     userData: "",
   });
 
-  await prisma.server.update({
+  const { count } = await prisma.server.updateMany({
     data: {
       ipv4: created.ipv4,
       observedState: "waking",
@@ -623,8 +667,21 @@ export const stepCreateProviderServerFromSnapshot = async (
       phase: "waking",
       providerServerId: created.id,
     },
-    where: { id: serverId },
+    where: { desiredState: "running", id: serverId },
   });
+
+  if (count === 0) {
+    // Deleted (or otherwise cancelled) while the create was in flight.
+    // Persist the id without clobbering teardown's state so the cancelled
+    // path above can retry the cleanup if this inline delete fails.
+    await prisma.server.updateMany({
+      data: { pendingVmName: null, providerServerId: created.id },
+      where: { id: serverId },
+    });
+    await provider.deleteServer(created.id);
+    return { cancelled: true as const };
+  }
+
   await emitActivity({
     message: "Restoring VM from snapshot",
     metadata: { providerServerId: created.id },
@@ -685,5 +742,145 @@ export const stepMarkAwake = async (serverId: string) => {
     message: "Server back online",
     phase: "ready",
     serverId,
+  });
+};
+
+export const stepSendWakeStartCommand = async (serverId: string) => {
+  "use step";
+  const { stepId } = getStepMetadata();
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server || server.desiredState !== "running") {
+    return;
+  }
+  // Hibernation stops the game container manually before the snapshot, and
+  // Docker's `unless-stopped` policy never restarts a manually-stopped
+  // container — so the restored VM boots with the game down. Start it
+  // explicitly, with a freshly built compose so settings saved while
+  // hibernated are applied (mirrors the START action).
+  const compose = await buildServerCompose(server);
+  await enqueueCommand({
+    idempotencyKey: stepId,
+    payload: compose ? { compose } : {},
+    serverId,
+    type: compose ? "UPDATE_CONFIG" : "START",
+  });
+  await emitActivity({
+    message: "Starting game after wake",
+    phase: "starting",
+    serverId,
+  });
+};
+
+export const stepMarkHibernating = async (serverId: string) => {
+  "use step";
+  // The agent's "stopped" event lands on observedState during the stop
+  // drain; re-assert "hibernating" so the UI doesn't offer Start (and the
+  // hibernate action can't claim the row again) while the VM is shut down
+  // and snapshotted.
+  await prisma.server.updateMany({
+    data: { observedState: "hibernating" },
+    where: {
+      desiredState: "hibernated",
+      id: serverId,
+      observedState: "stopped",
+    },
+  });
+};
+
+export const stepChangeServerType = async (input: {
+  serverId: string;
+  serverType: string;
+}) => {
+  "use step";
+  const server = await prisma.server.findUnique({
+    where: { id: input.serverId },
+  });
+  if (!server?.providerServerId) {
+    throw new FatalError("Server has no provider VM to rescale");
+  }
+  try {
+    await getProvider().rescaleServer(
+      server.providerServerId,
+      input.serverType
+    );
+  } catch (error) {
+    if (
+      error instanceof ProviderApiError &&
+      error.isClientError &&
+      error.status !== 429
+    ) {
+      throw new FatalError(error.message);
+    }
+    throw error;
+  }
+  await prisma.server.update({
+    data: { serverType: input.serverType },
+    where: { id: input.serverId },
+  });
+};
+
+export const stepPoweronProviderServer = async (serverId: string) => {
+  "use step";
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server?.providerServerId) {
+    return { ok: false as const };
+  }
+  await getProvider().poweronServer(server.providerServerId);
+  return { ok: true as const };
+};
+
+export const stepMarkRescaled = async (input: {
+  serverId: string;
+  serverType: string;
+}) => {
+  "use step";
+  const { count } = await prisma.server.updateMany({
+    data: { errorReason: null, phase: "ready" },
+    where: { id: input.serverId, phase: "rescaling" },
+  });
+  if (count === 0) {
+    return;
+  }
+  await emitActivity({
+    message: `Rescaled to ${input.serverType}`,
+    metadata: { serverType: input.serverType },
+    phase: "ready",
+    serverId: input.serverId,
+  });
+};
+
+export const stepMarkRescaleFailed = async (input: {
+  serverId: string;
+  reason: string;
+}) => {
+  "use step";
+  const server = await prisma.server.findUnique({
+    where: { id: input.serverId },
+  });
+  if (server?.providerServerId) {
+    // Best-effort: bring the VM back up so a failed rescale doesn't leave
+    // the server powered off with nothing driving it.
+    try {
+      await getProvider().poweronServer(server.providerServerId);
+    } catch {
+      // The VM may already be on (or gone); the user can still retry.
+    }
+  }
+  const { count } = await prisma.server.updateMany({
+    data: { errorReason: input.reason, phase: "ready" },
+    where: {
+      desiredState: { not: "deleted" },
+      id: input.serverId,
+      phase: "rescaling",
+    },
+  });
+  if (count === 0) {
+    return;
+  }
+  await emitActivity({
+    message: `Rescale failed: ${input.reason}`,
+    metadata: { reason: input.reason },
+    phase: "errored",
+    serverId: input.serverId,
   });
 };

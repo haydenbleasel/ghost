@@ -39,6 +39,52 @@ const BOOTSTRAP_PATH =
 const STATE_PATH = process.env.GHOST_STATE_PATH ?? "/var/lib/ghost/state.json";
 const STATE_DIR = STATE_PATH.replace(/\/[^/]+$/u, "");
 
+// The enrollment keypair is persisted before the enroll POST is sent: if the
+// response is lost (network blip, crash before state.json exists), the retry
+// re-sends the same public key and the server can recognise it as a replay of
+// an enrollment that already succeeded — a fresh keypair per attempt would
+// hit "Token already used" forever.
+const ENROLL_KEYPAIR_PATH =
+  process.env.GHOST_ENROLL_KEYPAIR_PATH ?? `${STATE_DIR}/enroll-keypair.json`;
+
+const enrollKeypairSchema = z.object({
+  privateKey: z.string().min(1),
+  publicKey: z.string().min(1),
+});
+
+export type EnrollKeypair = z.infer<typeof enrollKeypairSchema>;
+
+export const loadEnrollKeypair = async (): Promise<EnrollKeypair | null> => {
+  if (!existsSync(ENROLL_KEYPAIR_PATH)) {
+    return null;
+  }
+  try {
+    const raw = await readFile(ENROLL_KEYPAIR_PATH, "utf-8");
+    return enrollKeypairSchema.parse(JSON.parse(raw));
+  } catch {
+    // Corrupted (e.g. crash mid-write before this used atomic swap) —
+    // regenerate rather than brick enrollment.
+    return null;
+  }
+};
+
+export const saveEnrollKeypair = async (
+  keypair: EnrollKeypair
+): Promise<void> => {
+  await mkdir(STATE_DIR, { recursive: true });
+  const tmp = `${ENROLL_KEYPAIR_PATH}.tmp`;
+  await writeFile(tmp, JSON.stringify(keypair), { mode: 0o600 });
+  await rename(tmp, ENROLL_KEYPAIR_PATH);
+};
+
+export const deleteEnrollKeypair = async (): Promise<void> => {
+  try {
+    await unlink(ENROLL_KEYPAIR_PATH);
+  } catch {
+    // ignore
+  }
+};
+
 export const loadBootstrap = async (): Promise<Bootstrap | null> => {
   if (!existsSync(BOOTSTRAP_PATH)) {
     return null;

@@ -134,25 +134,48 @@ export const ServerShell = ({
       }
       const { server: fresh } = await res.json();
       if (fresh) {
-        setServer((prev) => ({
-          ...prev,
-          backupsEnabled: fresh.backupsEnabled ?? prev.backupsEnabled,
-          desiredState: fresh.desiredState,
-          errorReason: fresh.errorReason ?? null,
-          game: fresh.game,
-          hibernationImageId: fresh.hibernationImageId ?? null,
-          id: fresh.id,
-          ipv4: fresh.ipv4,
-          lastHeartbeatAt: fresh.agent?.lastHeartbeatAt ?? null,
-          name: fresh.name,
-          observedState: fresh.observedState,
-          phase: fresh.phase,
-          serverType: fresh.serverType ?? prev.serverType,
-        }));
+        setServer((prev) => {
+          const serverType = fresh.serverType ?? prev.serverType;
+          // A background rescale changed the type — rebuild the hardware
+          // specs so the Details tab doesn't show the old size until a hard
+          // reload. Disk is preserved (Hetzner rescales keep the disk).
+          const nextType =
+            serverType === prev.serverType
+              ? undefined
+              : eligibleTypes.find(
+                  (candidate) => candidate.name === serverType
+                );
+          return {
+            ...prev,
+            backupsEnabled: fresh.backupsEnabled ?? prev.backupsEnabled,
+            desiredState: fresh.desiredState,
+            errorReason: fresh.errorReason ?? null,
+            game: fresh.game,
+            hibernationImageId: fresh.hibernationImageId ?? null,
+            id: fresh.id,
+            ipv4: fresh.ipv4,
+            lastHeartbeatAt: fresh.agent?.lastHeartbeatAt ?? null,
+            name: fresh.name,
+            observedState: fresh.observedState,
+            phase: fresh.phase,
+            serverType,
+            settings: fresh.settings ?? prev.settings,
+            specs: nextType
+              ? {
+                  architecture: nextType.architecture,
+                  cores: nextType.cores,
+                  cpuType: nextType.cpuType,
+                  disk: prev.specs?.disk ?? nextType.disk,
+                  memory: nextType.memory,
+                  typeName: nextType.name,
+                }
+              : prev.specs,
+          };
+        });
       }
     }, 5000);
     return () => clearInterval(t);
-  }, [initial.id, router]);
+  }, [initial.id, router, eligibleTypes]);
 
   const sendCommand = async (type: "START" | "STOP" | "RESTART") => {
     setPending(type);

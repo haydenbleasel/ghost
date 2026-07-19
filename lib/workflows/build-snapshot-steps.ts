@@ -120,9 +120,24 @@ export const stepCreateBuilderVm = async (input: {
     });
   } catch (error) {
     if (error instanceof ProviderApiError && error.isClientError) {
-      throw new FatalError(error.message);
+      // 429 is a transient rate limit — retry the step instead of failing
+      // the build permanently.
+      if (error.status === 429) {
+        throw error;
+      }
+      // A name conflict means our own earlier create succeeded but its
+      // response (and the providerBuilderId write below) was lost — adopt
+      // that VM instead of failing the build and stranding it, billed, with
+      // no recorded id.
+      const existing = await provider.getServerByName(name);
+      if (existing && existing.status !== "deleting") {
+        created = existing;
+      } else {
+        throw new FatalError(error.message);
+      }
+    } else {
+      throw error;
     }
-    throw error;
   }
 
   await prisma.snapshotBuild.update({

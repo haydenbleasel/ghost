@@ -48,7 +48,13 @@ export const hibernate = async (
     },
     where: {
       OR: [
-        { observedState: { in: ["running", "stopped"] } },
+        // desiredState guards re-entry: mid-hibernation the agent's stop
+        // event briefly sets observedState back to "stopped", which must not
+        // be claimable again (desiredState is already "hibernated" by then).
+        {
+          desiredState: { in: ["running", "stopped"] },
+          observedState: { in: ["running", "stopped"] },
+        },
         { desiredState: "hibernated", observedState: "failed" },
       ],
       deletedAt: null,

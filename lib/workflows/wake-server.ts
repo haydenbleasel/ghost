@@ -9,6 +9,7 @@ import {
   stepMarkFailed,
   stepMarkServerRunning,
   stepReadDesiredState,
+  stepSendWakeStartCommand,
   stepWaitAgentReconnected,
 } from "./steps";
 
@@ -83,6 +84,7 @@ export const wakeServer = async (input: { serverId: string }) => {
       return;
     }
 
+    await stepSendWakeStartCommand(serverId);
     await stepDeleteHibernationSnapshot(serverId);
     await stepMarkAwake(serverId);
   } catch (error) {

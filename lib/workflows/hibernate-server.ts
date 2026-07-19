@@ -7,6 +7,7 @@ import {
   stepGetServerStatus,
   stepGetSnapshotStatus,
   stepMarkFailed,
+  stepMarkHibernating,
   stepPoweroffProviderServer,
   stepReadDesiredState,
   stepReadObservedState,
@@ -76,6 +77,8 @@ export const hibernateServer = async (input: { serverId: string }) => {
     if (await isCancelled(serverId)) {
       return;
     }
+
+    await stepMarkHibernating(serverId);
 
     const shutdown = await stepShutdownProviderServer(serverId);
     if (!shutdown.ok) {

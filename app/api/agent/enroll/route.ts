@@ -45,7 +45,31 @@ export const POST = async (request: Request) => {
     );
   }
 
+  // A burned token with a matching public key is a retry of an enrollment
+  // that already succeeded but whose response was lost — replay the success
+  // instead of bricking the agent with a 409 loop (it persists its keypair
+  // before the POST precisely so this check can work).
+  const replayResponse = async () => {
+    const existing = await prisma.agent.findUnique({
+      where: { serverId: claims.serverId },
+    });
+    if (existing && existing.publicKey === parsed.data.publicKey) {
+      return NextResponse.json(
+        enrollResponseSchema.parse({
+          agentId: existing.id,
+          serverId: existing.serverId,
+          sessionVersion: existing.sessionVersion,
+        })
+      );
+    }
+    return null;
+  };
+
   if (enrollment.burnedAt) {
+    const replay = await replayResponse();
+    if (replay) {
+      return replay;
+    }
     return NextResponse.json({ error: "Token already used" }, { status: 409 });
   }
 
@@ -84,6 +108,12 @@ export const POST = async (request: Request) => {
   });
 
   if (!agent) {
+    // Lost the burn race — if the winner was this same agent retrying
+    // concurrently, its row carries the same key; replay the success.
+    const replay = await replayResponse();
+    if (replay) {
+      return replay;
+    }
     return NextResponse.json({ error: "Token already used" }, { status: 409 });
   }
 
