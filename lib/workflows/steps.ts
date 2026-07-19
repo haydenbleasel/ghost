@@ -409,7 +409,234 @@ export const stepReadDesiredState = async (serverId: string) => {
   if (!server) {
     return "deleted" as const;
   }
-  return server.desiredState as "running" | "stopped" | "deleted";
+  return server.desiredState as
+    | "running"
+    | "stopped"
+    | "hibernated"
+    | "deleted";
 };
 
 export type WaitPhaseTarget = Phase | Phase[];
+
+export const stepSendStopCommand = async (serverId: string) => {
+  "use step";
+  const { stepId } = getStepMetadata();
+  const agent = await prisma.agent.findUnique({ where: { serverId } });
+  if (!agent) {
+    return { hadAgent: false };
+  }
+  const lastHeartbeat = agent.lastHeartbeatAt?.getTime() ?? 0;
+  if (Date.now() - lastHeartbeat > AGENT_LIVENESS_WINDOW_MS) {
+    return { hadAgent: false };
+  }
+  await enqueueCommand({
+    idempotencyKey: stepId,
+    payload: {},
+    serverId,
+    type: "STOP",
+  });
+  await emitActivity({
+    message: "Stopping game for hibernation",
+    phase: "hibernating",
+    serverId,
+  });
+  return { hadAgent: true };
+};
+
+export const stepShutdownProviderServer = async (serverId: string) => {
+  "use step";
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server?.providerServerId) {
+    return { ok: false as const };
+  }
+  await getProvider().shutdownServer(server.providerServerId);
+  return { ok: true as const, providerServerId: server.providerServerId };
+};
+
+export const stepPoweroffProviderServer = async (serverId: string) => {
+  "use step";
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server?.providerServerId) {
+    return { ok: false as const };
+  }
+  await getProvider().poweroffServer(server.providerServerId);
+  return { ok: true as const };
+};
+
+export const stepCreateHibernationSnapshot = async (serverId: string) => {
+  "use step";
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server?.providerServerId) {
+    throw new FatalError("Cannot snapshot a server with no provider VM");
+  }
+  if (server.hibernationImageId) {
+    return { imageId: server.hibernationImageId };
+  }
+  const imageId = await getProvider().createSnapshot(server.providerServerId, {
+    description: `ghost-hibernation-${serverId}`,
+  });
+  await prisma.server.update({
+    data: { hibernationImageId: imageId },
+    where: { id: serverId },
+  });
+  await emitActivity({
+    message: "Creating snapshot",
+    metadata: { imageId },
+    phase: "hibernating",
+    serverId,
+  });
+  return { imageId };
+};
+
+export const stepGetSnapshotStatus = async (input: {
+  serverId: string;
+  imageId: string;
+}) => {
+  "use step";
+  // "missing" (deleted out from under us) is distinct from a bad status so
+  // the workflow can clear the dangling image id; transient provider errors
+  // throw and retry the step instead of masquerading as either.
+  const image = await getProvider().getImage(input.imageId);
+  if (!image) {
+    return { status: "missing" as const };
+  }
+  return { status: image.status };
+};
+
+export const stepDeleteProviderServerForHibernation = async (
+  serverId: string
+) => {
+  "use step";
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server?.providerServerId) {
+    return { deleted: false };
+  }
+  await getProvider().deleteServer(server.providerServerId);
+  await prisma.server.update({
+    data: {
+      hibernatedAt: new Date(),
+      ipv4: null,
+      observedState: "hibernated",
+      phase: "hibernated",
+      providerServerId: null,
+    },
+    where: { id: serverId },
+  });
+  await emitActivity({
+    message: "VM released; snapshot retained",
+    phase: "hibernated",
+    serverId,
+  });
+  return { deleted: true };
+};
+
+export const stepCreateProviderServerFromSnapshot = async (
+  serverId: string
+) => {
+  "use step";
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server || server.desiredState !== "running") {
+    return { cancelled: true as const };
+  }
+  if (server.providerServerId) {
+    return {
+      cancelled: false as const,
+      providerServerId: server.providerServerId,
+    };
+  }
+  if (!server.hibernationImageId) {
+    throw new FatalError("Cannot wake server without a hibernation snapshot");
+  }
+  const provider = getProvider();
+
+  const name = `ghost-${serverId.toLowerCase().slice(-12)}-${crypto
+    .randomBytes(2)
+    .toString("hex")}`;
+
+  let created: Awaited<ReturnType<typeof provider.createServer>>;
+  try {
+    created = await provider.createServer({
+      imageId: server.hibernationImageId,
+      location: server.location,
+      name,
+      serverType: server.serverType,
+      userData: "",
+    });
+  } catch (error) {
+    if (error instanceof ProviderApiError && error.isClientError) {
+      throw new FatalError(error.message);
+    }
+    throw error;
+  }
+
+  await prisma.server.update({
+    data: {
+      ipv4: created.ipv4,
+      observedState: "waking",
+      phase: "waking",
+      providerServerId: created.id,
+    },
+    where: { id: serverId },
+  });
+  await emitActivity({
+    message: "Restoring VM from snapshot",
+    metadata: { providerServerId: created.id },
+    phase: "waking",
+    serverId,
+  });
+  return { cancelled: false as const, providerServerId: created.id };
+};
+
+export const stepClearVanishedProviderServer = async (serverId: string) => {
+  "use step";
+  // The VM 404'd at the provider: drop the dangling reference so a wake
+  // retry recreates it from the snapshot instead of polling a ghost.
+  await prisma.server.updateMany({
+    data: { ipv4: null, providerServerId: null },
+    where: { id: serverId },
+  });
+};
+
+export const stepWaitAgentReconnected = async (serverId: string) => {
+  "use step";
+  const agent = await prisma.agent.findUnique({
+    select: { lastHeartbeatAt: true },
+    where: { serverId },
+  });
+  if (!agent?.lastHeartbeatAt) {
+    return { reconnected: false };
+  }
+  const reconnected =
+    Date.now() - agent.lastHeartbeatAt.getTime() < AGENT_LIVENESS_WINDOW_MS;
+  return { reconnected };
+};
+
+export const stepDeleteHibernationSnapshot = async (serverId: string) => {
+  "use step";
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server?.hibernationImageId) {
+    return { deleted: false };
+  }
+  await getProvider().deleteImage(server.hibernationImageId);
+  await prisma.server.update({
+    data: { hibernatedAt: null, hibernationImageId: null },
+    where: { id: serverId },
+  });
+  return { deleted: true };
+};
+
+export const stepMarkAwake = async (serverId: string) => {
+  "use step";
+  const { count } = await prisma.server.updateMany({
+    data: { observedState: "running", phase: "ready" },
+    where: { id: serverId },
+  });
+  if (count === 0) {
+    return;
+  }
+  await emitActivity({
+    message: "Server back online",
+    phase: "ready",
+    serverId,
+  });
+};

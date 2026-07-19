@@ -48,7 +48,12 @@ describe("protocol enums", () => {
   });
 
   test("DESIRED_STATES is the small fixed set", () => {
-    expect([...DESIRED_STATES]).toEqual(["running", "stopped", "deleted"]);
+    expect([...DESIRED_STATES]).toEqual([
+      "running",
+      "stopped",
+      "hibernated",
+      "deleted",
+    ]);
   });
 
   test("OBSERVED_STATES, COMMAND_TYPES, COMMAND_STATUSES, LOG_STREAMS are non-empty", () => {

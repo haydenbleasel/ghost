@@ -83,6 +83,7 @@ const ServerLayout = async ({
         dockerImage: game?.dockerImage ?? null,
         errorReason: server.errorReason,
         game: server.game,
+        hibernationImageId: server.hibernationImageId,
         id: server.id,
         ipv4: server.ipv4,
         joinPassword: server.joinPassword,

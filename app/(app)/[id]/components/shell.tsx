@@ -1,9 +1,11 @@
 "use client";
 import {
+  MoonIcon,
   MoreHorizontalIcon,
   PlayIcon,
   RotateCcwIcon,
   SquareIcon,
+  SunIcon,
   Trash2Icon,
 } from "lucide-react";
 import Image from "next/image";
@@ -40,6 +42,8 @@ import { cn } from "@/lib/utils";
 import { PageBody, PageHeader } from "../../components/page-header";
 import { runServerCommand } from "../actions/commands";
 import { deleteServer } from "../actions/delete";
+import { hibernate } from "../actions/hibernate";
+import { wake } from "../actions/wake";
 import { ProvisioningStatus } from "./provisioning-status";
 import { ServerProvider } from "./server-context";
 import type { ServerView } from "./server-context";
@@ -109,6 +113,7 @@ export const ServerShell = ({
   const [server, setServer] = useState(initial);
   const [pending, setPending] = useState<null | string>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [hibernateOpen, setHibernateOpen] = useState(false);
 
   useEffect(() => {
     const t = setInterval(async () => {
@@ -124,6 +129,7 @@ export const ServerShell = ({
           desiredState: fresh.desiredState,
           errorReason: fresh.errorReason ?? null,
           game: fresh.game,
+          hibernationImageId: fresh.hibernationImageId ?? null,
           id: fresh.id,
           ipv4: fresh.ipv4,
           lastHeartbeatAt: fresh.agent?.lastHeartbeatAt ?? null,
@@ -159,6 +165,35 @@ export const ServerShell = ({
     }
   };
 
+  const runHibernate = async () => {
+    setPending("HIBERNATE");
+    try {
+      const result = await hibernate({ serverId: server.id });
+      if (result.ok) {
+        toast.success("Hibernating server");
+        setHibernateOpen(false);
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setPending(null);
+    }
+  };
+
+  const runWake = async () => {
+    setPending("WAKE");
+    try {
+      const result = await wake({ serverId: server.id });
+      if (result.ok) {
+        toast.success("Waking server");
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setPending(null);
+    }
+  };
+
   const updateServer = (patch: Partial<ServerView>) =>
     setServer((prev) => ({ ...prev, ...patch }));
 
@@ -170,6 +205,16 @@ export const ServerShell = ({
   }
 
   const deleting = server.desiredState === "deleted";
+  // "failed" is wake-able (or hibernate-able) again so a timed-out attempt
+  // isn't a dead end; which retry applies depends on which transition failed.
+  const canWake =
+    server.hibernationImageId !== null &&
+    (server.observedState === "hibernated" ||
+      (server.observedState === "failed" && server.desiredState === "running"));
+  const canHibernate =
+    server.observedState === "running" ||
+    server.observedState === "stopped" ||
+    (server.observedState === "failed" && server.desiredState === "hibernated");
   const statusLabel = deleting ? "deleting" : server.observedState;
 
   const meta = (
@@ -214,6 +259,21 @@ export const ServerShell = ({
           Restart
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        {canWake ? (
+          <DropdownMenuItem disabled={pending !== null} onSelect={runWake}>
+            <SunIcon />
+            Wake
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            disabled={pending !== null || !canHibernate}
+            onSelect={() => setHibernateOpen(true)}
+          >
+            <MoonIcon />
+            Hibernate
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={pending !== null || deleting}
           onSelect={() => setDeleteOpen(true)}
@@ -239,6 +299,27 @@ export const ServerShell = ({
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={runDelete}>Delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  const hibernateDialog = (
+    <AlertDialog onOpenChange={setHibernateOpen} open={hibernateOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Hibernate this server?</AlertDialogTitle>
+          <AlertDialogDescription>
+            We&apos;ll snapshot the disk and release the VM to stop Hetzner
+            charges. Restoring takes a few minutes, and the public IP will
+            change on wake.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={runHibernate}>
+            Hibernate
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -273,6 +354,7 @@ export const ServerShell = ({
           />
         </PageBody>
         {deleteDialog}
+        {hibernateDialog}
       </>
     );
   }
